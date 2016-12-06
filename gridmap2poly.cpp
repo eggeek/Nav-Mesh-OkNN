@@ -46,6 +46,7 @@ weight of 0.
 #include <vector>
 #include <queue>
 #include <stdlib.h>
+#include <cassert>
 
 
 
@@ -56,9 +57,9 @@ typedef std::vector<int> vint;
 // {point on map : {polygon id : (point1, point2)}}
 // for generating the polygons.
 typedef std::pair<int, int> point;
-typedef std::pair<point, point> two_point;
-typedef std::map<int, two_point> int_to_two_point;
-typedef std::vector<int_to_two_point> vint_to_two_point;
+typedef std::vector<point> vpoint;
+typedef std::map<int, vpoint> int_to_vpoint;
+typedef std::vector<int_to_vpoint> vint_to_vpoint;
 
 // Search node used for the Dijkstra-like floodfill.
 // We want to prioritise search nodes with a lower elevation, then the ones
@@ -101,7 +102,7 @@ int next_id = 0;
 std::vector<vint> polygon_id;
 std::vector<int> id_to_elevation; // resize as necessary
 std::vector<point> id_to_first_point; // resize with above
-std::vector<vint_to_two_point> id_to_neighbours;
+std::vector<vint_to_vpoint> id_to_neighbours;
 
 
 void fail(std::string msg)
@@ -305,6 +306,76 @@ void get_id_and_elevation()
 	}
 }
 
+void make_edges()
+{
+	// Fill in id_to_neighbours, which, for each lattice point, is a mapping
+	// from an ID to the two neighbouring lattice points where the polygon
+	// is connected to.
+
+	id_to_neighbours = std::vector<vint_to_vpoint>(
+							map_height + 1, vint_to_vpoint(map_width + 1));
+
+	// First, iterate over each "horizontal" edge made by two vertically
+	// adjacent cells. This includes cells "outside" of the map which we will
+	// assume to be traversable and have a elevation of 0.
+
+	// First, iterate over the y position of the horizontal edge.
+	for (int edge = 0; edge < map_height + 1; edge++)
+	{
+		// The interesting cells we are looking for have a y position of
+		// edge-1 and edge respectively.
+		// Then we can iterate over the x values of the cells as normal.
+		const bool is_top = edge == 0;
+		const bool is_bot = edge == map_height;
+		for (int x = 0; x < map_width; x++)
+		{
+			const int top_id = (is_top ? -1 : polygon_id[edge - 1][x]);
+			const int bot_id = (is_bot ? -1 : polygon_id[edge][x]);
+			const int top_ele = (is_top ? 0 : id_to_elevation[top_id]);
+			const int bot_ele = (is_bot ? 0 : id_to_elevation[bot_id]);
+
+			if (top_ele == bot_ele)
+			{
+				// Same elevation, therefore no edge will be made.
+				continue;
+			}
+			const int id_of_edge = (top_ele > bot_ele ? top_id : bot_id);
+			assert(id_of_edge != -1);
+
+			// Now we got an edge and the ID it's correlated to.
+			// For both points, we add the other point to the neighbours.
+			id_to_neighbours[edge][x][id_of_edge].push_back({x + 1, edge});
+			id_to_neighbours[edge][x + 1][id_of_edge].push_back({x, edge});
+		}
+	}
+
+	// Now we iterate over the "vertical" edges made by two horizontally
+	// adjacent cells.
+
+	for (int edge = 0; edge < map_width + 1; edge++)
+	{
+		const bool is_left = edge == 0;
+		const bool is_right = edge == map_width;
+		for (int y = 0; y < map_height; y++)
+		{
+			const int left_id = (is_left ? -1 : polygon_id[y][edge - 1]);
+			const int right_id = (is_right ? -1 : polygon_id[y][edge]);
+			const int left_ele = (is_left ? 0 : id_to_elevation[left_id]);
+			const int right_ele = (is_right ? 0 : id_to_elevation[right_id]);
+
+			if (left_ele == right_ele)
+			{
+				continue;
+			}
+			const int id_of_edge = (left_ele > right_ele ? left_id : right_id);
+			assert(id_of_edge != -1);
+
+			id_to_neighbours[y][edge][id_of_edge].push_back({edge, y + 1});
+			id_to_neighbours[y + 1][edge][id_of_edge].push_back({edge, y});
+		}
+	}
+}
+
 void print_map()
 {
 	for (auto row : map_traversable)
@@ -348,6 +419,8 @@ int main()
 	cerr << "map done" << endl;
 	get_id_and_elevation();
 	cerr << "elevation done" << endl;
+	make_edges();
+	cerr << "edges done" << endl;
 	//print_map();
 	print_ids();
 	print_elevation();
