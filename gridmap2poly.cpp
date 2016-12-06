@@ -119,8 +119,8 @@ void read_map()
 
 	// header
 	for (int i = 0; i < 3; i++)
-    {
-        std::string hfield, hvalue;
+	{
+		std::string hfield, hvalue;
 		if (std::cin >> hfield)
 		{
 			if (std::cin >> hvalue)
@@ -257,7 +257,7 @@ void get_id_and_elevation()
 	{
 		search_node c = open_list.top(); open_list.pop();
 		const int x = c.pos.first, y = c.pos.second;
-        if (polygon_id[y][x] != -1)
+		if (polygon_id[y][x] != -1)
 		{
 			// Already seen before, skip.
 			continue;
