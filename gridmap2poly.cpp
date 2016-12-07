@@ -102,7 +102,7 @@ int map_width, map_height;
 int next_id = 0;
 std::vector<vint> polygon_id;
 std::vector<int> id_to_elevation; // resize as necessary
-std::vector<point> id_to_first_point; // resize with above
+std::vector<point> id_to_first_cell; // resize with above
 std::vector<vint_to_vpoint> id_to_neighbours;
 
 
@@ -269,7 +269,7 @@ void get_id_and_elevation()
 			// Give it a new ID.
 			c.id = next_id++;
 			id_to_elevation.push_back(c.elevation);
-			id_to_first_point.push_back(c.pos);
+			id_to_first_cell.push_back(c.pos);
 		}
 		polygon_id[y][x] = c.id;
 
