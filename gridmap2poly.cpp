@@ -1,3 +1,4 @@
+// vim: noet
 /*
 Takes a map file from stdin, and outputs a polygon map file on stdout.
 A polygon map file is as defined:
