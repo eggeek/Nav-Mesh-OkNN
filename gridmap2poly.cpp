@@ -105,6 +105,7 @@ std::vector<int> id_to_elevation; // resize as necessary
 std::vector<point> id_to_first_cell; // resize with above
 std::vector<vint_to_vpoint> id_to_neighbours;
 
+std::vector<vpoint> id_to_polygon;
 
 void fail(std::string msg)
 {
@@ -377,6 +378,75 @@ void make_edges()
 	}
 }
 
+void generate_polygons()
+{
+	// Don't forget to initialise id_to_polygon!
+	id_to_polygon = std::vector<vpoint>(next_id);
+	// For each ID...
+	for (int id = 0; id < next_id; id++)
+	{
+		// we first want to check whether the elevation is zero.
+		if (id_to_elevation[id] == 0)
+		{
+			// If so, we want to continue on: this should be covered by the
+			// big "overall" rectangle.
+			continue;
+		}
+		// Then, we get a cell on the "border" of the polygon.
+		// We can use the first seen cell for this.
+		const point first_cell = id_to_first_cell[id];
+		const int cell_x = first_cell.first, cell_y = first_cell.second;
+		point last;
+
+		// We know that some corner of the cell must have an edge of the polygon.
+		// Go through all of them.
+		for (int dx = 0; dx < 2; dx++)
+		{
+			for (int dy = 0; dy < 2; dy++)
+			{
+				if (id_to_neighbours[cell_y+dy][cell_x+dx].count(id) != 0)
+				{
+					last = {cell_x + dx, cell_y + dy};
+					goto found_point;
+				}
+			}
+		}
+		assert(false);
+		found_point:
+		vpoint *cur_neighbours = &id_to_neighbours[last.second][last.first][id];
+		vpoint *cur_poly = &id_to_polygon[id];
+		assert(cur_neighbours->size() == 2);
+		// We now start going an arbitrary direction.
+		// To do this, we need to keep track of our "last" point.
+		point cur = cur_neighbours->at(0);
+
+		// Now we keep going, adding corners until we go on the first corner.
+		// We know we've reached a corner when the neighbours' x AND y values
+		// are different.
+		while (cur_poly->empty() || cur != cur_poly->at(0))
+		{
+			using namespace std;
+			cur_neighbours = &id_to_neighbours[cur.second][cur.first][id];
+			assert(cur_neighbours->size() == 2);
+			if (cur_neighbours->at(0).first != cur_neighbours->at(1).first &&
+				cur_neighbours->at(0).second != cur_neighbours->at(1).second)
+			{
+				cur_poly->push_back(cur);
+			}
+			const point temp = cur;
+			if (cur_neighbours->at(0) == last)
+			{
+				cur = cur_neighbours->at(1);
+			}
+			else
+			{
+				cur = cur_neighbours->at(0);
+			}
+			last = temp;
+		}
+	}
+}
+
 void print_map()
 {
 	for (auto row : map_traversable)
@@ -413,6 +483,26 @@ void print_ids()
 	}
 }
 
+void print_id_to_polygon()
+{
+	for (int id = 0; id < next_id; id++)
+	{
+		std::cout << id << std::endl;
+		if (id_to_polygon[id].empty())
+		{
+			std::cout << "empty" << std::endl;
+		}
+		else
+		{
+			for (point p : id_to_polygon[id])
+			{
+				std::cout << "(" << p.first << ", " << p.second << "); ";
+			}
+			std::cout << std::endl;
+		}
+	}
+}
+
 int main()
 {
 	using namespace std;
@@ -422,9 +512,12 @@ int main()
 	cerr << "elevation done" << endl;
 	make_edges();
 	cerr << "edges done" << endl;
+	generate_polygons();
+	cerr << "polygons done" << endl;
 	//print_map();
-	print_ids();
-	print_elevation();
+	//print_ids();
+	//print_elevation();
+	print_id_to_polygon();
 
 	return 0;
 }
