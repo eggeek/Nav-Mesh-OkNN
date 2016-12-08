@@ -573,19 +573,10 @@ void print_id_to_polygon()
 
 int main()
 {
-	using namespace std;
 	read_map();
-	cerr << "map done" << endl;
 	get_id_and_elevation();
-	cerr << "elevation done" << endl;
 	make_edges();
-	cerr << "edges done" << endl;
 	generate_polygons();
-	cerr << "polygons done" << endl;
-	//print_map();
-	//print_ids();
-	//print_elevation();
-	//print_id_to_polygon();
 	print_polymap();
 
 	return 0;
