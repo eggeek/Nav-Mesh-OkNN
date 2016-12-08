@@ -49,6 +49,7 @@ weight of 0.
 #include <stdlib.h>
 #include <cassert>
 
+#define FORMAT_VERSION 1
 
 
 typedef std::vector<bool> vbool;
@@ -447,6 +448,73 @@ void generate_polygons()
 	}
 }
 
+void print_polymap()
+{
+	std::cout << "poly" << std::endl;
+	std::cout << FORMAT_VERSION << std::endl;
+
+	// Get the number of polygons to print.
+	// Start with 1: the "border" of the map is included.
+	int num_polys = 1;
+	for (int id = 0; id < next_id; id++)
+	{
+		// We know a polygon won't be valid if its elevation is 0.
+		if (id_to_elevation[id] != 0)
+		{
+			num_polys++;
+		}
+	}
+
+	std::cout << num_polys << std::endl;
+
+	// Print the first polygon.
+	const point first_poly[] = {
+		{0, 0},
+		{map_width, 0},
+		{map_width, map_height},
+		{0, map_height}
+	};
+
+	std::cout << 4 << " ";
+	for (int i = 0; i < 4; i++)
+	{
+		std::cout << first_poly[i].first << " " << first_poly[i].second;
+		if (i == 3)
+		{
+			std::cout << std::endl;
+		}
+		else
+		{
+			std::cout << " ";
+		}
+	}
+
+	// Print the polygons.
+	for (int id = 0; id < next_id; id++)
+	{
+		const vpoint& points = id_to_polygon[id];
+		const size_t m = points.size();
+		if (m == 0)
+		{
+			continue;
+		}
+		std::cout << m << " ";
+		for (size_t index = 0; index < m; index++)
+		{
+			const point& cur_point = points[index];
+			std::cout << cur_point.first << " " << cur_point.second;
+			if (index == m-1)
+			{
+				std::cout << std::endl;
+			}
+			else
+			{
+				std::cout << " ";
+			}
+		}
+	}
+}
+
 void print_map()
 {
 	for (auto row : map_traversable)
@@ -517,7 +585,8 @@ int main()
 	//print_map();
 	//print_ids();
 	//print_elevation();
-	print_id_to_polygon();
+	//print_id_to_polygon();
+	print_polymap();
 
 	return 0;
 }
