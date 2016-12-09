@@ -5,7 +5,7 @@ DEV_CXXFLAGS = -g -ggdb -O0
 FADE2DFLAGS = -Iinclude/fade2d -Llib/ubuntu16.10_x86_64 -lfade2d -Wl,-rpath=lib/ubuntu16.10_x86_64
 
 # Uses Fade2D.
-FADE2D =
+FADE2D = visualiser
 # Does not use Fade2D.
 NOFADE2D = gridmap2poly
 
