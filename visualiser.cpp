@@ -7,12 +7,7 @@ using namespace std;
 using namespace GEOM_FADE2D;
 
 typedef vector<Point2> Polygon;
-vector<Polygon> *polys;
 
-vector<ConstraintGraph2*> *cgs;
-Zone2 *traversable;
-
-Fade_2D dt;
 
 // Retrieves the triangles of pZone and highlights them in the triangulation.
 void highlightTriangles(Fade_2D& dt,Zone2* pZone, const string& filename)
@@ -129,6 +124,33 @@ vector<ConstraintGraph2*> *create_constraint_graphs(const vector<Polygon> &polyg
 	return constraint_graphs;
 }
 
+Zone2* create_traversable_zone(const string &filename, Fade_2D &dt)
+{
+	vector<Polygon> *polygons = read_polys(filename);
+	vector<ConstraintGraph2*> *cgs = create_constraint_graphs(*polygons, dt);
+	dt.applyConstraintsAndZones();
+
+	for (auto x : *cgs)
+	{
+		assert(x->isPolygon());
+	}
+
+	// TODO: Merge the two for loops together
+	vector<Zone2*> zones;
+	for (auto x : *cgs)
+	{
+		zones.push_back(dt.createZone(x, ZL_INSIDE));
+	}
+	assert(!zones.empty());
+
+	Zone2* traversable = zones.front();
+	for (int i = 1; i < ((int)zones.size()); i++)
+	{
+		traversable = zoneSymmetricDifference(traversable, zones[i]);
+	}
+	return traversable;
+}
+
 
 void print_points(const vector<Polygon> &polygons)
 {
@@ -152,29 +174,10 @@ int main(int argc, char* argv[])
 		cerr << "usage: " << argv[0] << " <file>" << endl;
 		return 1;
 	}
+	Fade_2D dt;
 	string filename = argv[1];
-	polys = read_polys(filename);
-	cgs = create_constraint_graphs(*polys, dt);
-	print_points(*polys);
-	dt.applyConstraintsAndZones();
-	for (auto x : *cgs)
-	{
-		assert(x->isPolygon());
-	}
+	Zone2 *traversable = create_traversable_zone(filename, dt);
 	dt.show(filename + "-nozone.ps");
-
-	vector<Zone2*> zones;
-	for (auto x : *cgs)
-	{
-		zones.push_back(dt.createZone(x, ZL_INSIDE));
-	}
-	assert(!cgs->empty());
-	traversable = zones.front();
-	for (int i = 1; i < ((int)zones.size()); i++)
-	{
-		traversable = zoneSymmetricDifference(traversable, zones[i]);
-	}
 	highlightTriangles(dt, traversable, filename + "-traversable.ps");
-
 	return 0;
 }
