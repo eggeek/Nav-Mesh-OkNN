@@ -19,7 +19,8 @@ A polygon map file is as defined:
 
 To do this, we do a floodfill from the edge of the map to assign a "elevation"
 to all grid squares. To do this, we first assume that every square outside of
-the map is traversable.
+the map is traversable if we want an outside edge, or nontraversable if we do
+not want an outside edge.
 The elevation of a point is the minimum number of "traversability changes"
 needed to get there. That is:
 - any traversable area which is connected to a cell outside of the map has an
@@ -51,6 +52,7 @@ weight of 0.
 
 #define FORMAT_VERSION 1
 
+const bool HAS_OUTSIDE = false;
 
 typedef std::vector<bool> vbool;
 typedef std::vector<int> vint;
@@ -243,8 +245,8 @@ void get_id_and_elevation()
 	const int bottom_row = map_height - 1;
 	for (int i = 0; i < map_width; i++)
 	{
-		open_list.push({!map_traversable[0][i], -1, {i, 0}});
-		open_list.push({!map_traversable[bottom_row][i], -1, {i, bottom_row}});
+		open_list.push({HAS_OUTSIDE != map_traversable[0][i], -1, {i, 0}});
+		open_list.push({HAS_OUTSIDE != map_traversable[bottom_row][i], -1, {i, bottom_row}});
 	}
 
 	// Then do the left and right columns.
@@ -252,8 +254,8 @@ void get_id_and_elevation()
 	const int right_col = map_width - 1;
 	for (int i = 1; i < bottom_row; i++)
 	{
-		open_list.push({!map_traversable[i][0], -1, {0, i}});
-		open_list.push({!map_traversable[i][right_col], -1, {right_col, i}});
+		open_list.push({HAS_OUTSIDE != map_traversable[i][0], -1, {0, i}});
+		open_list.push({HAS_OUTSIDE != map_traversable[i][right_col], -1, {right_col, i}});
 	}
 
 	while (!open_list.empty())
@@ -454,8 +456,8 @@ void print_polymap()
 	std::cout << FORMAT_VERSION << std::endl;
 
 	// Get the number of polygons to print.
-	// Start with 1: the "border" of the map is included.
-	int num_polys = 1;
+	// Start with 1 if the border is included.
+	int num_polys = HAS_OUTSIDE;
 	for (int id = 0; id < next_id; id++)
 	{
 		// We know a polygon won't be valid if its elevation is 0.
@@ -467,25 +469,27 @@ void print_polymap()
 
 	std::cout << num_polys << std::endl;
 
-	// Print the first polygon.
-	const point first_poly[] = {
-		{0, 0},
-		{map_width, 0},
-		{map_width, map_height},
-		{0, map_height}
-	};
+	if (HAS_OUTSIDE) {
+		// Print the first polygon.
+		const point first_poly[] = {
+			{0, 0},
+			{map_width, 0},
+			{map_width, map_height},
+			{0, map_height}
+		};
 
-	std::cout << 4 << " ";
-	for (int i = 0; i < 4; i++)
-	{
-		std::cout << first_poly[i].first << " " << first_poly[i].second;
-		if (i == 3)
+		std::cout << 4 << " ";
+		for (int i = 0; i < 4; i++)
 		{
-			std::cout << std::endl;
-		}
-		else
-		{
-			std::cout << " ";
+			std::cout << first_poly[i].first << " " << first_poly[i].second;
+			if (i == 3)
+			{
+				std::cout << std::endl;
+			}
+			else
+			{
+				std::cout << " ";
+			}
 		}
 	}
 
