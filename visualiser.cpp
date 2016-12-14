@@ -110,7 +110,7 @@ vector<Polygon> *read_polys(const string& filename)
 	return polygons;
 }
 
-vector<ConstraintGraph2*> *create_constraint_graphs(const vector<Polygon> &polygons)
+vector<ConstraintGraph2*> *create_constraint_graphs(const vector<Polygon> &polygons, Fade_2D &dt)
 {
 	vector<ConstraintGraph2*> *constraint_graphs = new vector<ConstraintGraph2*>;
 	for (auto poly : polygons)
@@ -154,7 +154,7 @@ int main(int argc, char* argv[])
 	}
 	string filename = argv[1];
 	polys = read_polys(filename);
-	cgs = create_constraint_graphs(*polys);
+	cgs = create_constraint_graphs(*polys, dt);
 	print_points(*polys);
 	dt.applyConstraintsAndZones();
 	for (auto x : *cgs)
