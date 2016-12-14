@@ -242,11 +242,12 @@ void get_id_and_elevation()
 	// 1 if not.
 
 	// Do the top row and bottom row first.
+	#define INIT(x, y) open_list.push({HAS_OUTSIDE != map_traversable[(y)][(x)], -1, {(x), (y)}})
 	const int bottom_row = map_height - 1;
 	for (int i = 0; i < map_width; i++)
 	{
-		open_list.push({HAS_OUTSIDE != map_traversable[0][i], -1, {i, 0}});
-		open_list.push({HAS_OUTSIDE != map_traversable[bottom_row][i], -1, {i, bottom_row}});
+		INIT(i, 0);
+		INIT(i, bottom_row);
 	}
 
 	// Then do the left and right columns.
@@ -254,9 +255,10 @@ void get_id_and_elevation()
 	const int right_col = map_width - 1;
 	for (int i = 1; i < bottom_row; i++)
 	{
-		open_list.push({HAS_OUTSIDE != map_traversable[i][0], -1, {0, i}});
-		open_list.push({HAS_OUTSIDE != map_traversable[i][right_col], -1, {right_col, i}});
+		INIT(0, i);
+		INIT(right_col, i);
 	}
+	#undef INIT
 
 	while (!open_list.empty())
 	{
