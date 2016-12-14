@@ -6,10 +6,11 @@
 using namespace std;
 using namespace GEOM_FADE2D;
 
-vector<vector<Point2>> polys;
+typedef vector<Point2> Polygon;
+vector<Polygon> *polys;
 
 typedef ConstraintGraph2* CGPointer;
-vector<CGPointer> constraint_graphs;
+vector<CGPointer> *cgs;
 typedef Zone2* ZonePointer;
 ZonePointer traversable;
 
@@ -41,8 +42,9 @@ void fail(const string& message)
 	exit(1);
 }
 
-void read_polys(const string& filename)
+vector<Polygon> *read_polys(const string& filename)
 {
+	vector<Polygon> *polygons = new vector<Polygon>;
 	ifstream infile(filename);
 	if (!infile.is_open())
 	{
@@ -95,7 +97,7 @@ void read_polys(const string& filename)
 			cerr << "Got " << N << "points" << endl;
 			fail("Invalid number of points in poly");
 		}
-		vector<Point2> cur_poly;
+		Polygon cur_poly;
 		for (int j = 0; j < M; j++)
 		{
 			int x, y;
@@ -105,13 +107,15 @@ void read_polys(const string& filename)
 			}
 			cur_poly.push_back(Point2(x, y));
 		}
-		polys.push_back(cur_poly);
+		polygons->push_back(cur_poly);
 	}
+	return polygons;
 }
 
-void create_constraint_graphs()
+vector<CGPointer> *create_constraint_graphs(const vector<Polygon> &polygons)
 {
-	for (auto poly : polys)
+	vector<CGPointer> *constraint_graphs = new vector<CGPointer>;
+	for (auto poly : polygons)
 	{
 		vector<Segment2> segments;
 		for (int i = 0; i < ((int)poly.size()) - 1; i++)
@@ -122,13 +126,15 @@ void create_constraint_graphs()
 		}
 		segments.push_back(Segment2(poly.back(), poly.front()));
 		CGPointer cg = dt.createConstraint(segments, CIS_CONSTRAINED_DELAUNAY);
-		constraint_graphs.push_back(cg);
+		constraint_graphs->push_back(cg);
 	}
+	return constraint_graphs;
 }
 
-void print_points()
+
+void print_points(const vector<Polygon> &polygons)
 {
-	for (auto poly : polys)
+	for (auto poly : polygons)
 	{
 		cout << poly.size() << " ";
 		for (auto p : poly)
@@ -149,22 +155,22 @@ int main(int argc, char* argv[])
 		return 1;
 	}
 	string filename = argv[1];
-	read_polys(filename);
-	create_constraint_graphs();
-	print_points();
+	polys = read_polys(filename);
+	cgs = create_constraint_graphs(*polys);
+	print_points(*polys);
 	dt.applyConstraintsAndZones();
-	for (auto x : constraint_graphs)
+	for (auto x : *cgs)
 	{
 		assert(x->isPolygon());
 	}
 	dt.show(filename + "-nozone.ps");
 
 	vector<ZonePointer> zones;
-	for (auto x : constraint_graphs)
+	for (auto x : *cgs)
 	{
 		zones.push_back(dt.createZone(x, ZL_INSIDE));
 	}
-	assert(!constraint_graphs.empty());
+	assert(!cgs->empty());
 	traversable = zones.front();
 	for (int i = 1; i < ((int)zones.size()); i++)
 	{
