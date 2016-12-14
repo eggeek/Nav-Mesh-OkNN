@@ -177,7 +177,11 @@ int main(int argc, char* argv[])
 	Fade_2D dt;
 	string filename = argv[1];
 	Zone2 *traversable = create_traversable_zone(filename, dt);
-	dt.show(filename + "-nozone.ps");
 	highlightTriangles(dt, traversable, filename + "-traversable.ps");
+
+	vector<Triangle2*> triangles;
+	traversable->getTriangles(triangles);
+	cout << "Traversable triangles: " << triangles.size() << endl;
+	cout << "Total triangles: " << dt.numberOfTriangles() << endl;
 	return 0;
 }
