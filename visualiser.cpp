@@ -9,10 +9,8 @@ using namespace GEOM_FADE2D;
 typedef vector<Point2> Polygon;
 vector<Polygon> *polys;
 
-typedef ConstraintGraph2* CGPointer;
-vector<CGPointer> *cgs;
-typedef Zone2* ZonePointer;
-ZonePointer traversable;
+vector<ConstraintGraph2*> *cgs;
+Zone2 *traversable;
 
 Fade_2D dt;
 
@@ -112,9 +110,9 @@ vector<Polygon> *read_polys(const string& filename)
 	return polygons;
 }
 
-vector<CGPointer> *create_constraint_graphs(const vector<Polygon> &polygons)
+vector<ConstraintGraph2*> *create_constraint_graphs(const vector<Polygon> &polygons)
 {
-	vector<CGPointer> *constraint_graphs = new vector<CGPointer>;
+	vector<ConstraintGraph2*> *constraint_graphs = new vector<ConstraintGraph2*>;
 	for (auto poly : polygons)
 	{
 		vector<Segment2> segments;
@@ -125,7 +123,7 @@ vector<CGPointer> *create_constraint_graphs(const vector<Polygon> &polygons)
 			segments.push_back(Segment2(p0, p1));
 		}
 		segments.push_back(Segment2(poly.back(), poly.front()));
-		CGPointer cg = dt.createConstraint(segments, CIS_CONSTRAINED_DELAUNAY);
+		ConstraintGraph2 *cg = dt.createConstraint(segments, CIS_CONSTRAINED_DELAUNAY);
 		constraint_graphs->push_back(cg);
 	}
 	return constraint_graphs;
@@ -165,7 +163,7 @@ int main(int argc, char* argv[])
 	}
 	dt.show(filename + "-nozone.ps");
 
-	vector<ZonePointer> zones;
+	vector<Zone2*> zones;
 	for (auto x : *cgs)
 	{
 		zones.push_back(dt.createZone(x, ZL_INSIDE));
