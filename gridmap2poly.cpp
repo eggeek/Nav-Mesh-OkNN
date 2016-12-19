@@ -1,22 +1,6 @@
 // vim: noet
 /*
-Takes a map file from stdin, and outputs a polygon map file on stdout.
-A polygon map file is as defined:
-	The first line is "poly".
-	The second line is the version of the format (currently 1).
-	The third line contains an integer, N, which is how many polys there are.
-	Then follows N lines.
-		The below will all be separated by spaces.
-		The first integer M is how many points there are in the poly.
-		Then follows 2*M (possibly non-integer) numbers in the form
-			x1 y1 x2 y2 [...] xM yM
-		such that the ith point has coordinates {xi, yi}.
-
-	By convention, the first polygon should be an axis-aligned rectangle
-	corresponding to the whole map.
-	Assume that the polygons do not contain any self-intersections.
-	To get the traversable area, take the symmetric difference of ALL polygons.
-
+Takes a map file from stdin, and outputs a polygon map v1 file on stdout.
 To do this, we do a floodfill from the edge of the map to assign a "elevation"
 to all grid squares. To do this, we first assume that every square outside of
 the map is traversable if we want an outside edge, or nontraversable if we do
