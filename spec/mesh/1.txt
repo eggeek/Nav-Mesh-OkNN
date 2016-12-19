@@ -39,6 +39,9 @@ A vertex is defined by:
 		Each integer represents an index of the polygon array.
 		Ordered such that the polygon p[i] contains v[i] and v[i+1], wrapping
 		around at the last polygon.
+		If neighbours = 2, assume that the p[0] has v[0], this point,
+		v[1] in CLOCKWISE order. This should give the same behaviour as if
+		neighbours > 2.
 		If the polygon is not defined (it is outside the map or an obstacle),
 		a value of -1 is used.
 
@@ -74,3 +77,7 @@ A polygon is defined by:
 		the edge e[i].
 		If the polygon is not defined (it is outside the map or an obstacle),
 		a value of -1 is used.
+
+When serialising an object into a line of the format, store all numbers in order
+and separate them by spaces. As the length of all arrays have been defined
+before the array, arrays are stored as consecutive numbers.
