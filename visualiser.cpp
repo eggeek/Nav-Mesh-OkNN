@@ -3,6 +3,8 @@
 using namespace std;
 using namespace GEOM_FADE2D;
 
+typedef vector<Point2> Polygon;
+
 // Retrieves the triangles of pZone and highlights them in the triangulation.
 void highlightTriangles(Fade_2D& dt,Zone2* pZone, const string& filename)
 {
@@ -47,7 +49,7 @@ int main(int argc, char* argv[])
 	}
 	Fade_2D dt;
 	string filename = argv[1];
-	Zone2 *traversable = create_traversable_zone(filename, dt);
+	Zone2 *traversable = fadeutils::create_traversable_zone(filename, dt);
 	highlightTriangles(dt, traversable, filename + "-traversable.ps");
 
 	vector<Triangle2*> triangles;

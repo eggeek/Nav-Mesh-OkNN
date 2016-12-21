@@ -1,5 +1,8 @@
 #include "polymap.h"
 
+namespace fadeutils
+{
+
 void fail(const string& message)
 {
 	cerr << message << endl;
@@ -120,4 +123,6 @@ Zone2* create_traversable_zone(const string &filename, Fade_2D &dt)
 		traversable = zoneSymmetricDifference(traversable, zones[i]);
 	}
 	return traversable;
+}
+
 }
