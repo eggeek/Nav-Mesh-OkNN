@@ -14,10 +14,10 @@ typedef vector<Point2> Polygon;
 
 void fail(const string& message);
 
-vector<Polygon> *read_polys(const string& filename);
+vector<Polygon> *read_polys(istream& infile);
 
 vector<ConstraintGraph2*> *create_constraint_graphs(const vector<Polygon> &polygons, Fade_2D &dt);
 
-Zone2* create_traversable_zone(const string &filename, Fade_2D &dt);
+Zone2* create_traversable_zone(istream& infile, Fade_2D &dt);
 
 }

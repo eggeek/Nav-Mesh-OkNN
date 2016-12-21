@@ -49,7 +49,13 @@ int main(int argc, char* argv[])
 	}
 	Fade_2D dt;
 	string filename = argv[1];
-	Zone2 *traversable = fadeutils::create_traversable_zone(filename, dt);
+	ifstream mapfile(filename);
+	if (!mapfile.is_open())
+	{
+		cerr << "Unable to open file" << endl;
+		return 1;
+	}
+	Zone2 *traversable = fadeutils::create_traversable_zone(mapfile, dt);
 	highlightTriangles(dt, traversable, filename + "-traversable.ps");
 
 	vector<Triangle2*> triangles;

@@ -9,15 +9,9 @@ void fail(const string& message)
 	exit(1);
 }
 
-vector<Polygon> *read_polys(const string& filename)
+vector<Polygon> *read_polys(istream& infile)
 {
 	vector<Polygon> *polygons = new vector<Polygon>;
-	ifstream infile(filename);
-	if (!infile.is_open())
-	{
-		fail("Unable to open file");
-	}
-
 	string header;
 	int version;
 
@@ -104,9 +98,9 @@ vector<ConstraintGraph2*> *create_constraint_graphs(const vector<Polygon> &polyg
 	return constraint_graphs;
 }
 
-Zone2* create_traversable_zone(const string &filename, Fade_2D &dt)
+Zone2* create_traversable_zone(istream& infile, Fade_2D &dt)
 {
-	vector<Polygon> *polygons = read_polys(filename);
+	vector<Polygon> *polygons = read_polys(infile);
 	vector<ConstraintGraph2*> *cgs = create_constraint_graphs(*polygons, dt);
 	dt.applyConstraintsAndZones();
 
