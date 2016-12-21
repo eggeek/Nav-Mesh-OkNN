@@ -2,18 +2,16 @@ Mesh map file format version 1 is as defined:
 
 The first line is "mesh", the header.
 The second line is the version of the format, 1.
-The third line contains three integers: V, E and P.
+The third line contains two integers: V and P.
 	V is the number of vertices in the mesh.
-	E is the number of edges in the mesh.
 	P is the number of polygons in the mesh.
 Then follows the vertex section of the file, containing V lines.
-Then follows the edge section of the file, containing E lines.
 Then follows the polygon section of the file, containing P lines.
 End of file.
 
 Each section defines an array of that object, with each line being a single
 object. We will define S[i] to be the ith object in section S. For example,
-edge[1] is the second edge of the mesh.
+polygon[1] is the second polygon of the mesh.
 
 Assume that the polygons do not contain any self-intersections and are convex.
 
@@ -23,38 +21,14 @@ A vertex is defined by:
 		The x and y coordinates of the point.
 	neighbours: integer.
 		How many vertices the vertex is connected to.
-	v: an array of indices of size neighbours.
-		The neighbouring vertices.
-		Each integer represents an index of the vertex array.
-		Should be sorted such that iterating through v goes through the
-		neighbours in counterclockwise order.
-		The start of the array is arbitrary.
-	e: an array of indices of size neighbours.
-		The neighbouring edges.
-		Each integer represents an index of the edge array.
-		Ordered such that e[i] contains v[i] for all i. That is, e is in the
-		same order as v.
+		This is equivalent to the number of edges and polygons the vertex is
+		neighbouring.
 	p: an array of indices of size neighbours.
 		The neighbouring polygons.
 		Each integer represents an index of the polygon array.
-		Ordered such that the polygon p[i] contains v[i] and v[i+1], wrapping
-		around at the last polygon.
-		If neighbours = 2, assume that the p[0] has v[0], this point,
-		v[1] in CLOCKWISE order. This should give the same behaviour as if
-		neighbours > 2.
+		Ordered in counterclockwise order with an arbirary start.
 		If the polygon is not defined (it is outside the map or an obstacle),
 		a value of -1 is used.
-
-An edge is defined by:
-	v1, v2: index.
-		The indices of the two vertices defining the edge.
-		Note that v1 and v2 can be in any order.
-	p1, p2: index.
-		The index of the two polygons connected to the edge.
-		p1 and p2 are in an order such that for all points Q in p1, the z
-		component of (v2-v1) x (Q-v1) is >= 0.
-		Intuitively speaking, if you stand at v1 and look at v2, p1 is the
-		polygon to the left of you, and p2 is the polygon to the right of you.
 
 A polygon is defined by:
 	n: integer.
@@ -65,16 +39,11 @@ A polygon is defined by:
 		Should be sorted such that iterating through v goes through the
 		vertices in counterclockwise order.
 		The start of the array is arbitrary.
-	e: array of indices of size n.
-		The edges of the polygon.
-		Each integer represents an index of the edge array.
-		Ordered such that the edge e[i] contains v[i] and v[i+1], wrapping
-		around at the last polygon.
 	p: array of indices of size n.
 		The neighbouring polygons.
 		Each integer represents an index of the polygon array.
 		Ordered such that for each polygon p[i], p[i] and this polygon share
-		the edge e[i].
+		the edge of p[i] and p[i+1], wrapping around at the last polygon.
 		If the polygon is not defined (it is outside the map or an obstacle),
 		a value of -1 is used.
 
@@ -87,34 +56,27 @@ An example of this format is as shown:
 BEGIN FILE
 mesh
 1
-4 5 2
-0.0 0.0 2 3 1 3 0 0 -1
-1.5 0.0 3 0 3 2 0 4 1 0 1 -1
-1.5 1.5 2 1 3 1 2 1 -1
-0.0 1.5 3 0 2 1 3 2 4 -1 1 0
-0 1 -1 0
-1 2 -1 1
-2 3 -1 1
-3 0 -1 0
-3 1 0 1
-3 0 1 3 0 4 3 -1 1 -1
-3 1 2 3 1 2 4 -1 -1 0
+4 2
+0.0 0.0 2 0 -1
+1.5 0.0 3 0 1 -1
+1.5 1.5 2 1 -1
+0.0 1.5 3 -1 1 0
+3 0 1 3 -1 1 -1
+3 1 2 3 -1 -1 0
 END OF FILE
 
 This represents this mesh:
 
 0         1
- X---0---X
+ X-------X
  |      /|
  | 0   / |
  |    /  |
- 3   4   1
+ |   /   |
  |  /    |
  | /   1 |
  |/      |
- X---2---X
+ X-------X
 3         2
 
-X denotes a point. A number next to a point represents the index of the point.
-A number on a segment represents the index of the segment. A number inside a
-polygon is the index of that polygon.
+X denotes a point of the polygon.
