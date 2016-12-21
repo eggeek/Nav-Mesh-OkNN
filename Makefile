@@ -16,7 +16,7 @@ clean:
 	rm -f $(PU_OBJ)
 
 $(TARGETS): $(PU_OBJ)
-	$(CXX) $(CXXFLAGS) $(FADE2DFLAGS) $(PU_INCLUDES) $< $(@).cpp -o ./bin/$(@)
+	$(CXX) $(CXXFLAGS) $(FADE2DFLAGS) $(PU_INCLUDES) $(PU_OBJ) $(@).cpp -o ./bin/$(@)
 
-$(PU_OBJ):
-	$(CXX) $(CXXFLAGS) $(FADE2DFLAGS) $(INCLUDES) $(@:.o=.cpp) -c -o $@
+%.o: %.cpp
+	$(CXX) $(CXXFLAGS) $(FADE2DFLAGS) $(INCLUDES) $< -c -o $@
