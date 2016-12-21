@@ -61,7 +61,7 @@ vector<Polygon> *read_polys(istream& infile)
 		Polygon cur_poly;
 		for (int j = 0; j < M; j++)
 		{
-			int x, y;
+			double x, y;
 			if (!(infile >> x >> y))
 			{
 				fail("Error parsing map (can't get point)");
