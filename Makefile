@@ -16,6 +16,7 @@ clean:
 	rm -f $(PU_OBJ)
 
 $(TARGETS): $(PU_OBJ)
+	@mkdir -p ./bin
 	$(CXX) $(CXXFLAGS) $(FADE2DFLAGS) $(PU_INCLUDES) $(PU_OBJ) $(@).cpp -o ./bin/$(@)
 
 %.o: %.cpp
