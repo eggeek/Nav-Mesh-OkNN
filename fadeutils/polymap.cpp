@@ -76,6 +76,12 @@ vector<Polygon> *read_polys(const string& filename)
 		}
 		polygons->push_back(cur_poly);
 	}
+
+	int temp;
+	if (infile >> temp)
+	{
+		fail("Error parsing map (read too much)");
+	}
 	return polygons;
 }
 
