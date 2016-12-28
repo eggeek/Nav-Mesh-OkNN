@@ -1,3 +1,4 @@
+MAKEFLAGS += -r
 PU_FOLDERS = fadeutils
 PU_SRC = $(foreach folder,$(PU_FOLDERS),$(wildcard $(folder)/*.cpp))
 PU_OBJ = $(PU_SRC:.cpp=.o)
@@ -10,6 +11,7 @@ DEV_CXXFLAGS = -g -ggdb -O0
 FADE2DFLAGS = -Ifade2d -Llib/ubuntu16.10_x86_64 -lfade2d -Wl,-rpath=lib/ubuntu16.10_x86_64
 
 TARGETS = visualiser poly2mesh
+BIN_TARGETS = $(addprefix bin/,$(TARGETS))
 
 all: gridmap2poly poly2mesh visualiser
 
@@ -17,13 +19,16 @@ clean:
 	rm -rf ./bin/*
 	rm -f $(PU_OBJ)
 
-$(TARGETS): $(PU_OBJ)
-	@mkdir -p ./bin
-	$(CXX) $(CXXFLAGS) $(FADE2DFLAGS) $(PU_INCLUDES) $(PU_OBJ) $(@).cpp -o ./bin/$(@)
+.PHONY: $(TARGETS) gridmap2poly
+$(TARGETS) gridmap2poly: % : bin/%
 
-gridmap2poly:
+$(BIN_TARGETS): $(PU_OBJ)
 	@mkdir -p ./bin
-	$(CXX) $(CXXFLAGS) $(@).cpp -o ./bin/$(@)
+	$(CXX) $(CXXFLAGS) $(FADE2DFLAGS) $(PU_INCLUDES) $(PU_OBJ) $(@:bin/%=%).cpp -o $(@)
+
+bin/gridmap2poly:
+	@mkdir -p ./bin
+	$(CXX) $(CXXFLAGS) gridmap2poly.cpp -o ./bin/gridmap2poly
 
 %.o: %.cpp
 	$(CXX) $(CXXFLAGS) $(FADE2DFLAGS) $(INCLUDES) $< -c -o $@
