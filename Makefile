@@ -9,7 +9,7 @@ FAST_CXXFLAGS = -O3 -DNDEBUG
 DEV_CXXFLAGS = -g -ggdb -O0
 FADE2DFLAGS = -Ifade2d -Llib/ubuntu16.10_x86_64 -lfade2d -Wl,-rpath=lib/ubuntu16.10_x86_64
 
-TARGETS = visualiser gridmap2poly poly2mesh
+TARGETS = visualiser poly2mesh
 
 clean:
 	rm -rf ./bin/*
@@ -18,6 +18,10 @@ clean:
 $(TARGETS): $(PU_OBJ)
 	@mkdir -p ./bin
 	$(CXX) $(CXXFLAGS) $(FADE2DFLAGS) $(PU_INCLUDES) $(PU_OBJ) $(@).cpp -o ./bin/$(@)
+
+gridmap2poly:
+	@mkdir -p ./bin
+	$(CXX) $(CXXFLAGS) $(@).cpp -o ./bin/$(@)
 
 %.o: %.cpp
 	$(CXX) $(CXXFLAGS) $(FADE2DFLAGS) $(INCLUDES) $< -c -o $@
