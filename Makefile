@@ -11,6 +11,8 @@ FADE2DFLAGS = -Ifade2d -Llib/ubuntu16.10_x86_64 -lfade2d -Wl,-rpath=lib/ubuntu16
 
 TARGETS = visualiser poly2mesh
 
+all: gridmap2poly poly2mesh visualiser
+
 clean:
 	rm -rf ./bin/*
 	rm -f $(PU_OBJ)
