@@ -112,7 +112,7 @@ void print_polys()
 
 		// Triangles.
 		// Go 2 0 1 because of spec differences.
-		const int triangle_index[] = {2, 1, 0};
+		const int triangle_index[] = {2, 0, 1};
 		for (int i : triangle_index)
 		{
 			cout << " ";
