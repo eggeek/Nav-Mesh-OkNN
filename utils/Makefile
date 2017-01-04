@@ -22,7 +22,7 @@ clean:
 .PHONY: $(TARGETS) gridmap2poly
 $(TARGETS) gridmap2poly: % : bin/%
 
-$(BIN_TARGETS): $(PU_OBJ)
+$(BIN_TARGETS): bin/%: %.cpp $(PU_OBJ)
 	@mkdir -p ./bin
 	$(CXX) $(CXXFLAGS) $(FADE2DFLAGS) $(PU_INCLUDES) $(PU_OBJ) $(@:bin/%=%).cpp -o $(@)
 

@@ -21,7 +21,7 @@ clean:
 .PHONY: $(TARGETS)
 $(TARGETS): % : bin/%
 
-$(BIN_TARGETS): $(PA_OBJ)
+$(BIN_TARGETS): bin/%: %.cpp $(PA_OBJ)
 	@mkdir -p ./bin
 	$(CXX) $(CXXFLAGS) $(PA_INCLUDES) $(PA_OBJ) $(@:bin/%=%).cpp -o $(@)
 
