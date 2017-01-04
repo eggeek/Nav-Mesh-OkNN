@@ -2,6 +2,7 @@
 #include <iostream>
 #include <string>
 #include <cmath>
+#include <cassert>
 
 namespace polyanya
 {
@@ -230,6 +231,56 @@ int Mesh::poly_contains_point(int poly, Point& p, int& special_index)
 		last = cur;
 	}
 	return 1;
+}
+
+// Finds where the point P lies in the mesh. Returns (out1, out2).
+// Returns:
+//   (-1, -1) if P does not lie on the mesh.
+//   (-2, a)  if P is strictly contained within polygon a
+//   (a, b)   if P lies on the edge of polygons a and b.
+//            Note that b can be -1 (if P lies on border of mesh).
+//   (-3, c)  if P lies on a corner c.
+// TODO: Find a nicer way to return a result.
+void Mesh::get_point_location(Point& p, int& out1, int& out2)
+{
+	// TODO: Find a better way of doing this without going through every poly.
+	for (int i = 0; i < (int) mesh_polygons.size(); i++)
+	{
+		int special = -999;
+		const int result = poly_contains_point(i, p, special);
+		switch (result)
+		{
+			case 0:
+				// Does not contain: try the next one.
+				break;
+
+			case 1:
+				// This one strictly contains the point.
+				out1 = -2;
+				out2 = i;
+				return;
+
+			case 2:
+				// This one lies on the edge.
+				out1 = i;
+				out2 = special;
+				return;
+
+			case 3:
+				// This one lies on a corner.
+				out1 = -3;
+				out2 = special;
+				return;
+
+			default:
+				// This should not be reachable
+				assert(false);
+		}
+	}
+	// Haven't returned yet, therefore P does not lie on the mesh.
+	out1 = -1;
+	out2 = -1;
+	return;
 }
 
 void Mesh::print(std::ostream& outfile)

@@ -33,6 +33,15 @@ void test_containment(Point test_point)
 	}
 }
 
+void test_point_lookup(Point test_point)
+{
+	int a, b;
+	m.get_point_location(test_point, a, b);
+	cout << "Point " << test_point << " returns:" << endl;
+	cout << a << " " << b << endl;
+	cout << "from get_point_location." << endl;
+}
+
 int main(int argc, char* argv[])
 {
 	Point tp;
@@ -48,7 +57,8 @@ int main(int argc, char* argv[])
 	}
 	cout << "using point " << tp << endl;
 	m = Mesh(cin);
-	test_io();
-	test_containment(tp);
+	// test_io();
+	// test_containment(tp);
+	test_point_lookup(tp);
 	return 0;
 }
