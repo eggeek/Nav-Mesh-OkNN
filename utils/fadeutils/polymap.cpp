@@ -104,10 +104,12 @@ Zone2* create_traversable_zone(istream& infile, Fade_2D &dt)
 	vector<ConstraintGraph2*> *cgs = create_constraint_graphs(*polygons, dt);
 	dt.applyConstraintsAndZones();
 
+	#ifndef NDEBUG
 	for (auto x : *cgs)
 	{
 		assert(x->isPolygon());
 	}
+	#endif
 
 	// TODO: Merge the two for loops together
 	vector<Zone2*> zones;

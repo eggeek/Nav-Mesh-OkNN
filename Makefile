@@ -12,7 +12,9 @@ DEV_CXXFLAGS = -g -ggdb -O0
 TARGETS = test
 BIN_TARGETS = $(addprefix bin/,$(TARGETS))
 
-all: $(TARGETS)
+fast: CXXFLAGS += $(FAST_CXXFLAGS)
+dev: CXXFLAGS += $(DEV_CXXFLAGS)
+fast dev all: clean $(TARGETS)
 
 clean:
 	rm -rf ./bin/*
