@@ -1,6 +1,7 @@
 #include "mesh.h"
 #include <iostream>
 #include <string>
+#include <cmath>
 
 namespace polyanya
 {
@@ -143,6 +144,88 @@ Mesh::Mesh(std::istream& infile)
 		fail("Error parsing mesh (read too much)");
 	}
 	#undef fail
+}
+
+// Finds out whether the polygon specified by "poly" contains point P.
+// Returns:
+//   0 if does not contain
+//   1 if contains point
+//   2 if contains point and point lies on a polygon edge
+//   3 if contains point and point lies on a polygon vertex
+// If 2 is returned, special_index contains the index of the adjacent polygon.
+// If 3 is returned, special_index contains the index of the point it lies on.
+int Mesh::poly_contains_point(int poly, Point& p, int& special_index)
+{
+	// The below is taken from
+	// "An Efficient Test for a Point to Be in a Convex Polygon"
+	// from the Wolfram Demonstrations Project
+	// demonstrations.wolfram.com/AnEfficientTestForAPointToBeInAConvexPolygon/
+
+	// Assume points are in counterclockwise order.
+	const Polygon& poly_ref = mesh_polygons[poly];
+	const Point& last_point_in_poly = mesh_vertices[poly_ref.vertices.back()].p;
+	const Point ZERO = {0, 0};
+
+	Point last = last_point_in_poly - p;
+	if (last == ZERO)
+	{
+		special_index = poly_ref.vertices.back();
+		return 3;
+	}
+
+	for (int i = 0; i < (int) poly_ref.vertices.size(); i++)
+	{
+		const int point_index = poly_ref.vertices[i];
+		const Point cur = mesh_vertices[point_index].p - p;
+		if (cur == ZERO)
+		{
+			special_index = point_index;
+			return 3;
+		}
+		const double cur_a = last.x * cur.y - last.y * cur.x;
+		if (std::abs(cur_a) < EPSILON)
+		{
+			// The line going from cur to last goes through p.
+			// This means that they are colinear.
+			// The associated polygon should actually be polygons[i-1]
+			// according to the file format.
+
+			// Ensure that cur = c*last where c is negative.
+			// If not, this means that the point is definitely outside.
+			if (cur.x)
+			{
+				if (!((cur.x > 0) ^ (last.x > 0)))
+				{
+					return 0;
+				}
+			}
+			else
+			{
+				if (!((cur.y > 0) ^ (last.y > 0)))
+				{
+					return 0;
+				}
+			}
+			if (i == 0)
+			{
+				special_index = poly_ref.polygons.back();
+			}
+			else
+			{
+				special_index = poly_ref.polygons[i-1];
+			}
+			return 2;
+		}
+
+		// Because we assume that the points are counterclockwise,
+		// we can immediately terminate when we see a negatively signed area.
+		if (cur_a < 0)
+		{
+			return 0;
+		}
+		last = cur;
+	}
+	return 1;
 }
 
 void Mesh::print(std::ostream& outfile)
