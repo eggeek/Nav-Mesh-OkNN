@@ -48,7 +48,7 @@ int main(int argc, char* argv[])
 	}
 	cout << "using point " << tp << endl;
 	m = Mesh(cin);
-	// test_io();
+	test_io();
 	test_containment(tp);
 	return 0;
 }

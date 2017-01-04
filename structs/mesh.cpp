@@ -85,6 +85,10 @@ Mesh::Mesh(std::istream& infile)
 				fail("Invalid polygon index when getting vertex");
 			}
 			v.polygons[j] = polygon_index;
+			if ((!v.is_corner) && (polygon_index != -1))
+			{
+				v.is_corner = true;
+			}
 		}
 	}
 
@@ -235,7 +239,7 @@ void Mesh::print(std::ostream& outfile)
 	outfile << "vertices:" << std::endl;
 	for (Vertex vertex : mesh_vertices)
 	{
-		outfile << vertex.p << std::endl;
+		outfile << vertex.p << " " << vertex.is_corner << std::endl;
 	}
 	outfile << std::endl;
 	outfile << "polygons:" << std::endl;
