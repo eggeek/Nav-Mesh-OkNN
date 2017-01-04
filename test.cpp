@@ -44,6 +44,7 @@ void test_point_lookup(Point test_point)
 
 int main(int argc, char* argv[])
 {
+	m = Mesh(cin);
 	Point tp;
 	if (argc == 3)
 	{
@@ -56,7 +57,6 @@ int main(int argc, char* argv[])
 		tp = {0, 0};
 	}
 	cout << "using point " << tp << endl;
-	m = Mesh(cin);
 	// test_io();
 	// test_containment(tp);
 	test_point_lookup(tp);
