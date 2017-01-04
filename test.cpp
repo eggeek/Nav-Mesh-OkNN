@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <sstream>
 #include <iomanip>
+#include <time.h>
 
 using namespace std;
 using namespace polyanya;
@@ -36,7 +37,13 @@ void test_containment(Point test_point)
 void test_point_lookup(Point test_point)
 {
 	int a, b;
+	clock_t t;
+	t = clock();
 	m.get_point_location(test_point, a, b);
+	t = clock() - t;
+	cout << "Took " << t << " clock ticks." << endl;
+	cout << "That should be " << (t/1.0/CLOCKS_PER_SEC * 1e6)
+		<< " microseconds." << endl;
 	cout << "Point " << test_point << " returns:" << endl;
 	cout << a << " " << b << endl;
 	cout << "from get_point_location." << endl;
