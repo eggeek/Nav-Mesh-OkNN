@@ -124,6 +124,20 @@ Mesh::Mesh(std::istream& infile)
 				fail("Invalid vertex index when getting polygon");
 			}
 			p.vertices[j] = vertex_index;
+			if (j == 0)
+			{
+				p.min_x = mesh_vertices[vertex_index].p.x;
+				p.min_y = mesh_vertices[vertex_index].p.y;
+				p.max_x = mesh_vertices[vertex_index].p.x;
+				p.max_y = mesh_vertices[vertex_index].p.y;
+			}
+			else
+			{
+				p.min_x = std::min(p.min_x, mesh_vertices[vertex_index].p.x);
+				p.min_y = std::min(p.min_y, mesh_vertices[vertex_index].p.y);
+				p.max_x = std::max(p.max_x, mesh_vertices[vertex_index].p.x);
+				p.max_y = std::max(p.max_y, mesh_vertices[vertex_index].p.y);
+			}
 		}
 
 		for (int j = 0; j < n; j++)
@@ -247,6 +261,12 @@ void Mesh::get_point_location(Point& p, int& out1, int& out2)
 	for (int i = 0; i < (int) mesh_polygons.size(); i++)
 	{
 		int special = -999;
+		const Polygon& poly = mesh_polygons[i];
+		if (p.x < poly.min_x - EPSILON || p.x > poly.max_x + EPSILON ||
+			p.y < poly.min_y - EPSILON || p.y > poly.max_y + EPSILON)
+		{
+			continue;
+		}
 		const int result = poly_contains_point(i, p, special);
 		switch (result)
 		{
