@@ -182,6 +182,11 @@ int Mesh::poly_contains_point(int poly, Point& p, int& special_index)
 
 	// Assume points are in counterclockwise order.
 	const Polygon& poly_ref = mesh_polygons[poly];
+	if (p.x < poly_ref.min_x - EPSILON || p.x > poly_ref.max_x + EPSILON ||
+		p.y < poly_ref.min_y - EPSILON || p.y > poly_ref.max_y + EPSILON)
+	{
+		return 0;
+	}
 	const Point& last_point_in_poly = mesh_vertices[poly_ref.vertices.back()].p;
 	const Point ZERO = {0, 0};
 
@@ -261,12 +266,6 @@ void Mesh::get_point_location(Point& p, int& out1, int& out2)
 	for (int i = 0; i < (int) mesh_polygons.size(); i++)
 	{
 		int special = -999;
-		const Polygon& poly = mesh_polygons[i];
-		if (p.x < poly.min_x - EPSILON || p.x > poly.max_x + EPSILON ||
-			p.y < poly.min_y - EPSILON || p.y > poly.max_y + EPSILON)
-		{
-			continue;
-		}
 		const int result = poly_contains_point(i, p, special);
 		switch (result)
 		{
