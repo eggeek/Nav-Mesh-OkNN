@@ -9,6 +9,11 @@ namespace polyanya
 
 Mesh::Mesh(std::istream& infile)
 {
+	read(infile);
+}
+
+void Mesh::read(std::istream& infile)
+{
 	#define fail(message) std::cerr << message << std::endl; exit(1);
 	std::string header;
 	int version;
