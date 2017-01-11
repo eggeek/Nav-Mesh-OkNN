@@ -10,6 +10,8 @@ using namespace polyanya;
 
 Mesh m;
 
+const int MIN_X = 0, MAX_X = 1024, MIN_Y = 0, MAX_Y = 768;
+
 void test_io()
 {
 	m.print(cout);
@@ -34,7 +36,7 @@ void test_containment(Point test_point)
 	}
 }
 
-void test_point_lookup(Point test_point)
+void benchmark_point_lookup_single(Point test_point)
 {
 	int a, b;
 	clock_t t;
@@ -47,6 +49,51 @@ void test_point_lookup(Point test_point)
 	cout << "Point " << test_point << " returns:" << endl;
 	cout << a << " " << b << endl;
 	cout << "from get_point_location." << endl;
+}
+
+void benchmark_point_lookup_average()
+{
+	clock_t t;
+	int a, b;
+	Point p;
+	t = clock();
+	for (int y = MIN_Y; y <= MAX_Y; y++)
+	{
+		for (int x = MIN_X; x <= MAX_X; x++)
+		{
+			p.x = x;
+			p.y = y;
+			m.get_point_location(p, a, b);
+		}
+	}
+	t = clock() - t;
+	const double total_micro = (t/1.0/CLOCKS_PER_SEC * 1e6);
+	const double average_micro = total_micro / ((MAX_X + 1) * (MAX_Y + 1));
+	cout << "Point lookup took " << average_micro << "us on average." << endl;
+}
+
+void test_point_lookup_correct()
+{
+	cout << "Confirming that get_point_location is correct" << endl
+		<< "(this will take a while)..." << endl;
+	for (int y = MIN_Y; y <= MAX_Y; y++)
+	{
+		cout << "y=" << y << endl;
+		for (int x = MIN_X; x <= MAX_X; x++)
+		{
+			Point test_point = {(double)x, (double)y};
+			int a, b, naive_a, naive_b;
+			m.get_point_location(test_point, a, b);
+			m.get_point_location_naive(test_point, naive_a, naive_b);
+			if (a != naive_a || b != naive_b)
+			{
+				if (a == naive_b && b == naive_a) continue;
+				cout << "Found discrepancy at " << test_point << endl;
+				cout << "Method gives " << a << " " << b << endl;
+				cout << "Naive gives " << naive_a << " " << naive_b << endl;
+			}
+		}
+	}
 }
 
 int main(int argc, char* argv[])
@@ -66,6 +113,7 @@ int main(int argc, char* argv[])
 	cout << "using point " << tp << endl;
 	// test_io();
 	// test_containment(tp);
-	test_point_lookup(tp);
+	benchmark_point_lookup_single(tp);
+	benchmark_point_lookup_average();
 	return 0;
 }

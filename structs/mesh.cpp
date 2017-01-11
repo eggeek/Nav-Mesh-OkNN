@@ -10,6 +10,7 @@ namespace polyanya
 Mesh::Mesh(std::istream& infile)
 {
 	read(infile);
+	precalc_point_location();
 }
 
 void Mesh::read(std::istream& infile)
@@ -170,6 +171,25 @@ void Mesh::read(std::istream& infile)
 	#undef fail
 }
 
+void Mesh::precalc_point_location()
+{
+	for (Vertex& v : mesh_vertices)
+	{
+		slabs[v.p.x] = new std::vector<int>;
+	}
+	for (int i = 0; i < (int) mesh_polygons.size(); i++)
+	{
+		const Polygon& p = mesh_polygons[i];
+		const auto low_it = slabs.lower_bound(p.min_x);
+		const auto high_it = slabs.upper_bound(p.max_x);
+
+		for (auto it = low_it; it != high_it; it++)
+		{
+			it->second->push_back(i);
+		}
+	}
+}
+
 // Finds out whether the polygon specified by "poly" contains point P.
 // Returns:
 //   0 if does not contain
@@ -264,8 +284,54 @@ int Mesh::poly_contains_point(int poly, Point& p, int& special_index)
 //   (a, b)   if P lies on the edge of polygons a and b.
 //            Note that b can be -1 (if P lies on border of mesh).
 //   (-3, c)  if P lies on a corner c.
-// TODO: Find a nicer way to return a result.
 void Mesh::get_point_location(Point& p, int& out1, int& out2)
+{
+	// TODO: Find a better way of doing this without going through every poly.
+	auto slab = slabs.upper_bound(p.x);
+	if (slab != slabs.begin())
+	{
+		slab--;
+		for (int polygon : *(slab->second))
+		{
+			int special = -999;
+			const int result = poly_contains_point(polygon, p, special);
+			switch (result)
+			{
+				case 0:
+					// Does not contain: try the next one.
+					break;
+
+				case 1:
+					// This one strictly contains the point.
+					out1 = -2;
+					out2 = polygon;
+					return;
+
+				case 2:
+					// This one lies on the edge.
+					out1 = polygon;
+					out2 = special;
+					return;
+
+				case 3:
+					// This one lies on a corner.
+					out1 = -3;
+					out2 = special;
+					return;
+
+				default:
+					// This should not be reachable
+					assert(false);
+			}
+		}
+	}
+	// Haven't returned yet, therefore P does not lie on the mesh.
+	out1 = -1;
+	out2 = -1;
+	return;
+}
+
+void Mesh::get_point_location_naive(Point& p, int& out1, int& out2)
 {
 	// TODO: Find a better way of doing this without going through every poly.
 	for (int i = 0; i < (int) mesh_polygons.size(); i++)
