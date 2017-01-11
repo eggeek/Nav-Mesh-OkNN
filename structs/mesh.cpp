@@ -195,7 +195,14 @@ void Mesh::precalc_point_location()
 		std::sort(vec_ref->begin(), vec_ref->end(),
 			[&](const int& a, const int& b) -> bool
 			{
-				return mesh_polygons[a].min_y < mesh_polygons[b].min_y;
+				// Sorts based on the midpoints.
+				// If tied, sort based on width of poly.
+				const Polygon& ap = mesh_polygons[a], bp = mesh_polygons[b];
+				const double as = ap.min_y + ap.max_y, bs = bp.min_y + ap.max_y;
+				if (as == bs) {
+					return (ap.max_y - ap.min_y) > (bp.max_y - bp.min_y);
+				}
+				return as < bs;
 			}
 		);
 	}
@@ -302,10 +309,29 @@ void Mesh::get_point_location(Point& p, int& out1, int& out2)
 	if (slab != slabs.begin())
 	{
 		slab--;
-		for (int polygon : *(slab->second))
+		const std::vector<int>* polys = slab->second;
+		const auto close_it = std::lower_bound(polys->begin(), polys->end(), p.y,
+			[&](const int& poly_index, const double& y_coord) -> bool
+			{
+				// Sorts based on the midpoints.
+				// If tied, sort based on width of poly.
+				const Polygon& poly = mesh_polygons[poly_index];
+				return poly.min_y + poly.max_y < y_coord * 2;
+			}
+		);
+		const int close_index = close_it - polys->begin();
+		// The plan is to take an index and repeatedly do:
+		// +1, -2, +3, -4, +5, -6, +7, -8, ...
+		// until it hits the edge. If it hits an edge, instead iterate normally.
+		const int ps = polys->size();
+		int i = close_index;
+		int next_delta = 1;
+		int walk_delta = 0; // way to go when walking normally
+
+		while (i >= 0 && i < ps)
 		{
+			const int polygon = (*polys)[i];
 			int special = -999;
-			if (mesh_polygons[polygon].min_y > p.y) break;
 			const int result = poly_contains_point(polygon, p, special);
 			switch (result)
 			{
@@ -334,6 +360,33 @@ void Mesh::get_point_location(Point& p, int& out1, int& out2)
 				default:
 					// This should not be reachable
 					assert(false);
+			}
+
+
+			// do stuff
+			if (walk_delta == 0)
+			{
+				const int next_i = i + next_delta * (2 * (next_delta & 1) - 1);
+				if (next_i < 0)
+				{
+					// was going to go too far to the left.
+					// start going right
+					walk_delta = 1;
+				}
+				else if (next_i >= ps)
+				{
+					walk_delta = -1;
+				}
+				else
+				{
+					i = next_i;
+					next_delta++;
+				}
+			}
+
+			if (walk_delta != 0)
+			{
+				i += walk_delta;
 			}
 		}
 	}
