@@ -48,12 +48,28 @@ void print_header()
 
 void print_vertices()
 {
+	cout << fixed << setprecision(10);
 	for (auto vertex : vertices)
 	{
 		double x, y;
 		vertex->xy(x, y);
-		cout << fixed << setprecision(10);
-		cout << x << " " << y;
+		if (x == (int) x)
+		{
+			cout << (int) x;
+		}
+		else
+		{
+			cout << x;
+		}
+		cout << " ";
+		if (y == (int) y)
+		{
+			cout << (int) y;
+		}
+		else
+		{
+			cout << y;
+		}
 
 		vector<int> neighbours;
 		typedef TriangleAroundVertexIterator TAVI;
