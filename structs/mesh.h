@@ -16,6 +16,7 @@ class Mesh
 		std::vector<Vertex> mesh_vertices;
 		std::vector<Polygon> mesh_polygons;
 		std::map<double, std::vector<int>* > slabs;
+		double min_x, max_x, min_y, max_y;
 
 		void read(std::istream& infile);
 		void precalc_point_location();

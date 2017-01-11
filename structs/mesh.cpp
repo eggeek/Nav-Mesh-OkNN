@@ -146,6 +146,21 @@ void Mesh::read(std::istream& infile)
 				p.max_y = std::max(p.max_y, mesh_vertices[vertex_index].p.y);
 			}
 		}
+		// mesh min/max
+		if (i == 0)
+		{
+			min_x = p.min_x;
+			min_y = p.min_y;
+			max_x = p.max_x;
+			max_y = p.max_y;
+		}
+		else
+		{
+			min_x = std::min(min_x, p.min_x);
+			min_y = std::min(min_y, p.min_y);
+			max_x = std::max(max_x, p.max_x);
+			max_y = std::max(max_y, p.max_y);
+		}
 
 		for (int j = 0; j < n; j++)
 		{
@@ -305,89 +320,99 @@ int Mesh::poly_contains_point(int poly, Point& p, int& special_index)
 void Mesh::get_point_location(Point& p, int& out1, int& out2)
 {
 	// TODO: Find a better way of doing this without going through every poly.
-	auto slab = slabs.upper_bound(p.x);
-	if (slab != slabs.begin())
+	if (p.x < min_x - EPSILON || p.x > max_x + EPSILON ||
+		p.y < min_y - EPSILON || p.y > max_y + EPSILON)
 	{
-		slab--;
-		const std::vector<int>* polys = slab->second;
-		const auto close_it = std::lower_bound(polys->begin(), polys->end(), p.y,
-			[&](const int& poly_index, const double& y_coord) -> bool
-			{
-				// Sorts based on the midpoints.
-				// If tied, sort based on width of poly.
-				const Polygon& poly = mesh_polygons[poly_index];
-				return poly.min_y + poly.max_y < y_coord * 2;
-			}
-		);
-		const int close_index = close_it - polys->begin();
-		// The plan is to take an index and repeatedly do:
-		// +1, -2, +3, -4, +5, -6, +7, -8, ...
-		// until it hits the edge. If it hits an edge, instead iterate normally.
-		const int ps = polys->size();
-		int i = close_index;
-		int next_delta = 1;
-		int walk_delta = 0; // way to go when walking normally
-
-		while (i >= 0 && i < ps)
+		out1 = -1;
+		out2 = -1;
+		return;
+	}
+	auto slab = slabs.upper_bound(p.x);
+	if (slab == slabs.begin())
+	{
+		out1 = -1;
+		out2 = -1;
+		return;
+	}
+	slab--;
+	const std::vector<int>* polys = slab->second;
+	const auto close_it = std::lower_bound(polys->begin(), polys->end(), p.y,
+		[&](const int& poly_index, const double& y_coord) -> bool
 		{
-			const int polygon = (*polys)[i];
-			int special = -999;
-			const int result = poly_contains_point(polygon, p, special);
-			switch (result)
+			// Sorts based on the midpoints.
+			// If tied, sort based on width of poly.
+			const Polygon& poly = mesh_polygons[poly_index];
+			return poly.min_y + poly.max_y < y_coord * 2;
+		}
+	);
+	const int close_index = close_it - polys->begin();
+	// The plan is to take an index and repeatedly do:
+	// +1, -2, +3, -4, +5, -6, +7, -8, ...
+	// until it hits the edge. If it hits an edge, instead iterate normally.
+	const int ps = polys->size();
+	int i = close_index;
+	int next_delta = 1;
+	int walk_delta = 0; // way to go when walking normally
+
+	while (i >= 0 && i < ps)
+	{
+		const int polygon = (*polys)[i];
+		int special = -999;
+		const int result = poly_contains_point(polygon, p, special);
+		switch (result)
+		{
+			case 0:
+				// Does not contain: try the next one.
+				break;
+
+			case 1:
+				// This one strictly contains the point.
+				out1 = -2;
+				out2 = polygon;
+				return;
+
+			case 2:
+				// This one lies on the edge.
+				out1 = polygon;
+				out2 = special;
+				return;
+
+			case 3:
+				// This one lies on a corner.
+				out1 = -3;
+				out2 = special;
+				return;
+
+			default:
+				// This should not be reachable
+				assert(false);
+		}
+
+
+		// do stuff
+		if (walk_delta == 0)
+		{
+			const int next_i = i + next_delta * (2 * (next_delta & 1) - 1);
+			if (next_i < 0)
 			{
-				case 0:
-					// Does not contain: try the next one.
-					break;
-
-				case 1:
-					// This one strictly contains the point.
-					out1 = -2;
-					out2 = polygon;
-					return;
-
-				case 2:
-					// This one lies on the edge.
-					out1 = polygon;
-					out2 = special;
-					return;
-
-				case 3:
-					// This one lies on a corner.
-					out1 = -3;
-					out2 = special;
-					return;
-
-				default:
-					// This should not be reachable
-					assert(false);
+				// was going to go too far to the left.
+				// start going right
+				walk_delta = 1;
 			}
-
-
-			// do stuff
-			if (walk_delta == 0)
+			else if (next_i >= ps)
 			{
-				const int next_i = i + next_delta * (2 * (next_delta & 1) - 1);
-				if (next_i < 0)
-				{
-					// was going to go too far to the left.
-					// start going right
-					walk_delta = 1;
-				}
-				else if (next_i >= ps)
-				{
-					walk_delta = -1;
-				}
-				else
-				{
-					i = next_i;
-					next_delta++;
-				}
+				walk_delta = -1;
 			}
-
-			if (walk_delta != 0)
+			else
 			{
-				i += walk_delta;
+				i = next_i;
+				next_delta++;
 			}
+		}
+
+		if (walk_delta != 0)
+		{
+			i += walk_delta;
 		}
 	}
 	// Haven't returned yet, therefore P does not lie on the mesh.
