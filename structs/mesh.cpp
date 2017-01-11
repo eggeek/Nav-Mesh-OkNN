@@ -3,6 +3,7 @@
 #include <string>
 #include <cmath>
 #include <cassert>
+#include <algorithm>
 
 namespace polyanya
 {
@@ -188,6 +189,16 @@ void Mesh::precalc_point_location()
 			it->second->push_back(i);
 		}
 	}
+	for (auto pair : slabs)
+	{
+		const auto vec_ref = pair.second;
+		std::sort(vec_ref->begin(), vec_ref->end(),
+			[&](const int& a, const int& b) -> bool
+			{
+				return mesh_polygons[a].min_y < mesh_polygons[b].min_y;
+			}
+		);
+	}
 }
 
 // Finds out whether the polygon specified by "poly" contains point P.
@@ -294,6 +305,7 @@ void Mesh::get_point_location(Point& p, int& out1, int& out2)
 		for (int polygon : *(slab->second))
 		{
 			int special = -999;
+			if (mesh_polygons[polygon].min_y > p.y) break;
 			const int result = poly_contains_point(polygon, p, special);
 			switch (result)
 			{

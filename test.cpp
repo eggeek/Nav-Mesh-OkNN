@@ -113,6 +113,7 @@ int main(int argc, char* argv[])
 	cout << "using point " << tp << endl;
 	// test_io();
 	// test_containment(tp);
+	// test_point_lookup_correct();
 	benchmark_point_lookup_single(tp);
 	benchmark_point_lookup_average();
 	return 0;
