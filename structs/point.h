@@ -31,6 +31,16 @@ struct Point
 		return *this + (-other);
 	}
 
+	Point operator*(const double& mult) const
+	{
+		return {mult * x, mult * y};
+	}
+
+	friend Point operator*(const double& mult, const Point& p)
+	{
+		return p * mult;
+	}
+
 	friend std::ostream& operator<<(std::ostream& stream, const Point& p)
 	{
 		return stream << "(" << p.x << ", " << p.y << ")";
