@@ -250,7 +250,7 @@ int Mesh::poly_contains_point(int poly, Point& p, int& special_index)
 			return 3;
 		}
 		const double cur_a = last * cur;
-		if (std::abs(cur_a) < EPSILON)
+		if (std::abs(cur_a) < EPSILON_SQUARED)
 		{
 			// The line going from cur to last goes through p.
 			// This means that they are colinear.
