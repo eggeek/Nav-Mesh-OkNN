@@ -249,7 +249,7 @@ int Mesh::poly_contains_point(int poly, Point& p, int& special_index)
 			special_index = point_index;
 			return 3;
 		}
-		const double cur_a = last.x * cur.y - last.y * cur.x;
+		const double cur_a = last * cur;
 		if (std::abs(cur_a) < EPSILON)
 		{
 			// The line going from cur to last goes through p.

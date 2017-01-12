@@ -31,6 +31,13 @@ struct Point
 		return *this + (-other);
 	}
 
+	// Cross product.
+	// Returns the z component (as we are working in 2D).
+	double operator*(const Point& other) const
+	{
+		return x * other.y - y * other.x;
+	}
+
 	Point operator*(const double& mult) const
 	{
 		return {mult * x, mult * y};
