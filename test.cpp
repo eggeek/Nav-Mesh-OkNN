@@ -1,9 +1,11 @@
 // various testing functions
 #include "mesh.h"
+#include "geometry.h"
 #include <stdio.h>
 #include <sstream>
 #include <iomanip>
 #include <time.h>
+#include <random>
 
 using namespace std;
 using namespace polyanya;
@@ -11,6 +13,7 @@ using namespace polyanya;
 Mesh m;
 
 const int MIN_X = 0, MAX_X = 1024, MIN_Y = 0, MAX_Y = 768;
+const int MAX_ITER = 10000;
 
 void test_io()
 {
@@ -96,6 +99,28 @@ void test_point_lookup_correct()
 	}
 }
 
+void test_projection_correct()
+{
+	// Projection has asserts inside it so we just stress test those
+	uniform_real_distribution<double> unif(-10, 10);
+	default_random_engine engine;
+
+	#define rand_point {unif(engine), unif(engine)}
+
+	Point a, b, c, d;
+	double d1, d2, d3;
+	for (int i = 0; i < MAX_ITER; i++)
+	{
+		a = rand_point;
+		b = rand_point;
+		c = rand_point;
+		d = rand_point;
+		line_intersect_time(a, b, c, d, d1, d2, d3);
+	}
+
+	#undef rand_point
+}
+
 int main(int argc, char* argv[])
 {
 	m = Mesh(cin);
@@ -114,7 +139,8 @@ int main(int argc, char* argv[])
 	// test_io();
 	// test_containment(tp);
 	// test_point_lookup_correct();
-	benchmark_point_lookup_average();
-	benchmark_point_lookup_single(tp);
+	// benchmark_point_lookup_average();
+	// benchmark_point_lookup_single(tp);
+	test_projection_correct();
 	return 0;
 }
