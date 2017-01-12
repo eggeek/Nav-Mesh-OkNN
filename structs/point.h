@@ -31,6 +31,11 @@ struct Point
 		return *this + (-other);
 	}
 
+	friend std::ostream& operator<<(std::ostream& stream, const Point& p)
+	{
+		return stream << "(" << p.x << ", " << p.y << ")";
+	}
+
 	double distance_sq(const Point& other) const
 	{
 		#define square(x) (x)*(x)
@@ -43,10 +48,5 @@ struct Point
 		return std::sqrt(this->distance_sq(other));
 	}
 };
-
-inline std::ostream& operator<< (std::ostream& stream, const Point& p)
-{
-	return stream << "(" << p.x << ", " << p.y << ")";
-}
 
 }
