@@ -345,7 +345,8 @@ void Mesh::get_point_location(Point& p, int& out1, int& out2)
 			return poly.min_y + poly.max_y < y_coord * 2;
 		}
 	);
-	const int close_index = close_it - polys->begin();
+	const int close_index = close_it - polys->begin()
+							- (close_it == polys->end());
 	// The plan is to take an index and repeatedly do:
 	// +1, -2, +3, -4, +5, -6, +7, -8, ...
 	// until it hits the edge. If it hits an edge, instead iterate normally.
