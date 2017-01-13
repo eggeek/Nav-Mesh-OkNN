@@ -39,19 +39,13 @@ void line_intersect_time(const Point& a, const Point& b,
 	}
 }
 
-// Returns based on where num / denom is in the range [0, 1].
-// Returns:
-//   -2 if num / denom < 0
-//   -1 if num / denom = 0
-//    0 if num / denom is in the range (0, 1)
-//    1 if num / denom = 1
-//    2 if num / denom > 1
-int line_intersect_bound_check(const double num, const double denom)
+// Returns where num / denom is in the range [0, 1].
+ZeroOnePos line_intersect_bound_check(const double num, const double denom)
 {
 	// Check num / denom == 0.
 	if (std::abs(num) < EPSILON_SQUARED)
 	{
-		return -1;
+		return ZeroOnePos::EQ_ZERO;
 	}
 	// Check num / denom == 1.
 	// Note: Checking whether it is accurately near 1 requires us to check
@@ -62,7 +56,7 @@ int line_intersect_bound_check(const double num, const double denom)
 	// instead. This is less accurate but faster.
 	if (std::abs(num - denom) < EPSILON)
 	{
-		return 1;
+		return ZeroOnePos::EQ_ONE;
 	}
 
 	// Now we finally check whether it's greater than 1 or less than 0.
@@ -71,12 +65,12 @@ int line_intersect_bound_check(const double num, const double denom)
 		if (num < 0)
 		{
 			// strictly less than 0
-			return -2;
+			return ZeroOnePos::LT_ZERO;
 		}
 		if (num > denom)
 		{
 			// strictly greater than 1
-			return 2;
+			return ZeroOnePos::GT_ONE;
 		}
 	}
 	else
@@ -84,15 +78,15 @@ int line_intersect_bound_check(const double num, const double denom)
 		if (num > 0)
 		{
 			// strictly less than 0
-			return -2;
+			return ZeroOnePos::LT_ZERO;
 		}
 		if (num < denom)
 		{
 			// strictly greater than 1
-			return 2;
+			return ZeroOnePos::GT_ONE;
 		}
 	}
-	return 0;
+	return ZeroOnePos::IN_RANGE;
 }
 
 // Given two points a, b and a number t, compute the point

@@ -224,14 +224,12 @@ void Mesh::precalc_point_location()
 }
 
 // Finds out whether the polygon specified by "poly" contains point P.
-// Returns:
-//   0 if does not contain
-//   1 if contains point
-//   2 if contains point and point lies on a polygon edge
-//   3 if contains point and point lies on a polygon vertex
-// If 2 is returned, special_index contains the index of the adjacent polygon.
-// If 3 is returned, special_index contains the index of the point it lies on.
-int Mesh::poly_contains_point(int poly, Point& p, int& special_index)
+// If ON_EDGE is returned, special_index contains the index of the adjacent
+// polygon.
+// If ON_VERTEX is returned, special_index contains the index of the point it
+// lies on.
+PolyContainment Mesh::poly_contains_point(int poly, Point& p,
+										int& special_index)
 {
 	// The below is taken from
 	// "An Efficient Test for a Point to Be in a Convex Polygon"
@@ -243,7 +241,7 @@ int Mesh::poly_contains_point(int poly, Point& p, int& special_index)
 	if (p.x < poly_ref.min_x - EPSILON || p.x > poly_ref.max_x + EPSILON ||
 		p.y < poly_ref.min_y - EPSILON || p.y > poly_ref.max_y + EPSILON)
 	{
-		return 0;
+		return PolyContainment::OUTSIDE;
 	}
 	const Point& last_point_in_poly = mesh_vertices[poly_ref.vertices.back()].p;
 	const Point ZERO = {0, 0};
@@ -252,7 +250,7 @@ int Mesh::poly_contains_point(int poly, Point& p, int& special_index)
 	if (last == ZERO)
 	{
 		special_index = poly_ref.vertices.back();
-		return 3;
+		return PolyContainment::ON_VERTEX;
 	}
 
 	for (int i = 0; i < (int) poly_ref.vertices.size(); i++)
@@ -262,7 +260,7 @@ int Mesh::poly_contains_point(int poly, Point& p, int& special_index)
 		if (cur == ZERO)
 		{
 			special_index = point_index;
-			return 3;
+			return PolyContainment::ON_VERTEX;
 		}
 		const double cur_a = last * cur;
 		if (std::abs(cur_a) < EPSILON_SQUARED)
@@ -278,14 +276,14 @@ int Mesh::poly_contains_point(int poly, Point& p, int& special_index)
 			{
 				if (!((cur.x > 0) ^ (last.x > 0)))
 				{
-					return 0;
+					return PolyContainment::OUTSIDE;
 				}
 			}
 			else
 			{
 				if (!((cur.y > 0) ^ (last.y > 0)))
 				{
-					return 0;
+					return PolyContainment::OUTSIDE;
 				}
 			}
 			if (i == 0)
@@ -296,18 +294,18 @@ int Mesh::poly_contains_point(int poly, Point& p, int& special_index)
 			{
 				special_index = poly_ref.polygons[i-1];
 			}
-			return 2;
+			return PolyContainment::ON_EDGE;
 		}
 
 		// Because we assume that the points are counterclockwise,
 		// we can immediately terminate when we see a negatively signed area.
 		if (cur_a < 0)
 		{
-			return 0;
+			return PolyContainment::OUTSIDE;
 		}
 		last = cur;
 	}
-	return 1;
+	return PolyContainment::INSIDE;
 }
 
 // Finds where the point P lies in the mesh. Returns (out1, out2).
@@ -359,26 +357,26 @@ void Mesh::get_point_location(Point& p, int& out1, int& out2)
 	{
 		const int polygon = (*polys)[i];
 		int special = -999;
-		const int result = poly_contains_point(polygon, p, special);
+		const PolyContainment result = poly_contains_point(polygon, p, special);
 		switch (result)
 		{
-			case 0:
+			case PolyContainment::OUTSIDE:
 				// Does not contain: try the next one.
 				break;
 
-			case 1:
+			case PolyContainment::INSIDE:
 				// This one strictly contains the point.
 				out1 = -2;
 				out2 = polygon;
 				return;
 
-			case 2:
+			case PolyContainment::ON_EDGE:
 				// This one lies on the edge.
 				out1 = polygon;
 				out2 = special;
 				return;
 
-			case 3:
+			case PolyContainment::ON_VERTEX:
 				// This one lies on a corner.
 				out1 = -3;
 				out2 = special;
@@ -428,26 +426,26 @@ void Mesh::get_point_location_naive(Point& p, int& out1, int& out2)
 	for (int i = 0; i < (int) mesh_polygons.size(); i++)
 	{
 		int special = -999;
-		const int result = poly_contains_point(i, p, special);
+		const PolyContainment result = poly_contains_point(i, p, special);
 		switch (result)
 		{
-			case 0:
+			case PolyContainment::OUTSIDE:
 				// Does not contain: try the next one.
 				break;
 
-			case 1:
+			case PolyContainment::INSIDE:
 				// This one strictly contains the point.
 				out1 = -2;
 				out2 = i;
 				return;
 
-			case 2:
+			case PolyContainment::ON_EDGE:
 				// This one lies on the edge.
 				out1 = i;
 				out2 = special;
 				return;
 
-			case 3:
+			case PolyContainment::ON_VERTEX:
 				// This one lies on a corner.
 				out1 = -3;
 				out2 = special;
