@@ -8,59 +8,59 @@ typedef vector<Point2> Polygon;
 // Retrieves the triangles of pZone and highlights them in the triangulation.
 void highlightTriangles(Fade_2D& dt,Zone2* pZone, const string& filename)
 {
-	// 1) Show the full triangulation
-	Visualizer2 vis(filename);
-	dt.show(&vis);
+    // 1) Show the full triangulation
+    Visualizer2 vis(filename);
+    dt.show(&vis);
 
-	// 2) Fetch the triangles from the zone
-	vector<Triangle2*> vZoneT;
-	pZone->getTriangles(vZoneT);
+    // 2) Fetch the triangles from the zone
+    vector<Triangle2*> vZoneT;
+    pZone->getTriangles(vZoneT);
 
-	// 3) Highlight them in red
-	Color colorRed(1, 0, 0, 0.01, true); // The true parameter means 'fill'
-	for(size_t i=0; i<vZoneT.size(); i++)
-	{
-		vis.addObject(*vZoneT[i], colorRed);
-	}
-	vis.writeFile();
+    // 3) Highlight them in red
+    Color colorRed(1, 0, 0, 0.01, true); // The true parameter means 'fill'
+    for(size_t i=0; i<vZoneT.size(); i++)
+    {
+        vis.addObject(*vZoneT[i], colorRed);
+    }
+    vis.writeFile();
 }
 
 void print_points(const vector<Polygon> &polygons)
 {
-	for (auto poly : polygons)
-	{
-		cout << poly.size() << " ";
-		for (auto p : poly)
-		{
-			double x, y;
-			p.xy(x, y);
-			cout << x << " " << y << " ";
-		}
-		cout << endl;
-	}
+    for (auto poly : polygons)
+    {
+        cout << poly.size() << " ";
+        for (auto p : poly)
+        {
+            double x, y;
+            p.xy(x, y);
+            cout << x << " " << y << " ";
+        }
+        cout << endl;
+    }
 }
 
 int main(int argc, char* argv[])
 {
-	if (argc != 2)
-	{
-		cerr << "usage: " << argv[0] << " <file>" << endl;
-		return 1;
-	}
-	Fade_2D dt;
-	string filename = argv[1];
-	ifstream mapfile(filename);
-	if (!mapfile.is_open())
-	{
-		cerr << "Unable to open file" << endl;
-		return 1;
-	}
-	Zone2 *traversable = fadeutils::create_traversable_zone(mapfile, dt);
-	highlightTriangles(dt, traversable, filename + "-traversable.ps");
+    if (argc != 2)
+    {
+        cerr << "usage: " << argv[0] << " <file>" << endl;
+        return 1;
+    }
+    Fade_2D dt;
+    string filename = argv[1];
+    ifstream mapfile(filename);
+    if (!mapfile.is_open())
+    {
+        cerr << "Unable to open file" << endl;
+        return 1;
+    }
+    Zone2 *traversable = fadeutils::create_traversable_zone(mapfile, dt);
+    highlightTriangles(dt, traversable, filename + "-traversable.ps");
 
-	vector<Triangle2*> triangles;
-	traversable->getTriangles(triangles);
-	cout << "Traversable triangles: " << triangles.size() << endl;
-	cout << "Total triangles: " << dt.numberOfTriangles() << endl;
-	return 0;
+    vector<Triangle2*> triangles;
+    traversable->getTriangles(triangles);
+    cout << "Traversable triangles: " << triangles.size() << endl;
+    cout << "Total triangles: " << dt.numberOfTriangles() << endl;
+    return 0;
 }

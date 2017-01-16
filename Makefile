@@ -18,15 +18,15 @@ dev: CXXFLAGS += $(DEV_CXXFLAGS)
 fast dev: all
 
 clean:
-	rm -rf ./bin/*
-	rm -f $(PA_OBJ)
+    rm -rf ./bin/*
+    rm -f $(PA_OBJ)
 
 .PHONY: $(TARGETS)
 $(TARGETS): % : bin/%
 
 $(BIN_TARGETS): bin/%: %.cpp $(PA_OBJ)
-	@mkdir -p ./bin
-	$(CXX) $(CXXFLAGS) $(PA_INCLUDES) $(PA_OBJ) $(@:bin/%=%).cpp -o $(@)
+    @mkdir -p ./bin
+    $(CXX) $(CXXFLAGS) $(PA_INCLUDES) $(PA_OBJ) $(@:bin/%=%).cpp -o $(@)
 
 %.o: %.cpp
-	$(CXX) $(CXXFLAGS) $(PA_INCLUDES) $< -c -o $@
+    $(CXX) $(CXXFLAGS) $(PA_INCLUDES) $< -c -o $@

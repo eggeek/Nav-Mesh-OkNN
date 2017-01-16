@@ -9,19 +9,19 @@ namespace polyanya
 // This means that the f value needs to be set manually.
 struct SearchNode
 {
-	SearchNode* parent;
-	// Note that all Points here will be in terms of a Cartesian plane.
-	Point root;
+    SearchNode* parent;
+    // Note that all Points here will be in terms of a Cartesian plane.
+    Point root;
 
-	// If possible, set the orientation of left / root / right to be
-	// "if I'm standing at 'root' and look at 'left', 'right' is on my right"
-	Point left_end, right_end;
-	bool left_included, right_included;
+    // If possible, set the orientation of left / root / right to be
+    // "if I'm standing at 'root' and look at 'left', 'right' is on my right"
+    Point left_end, right_end;
+    bool left_included, right_included;
 
-	// Index of the polygon we're going to "push" into.
-	int next_polygon;
+    // Index of the polygon we're going to "push" into.
+    int next_polygon;
 
-	double f, g;
+    double f, g;
 };
 
 }
