@@ -19,19 +19,19 @@ dev: CXXFLAGS += $(DEV_CXXFLAGS)
 fast dev: all
 
 clean:
-    rm -rf ./bin/*
-    rm -f $(PU_OBJ)
+	rm -rf ./bin/*
+	rm -f $(PU_OBJ)
 
 .PHONY: $(TARGETS) gridmap2poly
 $(TARGETS) gridmap2poly: % : bin/%
 
 $(BIN_TARGETS): bin/%: %.cpp $(PU_OBJ)
-    @mkdir -p ./bin
-    $(CXX) $(CXXFLAGS) $(FADE2DFLAGS) $(PU_INCLUDES) $(PU_OBJ) $(@:bin/%=%).cpp -o $(@)
+	@mkdir -p ./bin
+	$(CXX) $(CXXFLAGS) $(FADE2DFLAGS) $(PU_INCLUDES) $(PU_OBJ) $(@:bin/%=%).cpp -o $(@)
 
 bin/gridmap2poly:
-    @mkdir -p ./bin
-    $(CXX) $(CXXFLAGS) gridmap2poly.cpp -o ./bin/gridmap2poly
+	@mkdir -p ./bin
+	$(CXX) $(CXXFLAGS) gridmap2poly.cpp -o ./bin/gridmap2poly
 
 %.o: %.cpp
-    $(CXX) $(CXXFLAGS) $(FADE2DFLAGS) $(INCLUDES) $< -c -o $@
+	$(CXX) $(CXXFLAGS) $(FADE2DFLAGS) $(INCLUDES) $< -c -o $@
