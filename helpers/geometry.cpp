@@ -115,7 +115,6 @@ Point reflect_point(const Point& p, const Point& l, const Point& r)
     #ifndef NDEBUG
     // If we're debugging, ensure that p + (numer / denom) * delta_rotated
     // lies on the line lr.
-    using namespace std;
     assert(is_colinear(l, p + (numer / denom) * delta_rotated, r));
     #endif
 
