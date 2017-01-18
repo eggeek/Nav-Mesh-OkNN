@@ -65,30 +65,6 @@ struct Point
     {
         return std::sqrt(this->distance_sq(other));
     }
-
-    // Reflects the point across the line lr.
-    Point reflect(const Point& l, const Point& r) const
-    {
-        // I have no idea how the below works.
-        const double denom = r.distance_sq(l);
-
-        const Point p = *this;
-        const double numer = (r - p) * (l - p);
-
-        // The vector r - l rotated 90 degrees counterclockwise.
-        // Can imagine "multiplying" the vector by the imaginary constant.
-        const Point delta_rotated = {l.y - r.y, r.x - l.x};
-
-        #ifndef NDEBUG
-        // If we're debugging, ensure that p + (numer / denom) * delta_rotated
-        // lies on the line lr.
-        #define colinear(a, b, c) (std::abs((b-a) * (c-b)) < EPSILON_SQUARED)
-        assert(colinear(l, p + (numer / denom) * delta_rotated, r));
-        #undef colinear
-        #endif
-
-        return *this + (2.0 * numer / denom) * delta_rotated;
-    }
 };
 
 }

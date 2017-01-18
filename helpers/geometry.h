@@ -19,6 +19,7 @@ enum struct ZeroOnePos
 
 ZeroOnePos line_intersect_bound_check(const double num, const double denom);
 Point get_point_on_line(const Point& a, const Point& b, const double t);
+Point reflect_point(const Point& p, const Point& l, const Point& r);
 bool is_colinear(const Point& a, const Point& b, const Point& c);
 
 }

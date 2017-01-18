@@ -95,6 +95,27 @@ Point get_point_on_line(const Point& a, const Point& b, const double t)
     return a + (b - a) * t;
 }
 
+// Reflects the point across the line lr.
+Point reflect_point(const Point& p, const Point& l, const Point& r)
+{
+    // I have no idea how the below works.
+    const double denom = r.distance_sq(l);
+    const double numer = (r - p) * (l - p);
+
+    // The vector r - l rotated 90 degrees counterclockwise.
+    // Can imagine "multiplying" the vector by the imaginary constant.
+    const Point delta_rotated = {l.y - r.y, r.x - l.x};
+
+    #ifndef NDEBUG
+    // If we're debugging, ensure that p + (numer / denom) * delta_rotated
+    // lies on the line lr.
+    using namespace std;
+    assert(is_colinear(l, p + (numer / denom) * delta_rotated, r));
+    #endif
+
+    return p + (2.0 * numer / denom) * delta_rotated;
+}
+
 bool is_colinear(const Point& a, const Point& b, const Point& c)
 {
     return std::abs((a - b) * (c - b)) < EPSILON_SQUARED;
