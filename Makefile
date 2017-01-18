@@ -1,5 +1,5 @@
 MAKEFLAGS += -r
-PA_FOLDERS = structs helpers
+PA_FOLDERS = structs helpers search
 PA_SRC = $(foreach folder,$(PA_FOLDERS),$(wildcard $(folder)/*.cpp))
 PA_OBJ = $(PA_SRC:.cpp=.o)
 PA_INCLUDES = $(addprefix -I,$(PA_FOLDERS))
