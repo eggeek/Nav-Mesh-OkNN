@@ -100,6 +100,12 @@ Point reflect_point(const Point& p, const Point& l, const Point& r)
 {
     // I have no idea how the below works.
     const double denom = r.distance_sq(l);
+    if (std::abs(denom) < EPSILON)
+    {
+        // A trivial reflection.
+        // Should be p + 2 * (l - p) = 2*l - p.
+        return 2 * l - p;
+    }
     const double numer = (r - p) * (l - p);
 
     // The vector r - l rotated 90 degrees counterclockwise.
