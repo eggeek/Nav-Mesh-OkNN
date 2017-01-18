@@ -121,6 +121,26 @@ void test_projection_correct()
     #undef rand_point
 }
 
+void test_reflection_correct()
+{
+    // Reflection has asserts inside it so we just stress test those
+    uniform_real_distribution<double> unif(-10, 10);
+    default_random_engine engine;
+
+    #define rand_point {unif(engine), unif(engine)}
+
+    Point a, b, c;
+    for (int i = 0; i < MAX_ITER; i++)
+    {
+        a = rand_point;
+        b = rand_point;
+        c = rand_point;
+        reflect_point(a, b, c);
+    }
+
+    #undef rand_point
+}
+
 int main(int argc, char* argv[])
 {
     m = Mesh(cin);
@@ -142,5 +162,6 @@ int main(int argc, char* argv[])
     // benchmark_point_lookup_average();
     // benchmark_point_lookup_single(tp);
     test_projection_correct();
+    test_reflection_correct();
     return 0;
 }
