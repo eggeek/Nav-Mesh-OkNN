@@ -1,4 +1,5 @@
 // various testing functions
+#include "expansion.h"
 #include "mesh.h"
 #include "geometry.h"
 #include <stdio.h>
@@ -14,6 +15,10 @@ Mesh m;
 
 const int MIN_X = 0, MAX_X = 1024, MIN_Y = 0, MAX_Y = 768;
 const int MAX_ITER = 10000;
+
+uniform_real_distribution<double> unif(-10, 10);
+default_random_engine engine;
+#define rand_point() {unif(engine), unif(engine)}
 
 void test_io()
 {
@@ -99,46 +104,43 @@ void test_point_lookup_correct()
     }
 }
 
-void test_projection_correct()
+void test_projection_asserts()
 {
-    // Projection has asserts inside it so we just stress test those
-    uniform_real_distribution<double> unif(-10, 10);
-    default_random_engine engine;
-
-    #define rand_point {unif(engine), unif(engine)}
-
     Point a, b, c, d;
     double d1, d2, d3;
     for (int i = 0; i < MAX_ITER; i++)
     {
-        a = rand_point;
-        b = rand_point;
-        c = rand_point;
-        d = rand_point;
+        a = rand_point();
+        b = rand_point();
+        c = rand_point();
+        d = rand_point();
         line_intersect_time(a, b, c, d, d1, d2, d3);
     }
-
-    #undef rand_point
 }
 
-void test_reflection_correct()
+void test_reflection_asserts()
 {
-    // Reflection has asserts inside it so we just stress test those
-    uniform_real_distribution<double> unif(-10, 10);
-    default_random_engine engine;
-
-    #define rand_point {unif(engine), unif(engine)}
-
     Point a, b, c;
     for (int i = 0; i < MAX_ITER; i++)
     {
-        a = rand_point;
-        b = rand_point;
-        c = rand_point;
+        a = rand_point();
+        b = rand_point();
+        c = rand_point();
         reflect_point(a, b, c);
     }
+}
 
-    #undef rand_point
+void test_h_value_asserts()
+{
+    Point a, b, c, d;
+    for (int i = 0; i < MAX_ITER; i++)
+    {
+        a = rand_point();
+        b = rand_point();
+        c = rand_point();
+        d = rand_point();
+        get_h_value(a, b, c, d);
+    }
 }
 
 int main(int argc, char* argv[])
@@ -161,7 +163,8 @@ int main(int argc, char* argv[])
     // test_point_lookup_correct();
     // benchmark_point_lookup_average();
     // benchmark_point_lookup_single(tp);
-    test_projection_correct();
-    test_reflection_correct();
+    test_projection_asserts();
+    test_reflection_asserts();
+    test_h_value_asserts();
     return 0;
 }
