@@ -95,4 +95,9 @@ Point get_point_on_line(const Point& a, const Point& b, const double t)
     return a + (b - a) * t;
 }
 
+bool is_colinear(const Point& a, const Point& b, const Point& c)
+{
+    return std::abs((a - b) * (c - b)) < EPSILON_SQUARED;
+}
+
 }
