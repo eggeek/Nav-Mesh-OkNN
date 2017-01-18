@@ -263,7 +263,7 @@ PolyContainment Mesh::poly_contains_point(int poly, Point& p,
             return PolyContainment::ON_VERTEX;
         }
         const double cur_a = last * cur;
-        if (std::abs(cur_a) < EPSILON_SQUARED)
+        if (std::abs(cur_a) < EPSILON)
         {
             // The line going from cur to last goes through p.
             // This means that they are colinear.

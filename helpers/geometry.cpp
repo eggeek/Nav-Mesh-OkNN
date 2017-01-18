@@ -18,7 +18,7 @@ void line_intersect_time(const Point& a, const Point& b,
                          double& ab_num, double& cd_num, double& denom)
 {
     denom = (b - a) * (d - c);
-    if (std::abs(denom) < EPSILON_SQUARED)
+    if (std::abs(denom) < EPSILON)
     {
         denom = 0.0; // to make comparison easy
         ab_num = 1;
@@ -42,7 +42,7 @@ void line_intersect_time(const Point& a, const Point& b,
 ZeroOnePos line_intersect_bound_check(const double num, const double denom)
 {
     // Check num / denom == 0.
-    if (std::abs(num) < EPSILON_SQUARED)
+    if (std::abs(num) < EPSILON)
     {
         return ZeroOnePos::EQ_ZERO;
     }
@@ -118,7 +118,7 @@ Point reflect_point(const Point& p, const Point& l, const Point& r)
 
 bool is_colinear(const Point& a, const Point& b, const Point& c)
 {
-    return std::abs((a - b) * (c - b)) < EPSILON_SQUARED;
+    return std::abs((a - b) * (c - b)) < EPSILON;
 }
 
 }

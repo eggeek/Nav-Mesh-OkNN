@@ -14,7 +14,7 @@ struct Point
 
     bool operator==(const Point& other) const
     {
-        return this->distance_sq(other) < EPSILON_SQUARED;
+        return this->distance_sq(other) < EPSILON;
     }
 
     Point operator+(const Point& other) const
