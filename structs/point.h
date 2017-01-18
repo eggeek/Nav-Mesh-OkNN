@@ -72,7 +72,7 @@ struct Point
         const double denom = r.distance_sq(l);
 
         const Point p = *this;
-        const double numer = (p * r) + (r * l) + (l * p);
+        const double numer = (r - p) * (l - p);
 
         // The vector r - l rotated 90 degrees counterclockwise.
         // Can imagine "multiplying" the vector by the imaginary constant.

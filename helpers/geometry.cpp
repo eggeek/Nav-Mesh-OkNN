@@ -26,9 +26,8 @@ void line_intersect_time(const Point& a, const Point& b,
     }
     else
     {
-        const double shared_term = a * c;
-        ab_num = (d * a) + shared_term + (c * d);
-        cd_num = (b * a) + shared_term + (c * b);
+        ab_num = (c - a) * (d - a);
+        cd_num = (b - c) * (a - c);
 
         #ifndef NDEBUG
         // If we're debugging, double check that our results are right.
