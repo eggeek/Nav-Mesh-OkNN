@@ -1,6 +1,7 @@
 #pragma once
 #include <iostream>
 #include <cmath>
+#include <cassert>
 #include "consts.h"
 
 namespace polyanya
@@ -77,6 +78,14 @@ struct Point
         // The vector r - l rotated 90 degrees counterclockwise.
         // Can imagine "multiplying" the vector by the imaginary constant.
         const Point delta_rotated = {l.y - r.y, r.x - l.x};
+
+        #ifndef NDEBUG
+        // If we're debugging, ensure that p + (numer / denom) * delta_rotated
+        // lies on the line lr.
+        #define colinear(a, b, c) (std::abs((b-a) * (c-b)) < EPSILON_SQUARED)
+        assert(colinear(l, p + (numer / denom) * delta_rotated, r));
+        #undef colinear
+        #endif
 
         return *this + (2.0 * numer / denom) * delta_rotated;
     }
