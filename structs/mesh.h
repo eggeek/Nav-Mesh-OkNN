@@ -1,9 +1,9 @@
 #pragma once
+#include "polygon.h"
+#include "vertex.h"
 #include <vector>
 #include <iostream>
 #include <map>
-#include "vertex.h"
-#include "polygon.h"
 
 namespace polyanya
 {

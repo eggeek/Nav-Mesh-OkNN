@@ -1,8 +1,8 @@
-#include <cmath>
-#include <cassert>
+#include "geometry.h"
 #include "point.h"
 #include "consts.h"
-#include "geometry.h"
+#include <cmath>
+#include <cassert>
 
 namespace polyanya
 {

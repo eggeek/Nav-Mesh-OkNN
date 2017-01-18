@@ -1,6 +1,6 @@
 #pragma once
-#include <vector>
 #include "point.h"
+#include <vector>
 
 namespace polyanya
 {

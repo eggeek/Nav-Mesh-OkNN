@@ -1,8 +1,8 @@
 #pragma once
+#include "consts.h"
 #include <iostream>
 #include <cmath>
 #include <cassert>
-#include "consts.h"
 
 namespace polyanya
 {

@@ -1,5 +1,7 @@
 #include "mesh.h"
+#include <vector>
 #include <iostream>
+#include <map>
 #include <string>
 #include <cmath>
 #include <cassert>
