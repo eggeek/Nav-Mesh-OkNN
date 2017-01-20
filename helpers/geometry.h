@@ -34,5 +34,9 @@ enum struct Orientation
 };
 
 Orientation get_orientation(const Point& a, const Point& b, const Point& c);
+inline bool is_collinear(const Point& a, const Point& b, const Point& c)
+{
+    return std::abs((b - a) * (c - b)) < EPSILON;
+}
 
 }
