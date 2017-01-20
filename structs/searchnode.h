@@ -17,7 +17,12 @@ struct SearchNode
     // "if I'm standing at 'root' and look at 'left', 'right' is on my right"
     Point left, right;
 
+    // The right vertex of the edge the interval is lying on.
+    // When generating the successors of this node, start there.
+    int right_vertex;
+
     // Index of the polygon we're going to "push" into.
+    // Every successor must lie within this polygon.
     int next_polygon;
 
     double f, g;
