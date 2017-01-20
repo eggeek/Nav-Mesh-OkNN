@@ -88,13 +88,6 @@ ZeroOnePos line_intersect_bound_check(const double num, const double denom)
     return ZeroOnePos::IN_RANGE;
 }
 
-// Given two points a, b and a number t, compute the point
-//  a + (b-a) * t
-Point get_point_on_line(const Point& a, const Point& b, const double t)
-{
-    return a + (b - a) * t;
-}
-
 // Reflects the point across the line lr.
 Point reflect_point(const Point& p, const Point& l, const Point& r)
 {

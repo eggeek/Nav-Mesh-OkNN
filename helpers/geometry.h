@@ -18,7 +18,12 @@ enum struct ZeroOnePos
 };
 
 ZeroOnePos line_intersect_bound_check(const double num, const double denom);
-Point get_point_on_line(const Point& a, const Point& b, const double t);
+// Given two points a, b and a number t, compute the point
+//  a + (b-a) * t
+inline Point get_point_on_line(const Point& a, const Point& b, const double t)
+{
+    return a + (b - a) * t;
+}
 Point reflect_point(const Point& p, const Point& l, const Point& r);
 
 enum struct Orientation
