@@ -9,23 +9,23 @@ namespace polyanya
 // This means that the f value needs to be set manually.
 struct SearchNode
 {
-    SearchNode* parent;
+    const SearchNode* parent;
     // Note that all Points here will be in terms of a Cartesian plane.
-    Point root;
+    const Point root;
 
     // If possible, set the orientation of left / root / right to be
     // "if I'm standing at 'root' and look at 'left', 'right' is on my right"
-    Point left, right;
+    const Point left, right;
 
     // The right vertex of the edge the interval is lying on.
     // When generating the successors of this node, start there.
-    int right_vertex;
+    const int right_vertex;
 
     // Index of the polygon we're going to "push" into.
     // Every successor must lie within this polygon.
-    int next_polygon;
+    const int next_polygon;
 
-    double f, g;
+    const double f, g;
 };
 
 }
