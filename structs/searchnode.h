@@ -15,7 +15,7 @@ struct SearchNode
 
     // If possible, set the orientation of left / root / right to be
     // "if I'm standing at 'root' and look at 'left', 'right' is on my right"
-    Point left_end, right_end;
+    Point left, right;
 
     // Index of the polygon we're going to "push" into.
     int next_polygon;
