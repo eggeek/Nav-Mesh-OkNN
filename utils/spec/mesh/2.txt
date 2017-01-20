@@ -1,7 +1,13 @@
-Mesh map file format version 1 is as defined:
+DIFFERENCES BETWEEN VERSION 1 AND 2:
+- polygon.p: For each polygon p[i], it shares v[i-1] and v[i] instead of v[i]
+  and v[i+1].
+  (An easy way to convert is to simply move the last element of each polygon's
+  p array to the start of the array.)
+
+Mesh map file format version 2 is as defined:
 
 The first line is "mesh", the header.
-The second line is the version of the format, 1.
+The second line is the version of the format, 2.
 The third line contains two integers: V and P.
     V is the number of vertices in the mesh.
     P is the number of polygons in the mesh.
@@ -55,14 +61,14 @@ An example of this format is as shown:
 
 BEGIN FILE
 mesh
-1
+2
 4 2
 0.0 0.0 2 0 -1
 1.5 0.0 3 0 1 -1
 1.5 1.5 2 1 -1
 0.0 1.5 3 -1 1 0
-3 0 1 3 -1 1 -1
-3 1 2 3 -1 -1 0
+3 0 1 3 -1 -1 1
+3 1 2 3 0 -1 -1
 END OF FILE
 
 This represents this mesh:

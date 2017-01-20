@@ -36,10 +36,10 @@ void Mesh::read(std::istream& infile)
     {
         fail("Error getting version number");
     }
-    if (version != 1)
+    if (version != 2)
     {
         std::cerr << "Got file with version " << version << std::endl;
-        fail("Invalid version (expecting 1)");
+        fail("Invalid version (expecting 2)");
     }
 
     int V, P;
@@ -269,8 +269,8 @@ PolyContainment Mesh::poly_contains_point(int poly, Point& p,
         {
             // The line going from cur to last goes through p.
             // This means that they are colinear.
-            // The associated polygon should actually be polygons[i-1]
-            // according to the file format.
+            // The associated polygon should simply be polygons[i] in version
+            // 2 of the file format.
 
             // Ensure that cur = c*last where c is negative.
             // If not, this means that the point is definitely outside.
@@ -288,14 +288,7 @@ PolyContainment Mesh::poly_contains_point(int poly, Point& p,
                     return PolyContainment::OUTSIDE;
                 }
             }
-            if (i == 0)
-            {
-                special_index = poly_ref.polygons.back();
-            }
-            else
-            {
-                special_index = poly_ref.polygons[i-1];
-            }
+            special_index = poly_ref.polygons[i];
             return PolyContainment::ON_EDGE;
         }
 

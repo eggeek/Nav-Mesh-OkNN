@@ -2,7 +2,7 @@
 #include <map>
 #include <iomanip>
 
-#define FORMAT_VERSION 1
+#define FORMAT_VERSION 2
 
 
 using namespace std;
@@ -127,8 +127,14 @@ void print_polys()
         }
 
         // Triangles.
-        // Go 2 0 1 because of spec differences.
-        const int triangle_index[] = {2, 0, 1};
+        // Go 2 0 1 in version 1, 1 2 0 in version 2.
+        const int triangle_index[] =
+        #if FORMAT_VERSION == 1
+            {2, 0, 1}
+        #else
+            {1, 2, 0}
+        #endif
+        ;
         for (int i : triangle_index)
         {
             cout << " ";
