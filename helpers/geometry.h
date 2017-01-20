@@ -24,7 +24,7 @@ Point reflect_point(const Point& p, const Point& l, const Point& r);
 enum struct Orientation
 {
 	CCW,      // counterclockwise
-	COLINEAR, // colinear
+	COLLINEAR, // collinear
 	CW,       // clockwise
 };
 

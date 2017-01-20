@@ -116,7 +116,7 @@ Point reflect_point(const Point& p, const Point& l, const Point& r)
     // If we're debugging, ensure that p + (numer / denom) * delta_rotated
     // lies on the line lr.
     assert(get_orientation(l, p + (numer / denom) * delta_rotated, r) ==
-           Orientation::COLINEAR);
+           Orientation::COLLINEAR);
     #endif
 
     return p + (2.0 * numer / denom) * delta_rotated;
@@ -127,7 +127,7 @@ Orientation get_orientation(const Point& a, const Point& b, const Point& c)
     const double cross = (b - a) * (c - b);
     if (std::abs(cross) < EPSILON)
     {
-        return Orientation::COLINEAR;
+        return Orientation::COLLINEAR;
     } else if (cross > 0)
     {
         return Orientation::CCW;

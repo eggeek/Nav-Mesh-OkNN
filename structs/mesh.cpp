@@ -268,7 +268,7 @@ PolyContainment Mesh::poly_contains_point(int poly, Point& p,
         if (std::abs(cur_a) < EPSILON)
         {
             // The line going from cur to last goes through p.
-            // This means that they are colinear.
+            // This means that they are collinear.
             // The associated polygon should simply be polygons[i] in version
             // 2 of the file format.
 
