@@ -39,6 +39,7 @@ class Mesh
                                             int& special_index);
         void get_point_location(Point& p, int& out1, int& out2);
         void get_point_location_naive(Point& p, int& out1, int& out2);
+        int get_any_poly_from_point(Point p);
 
 
     // TODO: "get polygon index from Point"

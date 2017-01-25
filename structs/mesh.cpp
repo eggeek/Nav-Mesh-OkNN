@@ -457,6 +457,46 @@ void Mesh::get_point_location_naive(Point& p, int& out1, int& out2)
     return;
 }
 
+int Mesh::get_any_poly_from_point(Point p)
+{
+    int out1, out2;
+    get_point_location(p, out1, out2);
+    if (out1 == -1)
+    {
+        // P does not lie on the mesh
+        return -1;
+    }
+    else if (out1 == -2)
+    {
+        // Strictly contained.
+        return out2;
+    }
+    else if (out1 == -3)
+    {
+        // Lies on a corner.
+        const Vertex& v = mesh_vertices[out2];
+        if (v.is_corner)
+        {
+            // Possibly ambiguous.
+            // There is a chance that there only has 1 zero in the polygons,
+            // but that's not worth checking. Just return -1.
+            return -1;
+        }
+        else
+        {
+            // It's not a corner, so we can arbirarily choose any polygon.
+            return v.polygons.front();
+        }
+    }
+    else
+    {
+        // Lies on edge.
+        // out1 is guaranteed not to be -1.
+        assert(out1 != -1);
+        return out1;
+    }
+}
+
 void Mesh::print(std::ostream& outfile)
 {
     outfile << "mesh with " << mesh_vertices.size() << " vertices, " \
