@@ -17,6 +17,11 @@ struct Point
         return this->distance_sq(other) < EPSILON;
     }
 
+    bool operator!=(const Point& other) const
+    {
+        return !((*this) == other);
+    }
+
     Point operator+(const Point& other) const
     {
         return {x + other.x, y + other.y};
