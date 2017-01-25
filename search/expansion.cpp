@@ -1,5 +1,6 @@
 #include "expansion.h"
 #include "searchnode.h"
+#include "successor.h"
 #include "mesh.h"
 #include "geometry.h"
 #include "vertex.h"
@@ -123,7 +124,7 @@ inline int binary_search(const std::vector<int>& arr, const int N,
 // Generates the successors of the search node and appends them to the successor
 // vector.
 void get_successors(SearchNode& node, const Point& goal, const Mesh& mesh,
-                    std::vector<SearchNode>& successors)
+                    std::vector<Successor>& successors)
 {
     // If the next polygon is -1, we did a bad job at pruning...
     assert(node.next_polygon != -1);
@@ -155,11 +156,7 @@ void get_successors(SearchNode& node, const Point& goal, const Mesh& mesh,
             }
             const Point& left = mesh_vertices[this_vertex].p,
                          right = mesh_vertices[last_vertex].p;
-            const int next_polygon = P[i];
-            const double g = node.g,
-                         h = get_h_value(node.root, goal, left, right);
-            successors.push_back({&node, node.root, left, right, last_vertex,
-                                  next_polygon, g + h, g});
+            successors.push_back({SuccessorType::OBSERVABLE, left, right, i});
             last_vertex = this_vertex;
         }
         return;
@@ -186,6 +183,7 @@ void get_successors(SearchNode& node, const Point& goal, const Mesh& mesh,
     // Note that left_ind MUST be greater than right_ind.
     // This will make binary searching easier.
     const int left_ind = N + right_ind - 1;
+
 
 
     // Find whether we can turn at either endpoint.
@@ -216,8 +214,13 @@ void get_successors(SearchNode& node, const Point& goal, const Mesh& mesh,
     assert(A != -1);
     const int normalised_A = normalise(A),
               normalised_Am1 = normalise(A-1);
-    const Point& A_p = mesh_vertices[V[normalised_A]].p,
-                 Am1_p = mesh_vertices[V[normalised_Am1]].p;
+
+    // Macro for getting a point from a polygon point index.
+    #define index2point(index) mesh_vertices[V[index]].p
+
+
+    const Point& A_p = index2point(normalised_A),
+                 Am1_p = index2point(normalised_Am1);
     const Point right_intersect = [&]() -> Point
     {
         double root_right_num, segment_num, denom;
@@ -252,8 +255,8 @@ void get_successors(SearchNode& node, const Point& goal, const Mesh& mesh,
     assert(B != -1);
     const int normalised_B = normalise(B),
               normalised_Bp1 = normalise(B+1);
-    const Point& B_p = mesh_vertices[V[normalised_B]].p,
-                 Bp1_p = mesh_vertices[V[normalised_Bp1]].p;
+    const Point& B_p = index2point(normalised_B),
+                 Bp1_p = index2point(normalised_Bp1);
     const Point left_intersect = [&]() -> Point
     {
         double root_left_num, segment_num, denom;
@@ -276,13 +279,6 @@ void get_successors(SearchNode& node, const Point& goal, const Mesh& mesh,
 
     // Macro to update this_inde/last_ind.
     #define update_ind() last_ind = cur_ind++; if (cur_ind == N) cur_ind = 0
-
-    // Macro to help adding stuff to the output.
-    // right_vertex is usually "last_ind".
-    // next_polygon is usually "P[cur_ind]".
-    #define push_succ(root, left, right, right_vertex, next_polygon, g, h) \
-        successors.push_back({&node, root, left, right, \
-                              right_vertex, next_polygon, g+h, g})
     if (can_turn_right)
     {
         // Find the last point which makes collinear successors on the right.
@@ -312,7 +308,6 @@ void get_successors(SearchNode& node, const Point& goal, const Mesh& mesh,
             // If right_intersect != Am1_p,
             // generate non-observable from Am1 to intersect.
             const int normalised_C = normalise(C);
-            const double new_g = node.g + node.root.distance(right_p);
 
             // We always generate successors from last_ind to cur_ind.
             // right_ind should always be normalised.
@@ -325,21 +320,11 @@ void get_successors(SearchNode& node, const Point& goal, const Mesh& mesh,
             while (last_ind != normalised_C)
             {
                 // Generate last-cur, turning at LAST.
-                // Check whether you can indeed turn at LAST.
-                const Vertex& last_v = mesh_vertices[V[last_ind]];
-                if (last_v.is_corner)
-                {
-                    const Point& last_p = last_v.p,
-                                 cur_p = mesh_vertices[V[cur_ind]].p;
-
-                    // Get new g value.
-                    const double g = node.g + node.root.distance(last_p);
-                    // Get new h value.
-                    // We can special case this.
-                    const double h = last_p.distance(goal);
-
-                    push_succ(last_p, cur_p, last_p, last_ind, P[cur_ind], g, h);
-                }
+                successors.push_back({
+                    SuccessorType::RIGHT_COLLINEAR,
+                    index2point(cur_ind), index2point(last_ind),
+                    cur_ind
+                });
 
                 // Update the indices.
                 update_ind();
@@ -349,12 +334,11 @@ void get_successors(SearchNode& node, const Point& goal, const Mesh& mesh,
             while (last_ind != normalised_Am1)
             {
                 // Generate last-cur, turning at right.
-                const Point& cur_p = mesh_vertices[V[cur_ind]].p,
-                             last_p = mesh_vertices[V[last_ind]].p;
-                // We already have a g value.
-                const double h = get_h_value(right_p, goal, cur_p, last_p);
-                push_succ(right_p, cur_p, last_p,
-                          last_ind, P[cur_ind], new_g, h);
+                successors.push_back({
+                    SuccessorType::RIGHT_NON_OBSERVABLE,
+                    index2point(cur_ind), index2point(last_ind),
+                    cur_ind
+                });
 
                 update_ind();
             }
@@ -364,11 +348,11 @@ void get_successors(SearchNode& node, const Point& goal, const Mesh& mesh,
             if (right_intersect != Am1_p)
             {
                 // Generate Am1-right_intersect, turning at right.
-                const double h = get_h_value(right_p, goal,
-                                             right_intersect, Am1_p);
-
-                push_succ(right_p, right_intersect, Am1_p,
-                          normalised_Am1, P[normalised_A], new_g, h);
+                successors.push_back({
+                    SuccessorType::RIGHT_NON_OBSERVABLE,
+                    right_intersect, Am1_p,
+                    normalised_A
+                });
             }
         }
     }
@@ -383,28 +367,22 @@ void get_successors(SearchNode& node, const Point& goal, const Mesh& mesh,
     // Note that we used the non-normalised indices for this.
     if (A == B + 1)
     {
-        // "Left index" is at normalised_A
-        // "Right index" is at normalsised_B
-        // Left/right endpoints are the intersects
-        // g value is the same
-        const double h = get_h_value(node.root, goal,
-                                     left_intersect, right_intersect);
-        push_succ(node.root, left_intersect, right_intersect,
-                  normalised_B, P[normalised_A], node.g, h);
-        // Note that the polygon we're pushing into is the same as the polygon
-        // we push into at the last non-observable right.
+        assert(normalised_A == normalised_Bp1);
+        successors.push_back({
+            SuccessorType::OBSERVABLE,
+            left_intersect, right_intersect,
+            normalised_A // (the same as normalised_Bp1)
+        });
     }
     else
     {
         // Generate first (probably non-maximal) successor
         // (right_intersect-A)
-        {
-            const double h = get_h_value(node.root, goal,
-                                         A_p, right_intersect);
-            // If you "snap" right_intersect, you get Am1.
-            push_succ(node.root, A_p, right_intersect,
-                      normalised_Am1, P[normalised_A], node.g, h);
-        }
+        successors.push_back({
+            SuccessorType::OBSERVABLE,
+            A_p, right_intersect,
+            normalised_A
+        });
 
         // Generate all guaranteed-maximal successors.
         // Should generate B-A of them.
@@ -422,14 +400,12 @@ void get_successors(SearchNode& node, const Point& goal, const Mesh& mesh,
             #endif
 
             // Generate last-cur.
-            const Point& cur_p = mesh_vertices[V[cur_ind]].p,
-                         last_p = mesh_vertices[V[last_ind]].p;
-            // We already have a g value.
-            const double h = get_h_value(node.root, goal, cur_p, last_p);
-            push_succ(node.root, cur_p, last_p,
-                      last_ind, P[cur_ind], node.g, h);
+            successors.push_back({
+                SuccessorType::OBSERVABLE,
+                index2point(cur_ind), index2point(last_ind),
+                cur_ind
+            });
 
-            // Generate last-cur.
             update_ind();
         }
 
@@ -439,14 +415,11 @@ void get_successors(SearchNode& node, const Point& goal, const Mesh& mesh,
 
         // Generate last (probably non-maximal) successor
         // (B-left_intersect)
-        {
-            const double h = get_h_value(node.root, goal,
-                                         left_intersect, B_p);
-            // If you "snap" left_intersect, you get Bp1.
-            push_succ(node.root, left_intersect, B_p,
-                      normalised_B, P[normalised_Bp1], node.g, h);
-        }
-
+        successors.push_back({
+            SuccessorType::OBSERVABLE,
+            left_intersect, B_p,
+            normalised_Bp1
+        });
     }
 
     if (can_turn_left)
@@ -474,7 +447,6 @@ void get_successors(SearchNode& node, const Point& goal, const Mesh& mesh,
         if (D != -1)
         {
             const int normalised_D = normalise(D);
-            const double new_g = node.g + node.root.distance(left_p);
             // If left_intersect != Bp1_p,
             // generate non-observable from left_intersect to Bp1_p.
             // Generate non-observable up to D.
@@ -482,11 +454,11 @@ void get_successors(SearchNode& node, const Point& goal, const Mesh& mesh,
             if (left_intersect != Bp1_p)
             {
                 // Generate left_intersect-Bp1, turning at left.
-                const double h = get_h_value(left_p, goal,
-                                             Bp1_p, left_intersect);
-
-                push_succ(left_p, Bp1_p, left_intersect,
-                          normalised_B, P[normalised_Bp1], new_g, h);
+                successors.push_back({
+                    SuccessorType::LEFT_NON_OBSERVABLE,
+                    Bp1_p, left_intersect,
+                    normalised_Bp1
+                });
             }
 
             int last_ind = normalised_Bp1;
@@ -495,12 +467,11 @@ void get_successors(SearchNode& node, const Point& goal, const Mesh& mesh,
             while (last_ind != normalised_D)
             {
                 // Generate last_ind-cur_ind, turning at left.
-                const Point& cur_p = mesh_vertices[V[cur_ind]].p,
-                             last_p = mesh_vertices[V[last_ind]].p;
-                // We already have a g value.
-                const double h = get_h_value(left_p, goal, cur_p, last_p);
-                push_succ(left_p, cur_p, last_p,
-                          last_ind, P[cur_ind], new_g, h);
+                successors.push_back({
+                    SuccessorType::LEFT_NON_OBSERVABLE,
+                    index2point(cur_ind), index2point(last_ind),
+                    cur_ind
+                });
 
                 update_ind();
             }
@@ -508,30 +479,21 @@ void get_successors(SearchNode& node, const Point& goal, const Mesh& mesh,
             const int normalised_left_ind = normalise(left_ind);
             while (last_ind != normalised_left_ind)
             {
-                // Generate collinear last_ind-cur_ind, turning at cur_ind.
                 // Generate last-cur, turning at CUR.
-                // Check whether you can indeed turn at CUR.
-                const Vertex& cur_v = mesh_vertices[V[cur_ind]];
-                if (cur_v.is_corner)
-                {
-                    const Point& cur_p = cur_v.p,
-                                 last_p = mesh_vertices[V[last_ind]].p;
-
-                    // Get new g value.
-                    const double g = node.g + node.root.distance(cur_p);
-                    // Get new h value.
-                    // We can special case this.
-                    const double h = cur_p.distance(goal);
-
-                    push_succ(cur_p, cur_p, last_p, last_ind, P[cur_ind], g, h);
-                }
+                successors.push_back({
+                    SuccessorType::LEFT_COLLINEAR,
+                    index2point(cur_ind), index2point(last_ind),
+                    cur_ind
+                });
                 update_ind();
             }
         }
 
     }
 
-    #undef update
+    #undef update_ind
+
+    #undef index_to_point
 
 }
 
