@@ -13,6 +13,6 @@ double get_h_value(const Point& root, Point goal,
 
 // Generates the successors of the search node and appends them to the successor
 // vector.
-void get_successors(const SearchNode& node, const Point& goal, const Mesh& mesh,
+void get_successors(SearchNode& node, const Point& goal, const Mesh& mesh,
                     std::vector<SearchNode>& successors);
 }
