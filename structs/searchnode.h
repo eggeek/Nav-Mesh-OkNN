@@ -26,6 +26,28 @@ struct SearchNode
     const int next_polygon;
 
     const double f, g;
+
+    // Comparison.
+    // Always take the "smallest" search node in a priority queue.
+    bool operator<(const SearchNode& other) const
+    {
+        if (this->f == other.f)
+        {
+            // If two nodes have the same f, the one with the bigger g
+            // is "smaller" to us.
+            return this->g > other.g;
+        }
+        return this->g < other.g;
+    }
+
+    bool operator>(const SearchNode& other) const
+    {
+        if (this->f == other.f)
+        {
+            return this->g < other.g;
+        }
+        return this->g > other.g;
+    }
 };
 
 }
