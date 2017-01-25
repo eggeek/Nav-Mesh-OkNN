@@ -273,19 +273,22 @@ PolyContainment Mesh::poly_contains_point(int poly, Point& p,
             // 2 of the file format.
 
             // Ensure that cur = c*last where c is negative.
-            // If not, this means that the point is definitely outside.
+            // If not, this means that the point is either outside or that this
+            // segment is collinear to an adjacent one.
             if (cur.x)
             {
                 if (!((cur.x > 0) ^ (last.x > 0)))
                 {
-                    return PolyContainment::OUTSIDE;
+                    last = cur;
+                    continue;
                 }
             }
             else
             {
                 if (!((cur.y > 0) ^ (last.y > 0)))
                 {
-                    return PolyContainment::OUTSIDE;
+                    last = cur;
+                    continue;
                 }
             }
             special_index = poly_ref.polygons[i];
