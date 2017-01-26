@@ -226,14 +226,7 @@ void Mesh::precalc_point_location()
 }
 
 // Finds out whether the polygon specified by "poly" contains point P.
-// If ON_EDGE is returned, special_index contains the index of the adjacent
-// polygon.
-// If ON_VERTEX is returned, special_index contains the index of the point it
-// lies on.
-PolyContainment Mesh::poly_contains_point(int poly, Point& p,
-                                          int& special_index,
-                                          IntPtr left_vertex,
-                                          IntPtr right_vertex)
+PolyContainment Mesh::poly_contains_point(int poly, Point& p)
 {
     // The below is taken from
     // "An Efficient Test for a Point to Be in a Convex Polygon"
@@ -245,7 +238,7 @@ PolyContainment Mesh::poly_contains_point(int poly, Point& p,
     if (p.x < poly_ref.min_x - EPSILON || p.x > poly_ref.max_x + EPSILON ||
         p.y < poly_ref.min_y - EPSILON || p.y > poly_ref.max_y + EPSILON)
     {
-        return PolyContainment::OUTSIDE;
+        return {PolyContainment::OUTSIDE, -1, -1, -1};
     }
     const Point& last_point_in_poly = mesh_vertices[poly_ref.vertices.back()].p;
     const Point ZERO = {0, 0};
@@ -253,8 +246,7 @@ PolyContainment Mesh::poly_contains_point(int poly, Point& p,
     Point last = last_point_in_poly - p;
     if (last == ZERO)
     {
-        special_index = poly_ref.vertices.back();
-        return PolyContainment::ON_VERTEX;
+        return {PolyContainment::ON_VERTEX, -1, poly_ref.vertices.back(), -1};
     }
 
     int last_index = poly_ref.vertices.back();
@@ -264,8 +256,7 @@ PolyContainment Mesh::poly_contains_point(int poly, Point& p,
         const Point cur = mesh_vertices[point_index].p - p;
         if (cur == ZERO)
         {
-            special_index = point_index;
-            return PolyContainment::ON_VERTEX;
+            return {PolyContainment::ON_VERTEX, -1, point_index, -1};
         }
         const double cur_a = last * cur;
         if (std::abs(cur_a) < EPSILON)
@@ -296,28 +287,20 @@ PolyContainment Mesh::poly_contains_point(int poly, Point& p,
                     continue;
                 }
             }
-            special_index = poly_ref.polygons[i];
-            if (left_vertex != nullptr)
-            {
-                *left_vertex = point_index;
-            }
-            if (right_vertex != nullptr)
-            {
-                *right_vertex = last_index;
-            }
-            return PolyContainment::ON_EDGE;
+            return {PolyContainment::ON_EDGE, poly_ref.polygons[i],
+                    point_index, last_index};
         }
 
         // Because we assume that the points are counterclockwise,
         // we can immediately terminate when we see a negatively signed area.
         if (cur_a < 0)
         {
-            return PolyContainment::OUTSIDE;
+            return {PolyContainment::OUTSIDE, -1, -1, -1};
         }
         last = cur;
         last_index = point_index;
     }
-    return PolyContainment::INSIDE;
+    return {PolyContainment::INSIDE, -1, -1, -1};
 }
 
 // Finds where the point P lies in the mesh. Returns (out1, out2).
@@ -369,11 +352,8 @@ void Mesh::get_point_location(Point& p, int& out1, int& out2,
     while (i >= 0 && i < ps)
     {
         const int polygon = (*polys)[i];
-        int special = -999;
-        const PolyContainment result = poly_contains_point(
-            polygon, p, special, left_vertex, right_vertex
-        );
-        switch (result)
+        const PolyContainment result = poly_contains_point(polygon, p);
+        switch (result.type)
         {
             case PolyContainment::OUTSIDE:
                 // Does not contain: try the next one.
@@ -388,13 +368,21 @@ void Mesh::get_point_location(Point& p, int& out1, int& out2,
             case PolyContainment::ON_EDGE:
                 // This one lies on the edge.
                 out1 = polygon;
-                out2 = special;
+                out2 = result.adjacent_poly;
+                if (left_vertex)
+                {
+                    *left_vertex = result.vertex1;
+                }
+                if (right_vertex)
+                {
+                    *right_vertex = result.vertex2;
+                }
                 return;
 
             case PolyContainment::ON_VERTEX:
                 // This one lies on a corner.
                 out1 = -3;
-                out2 = special;
+                out2 = result.vertex1;
                 return;
 
             default:
@@ -440,9 +428,8 @@ void Mesh::get_point_location_naive(Point& p, int& out1, int& out2)
     // TODO: Find a better way of doing this without going through every poly.
     for (int i = 0; i < (int) mesh_polygons.size(); i++)
     {
-        int special = -999;
-        const PolyContainment result = poly_contains_point(i, p, special);
-        switch (result)
+        const PolyContainment result = poly_contains_point(i, p);
+        switch (result.type)
         {
             case PolyContainment::OUTSIDE:
                 // Does not contain: try the next one.
@@ -457,13 +444,13 @@ void Mesh::get_point_location_naive(Point& p, int& out1, int& out2)
             case PolyContainment::ON_EDGE:
                 // This one lies on the edge.
                 out1 = i;
-                out2 = special;
+                out2 = result.adjacent_poly;
                 return;
 
             case PolyContainment::ON_VERTEX:
                 // This one lies on a corner.
                 out1 = -3;
-                out2 = special;
+                out2 = result.vertex1;
                 return;
 
             default:

@@ -29,18 +29,8 @@ void test_containment(Point test_point)
 {
     for (int i = 0; i < (int) m.mesh_polygons.size(); i++)
     {
-        cout << setw(4) << i << setw(0) << " ";
-        int special = -1;
-        cout << m.poly_contains_point(i, test_point, special);
-        if (special != -1)
-        {
-            for (auto p : m.mesh_polygons[i].vertices)
-            {
-                cout << " " << m.mesh_vertices[p].p;
-            }
-            cout << " " << special;
-        }
-        cout << endl;
+        cout << setw(4) << i << setw(0) << " "
+             << m.poly_contains_point(i, test_point) << endl;
     }
 }
 
@@ -161,7 +151,7 @@ int main(int argc, char* argv[])
     // test_io();
     // test_containment(tp);
     // test_point_lookup_correct();
-    // benchmark_point_lookup_average();
+    benchmark_point_lookup_average();
     // benchmark_point_lookup_single(tp);
     test_projection_asserts();
     test_reflection_asserts();
