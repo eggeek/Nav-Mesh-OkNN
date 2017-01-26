@@ -302,30 +302,25 @@ PolyContainment Mesh::poly_contains_point(int poly, Point& p)
     return {PolyContainment::INSIDE, -1, -1, -1};
 }
 
-// Finds where the point P lies in the mesh. Returns (out1, out2).
+// Finds where the point P lies in the mesh.
 // Returns:
 //   (-1, -1) if P does not lie on the mesh.
 //   (-2, a)  if P is strictly contained within polygon a
 //   (a, b)   if P lies on the edge of polygons a and b.
 //            Note that b can be -1 (if P lies on border of mesh).
 //   (-3, c)  if P lies on a corner c.
-void Mesh::get_point_location(Point& p, int& out1, int& out2,
-                              IntPtr left_vertex, IntPtr right_vertex)
+PointLocation Mesh::get_point_location(Point& p)
 {
     // TODO: Find a better way of doing this without going through every poly.
     if (p.x < min_x - EPSILON || p.x > max_x + EPSILON ||
         p.y < min_y - EPSILON || p.y > max_y + EPSILON)
     {
-        out1 = -1;
-        out2 = -1;
-        return;
+        return {PointLocation::NOT_ON_MESH, -1, -1, -1, -1};
     }
     auto slab = slabs.upper_bound(p.x);
     if (slab == slabs.begin())
     {
-        out1 = -1;
-        out2 = -1;
-        return;
+        return {PointLocation::NOT_ON_MESH, -1, -1, -1, -1};
     }
     slab--;
     const std::vector<int>& polys = slab->second;
@@ -360,29 +355,35 @@ void Mesh::get_point_location(Point& p, int& out1, int& out2,
 
             case PolyContainment::INSIDE:
                 // This one strictly contains the point.
-                out1 = -2;
-                out2 = polygon;
-                return;
+                return {PointLocation::IN_POLYGON, polygon, -1, -1, -1};
 
             case PolyContainment::ON_EDGE:
                 // This one lies on the edge.
-                out1 = polygon;
-                out2 = result.adjacent_poly;
-                if (left_vertex)
-                {
-                    *left_vertex = result.vertex1;
-                }
-                if (right_vertex)
-                {
-                    *right_vertex = result.vertex2;
-                }
-                return;
+                // Chek whether the other one is -1.
+                return {
+                    (result.adjacent_poly == -1 ?
+                     PointLocation::ON_MESH_BORDER :
+                     PointLocation::ON_EDGE),
+                    polygon, result.adjacent_poly,
+                    result.vertex1, result.vertex2
+                };
 
             case PolyContainment::ON_VERTEX:
                 // This one lies on a corner.
-                out1 = -3;
-                out2 = result.vertex1;
-                return;
+            {
+                const Vertex& v = mesh_vertices[result.vertex1];
+                if (v.is_corner)
+                {
+                    return {PointLocation::ON_CORNER_VERTEX, -1, -1,
+                            result.vertex1, -1};
+                }
+                else
+                {
+                    return {PointLocation::ON_NON_CORNER_VERTEX,
+                            v.polygons.front(), -1,
+                            result.vertex1, -1};
+                }
+            }
 
             default:
                 // This should not be reachable
@@ -417,17 +418,15 @@ void Mesh::get_point_location(Point& p, int& out1, int& out2,
         }
     }
     // Haven't returned yet, therefore P does not lie on the mesh.
-    out1 = -1;
-    out2 = -1;
-    return;
+    return {PointLocation::NOT_ON_MESH, -1, -1, -1, -1};
 }
 
-void Mesh::get_point_location_naive(Point& p, int& out1, int& out2)
+PointLocation Mesh::get_point_location_naive(Point& p)
 {
     // TODO: Find a better way of doing this without going through every poly.
-    for (int i = 0; i < (int) mesh_polygons.size(); i++)
+    for (int polygon = 0; polygon < (int) mesh_polygons.size(); polygon++)
     {
-        const PolyContainment result = poly_contains_point(i, p);
+        const PolyContainment result = poly_contains_point(polygon, p);
         switch (result.type)
         {
             case PolyContainment::OUTSIDE:
@@ -436,21 +435,35 @@ void Mesh::get_point_location_naive(Point& p, int& out1, int& out2)
 
             case PolyContainment::INSIDE:
                 // This one strictly contains the point.
-                out1 = -2;
-                out2 = i;
-                return;
+                return {PointLocation::IN_POLYGON, polygon, -1, -1, -1};
 
             case PolyContainment::ON_EDGE:
                 // This one lies on the edge.
-                out1 = i;
-                out2 = result.adjacent_poly;
-                return;
+                // Chek whether the other one is -1.
+                return {
+                    (result.adjacent_poly == -1 ?
+                     PointLocation::ON_MESH_BORDER :
+                     PointLocation::ON_EDGE),
+                    polygon, result.adjacent_poly,
+                    result.vertex1, result.vertex2
+                };
 
             case PolyContainment::ON_VERTEX:
                 // This one lies on a corner.
-                out1 = -3;
-                out2 = result.vertex1;
-                return;
+            {
+                const Vertex& v = mesh_vertices[result.vertex1];
+                if (v.is_corner)
+                {
+                    return {PointLocation::ON_CORNER_VERTEX, -1, -1,
+                            result.vertex1, -1};
+                }
+                else
+                {
+                    return {PointLocation::ON_NON_CORNER_VERTEX,
+                            v.polygons.front(), -1,
+                            result.vertex1, -1};
+                }
+            }
 
             default:
                 // This should not be reachable
@@ -458,53 +471,7 @@ void Mesh::get_point_location_naive(Point& p, int& out1, int& out2)
         }
     }
     // Haven't returned yet, therefore P does not lie on the mesh.
-    out1 = -1;
-    out2 = -1;
-    return;
-}
-
-// "Bonus" contains an additional polygon if p lies on an edge.
-int Mesh::get_any_poly_from_point(Point p, int& bonus,
-                                  IntPtr left_vertex, IntPtr right_vertex)
-{
-    int out1, out2;
-    bonus = -1;
-    get_point_location(p, out1, out2, left_vertex, right_vertex);
-    if (out1 == -1)
-    {
-        // P does not lie on the mesh
-        return -1;
-    }
-    else if (out1 == -2)
-    {
-        // Strictly contained.
-        return out2;
-    }
-    else if (out1 == -3)
-    {
-        // Lies on a corner.
-        const Vertex& v = mesh_vertices[out2];
-        if (v.is_corner)
-        {
-            // Possibly ambiguous.
-            // There is a chance that there only has 1 zero in the polygons,
-            // but that's not worth checking. Just return -1.
-            return -1;
-        }
-        else
-        {
-            // It's not a corner, so we can arbirarily choose any polygon.
-            return v.polygons.front();
-        }
-    }
-    else
-    {
-        // Lies on edge.
-        // out1 is guaranteed not to be -1.
-        assert(out1 != -1);
-        bonus = out2;
-        return out1;
-    }
+    return {PointLocation::NOT_ON_MESH, -1, -1, -1, -1};
 }
 
 void Mesh::print(std::ostream& outfile)

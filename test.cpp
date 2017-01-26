@@ -36,23 +36,21 @@ void test_containment(Point test_point)
 
 void benchmark_point_lookup_single(Point test_point)
 {
-    int a, b;
     clock_t t;
     t = clock();
-    m.get_point_location(test_point, a, b);
+    PointLocation pl = m.get_point_location(test_point);
     t = clock() - t;
     cout << "Took " << t << " clock ticks." << endl;
     cout << "That should be " << (t/1.0/CLOCKS_PER_SEC * 1e6)
         << " microseconds." << endl;
     cout << "Point " << test_point << " returns:" << endl;
-    cout << a << " " << b << endl;
+    cout << pl << endl;
     cout << "from get_point_location." << endl;
 }
 
 void benchmark_point_lookup_average()
 {
     clock_t t;
-    int a, b;
     Point p;
     t = clock();
     for (int y = MIN_Y; y <= MAX_Y; y++)
@@ -61,7 +59,7 @@ void benchmark_point_lookup_average()
         {
             p.x = x;
             p.y = y;
-            m.get_point_location(p, a, b);
+            m.get_point_location(p);
         }
     }
     t = clock() - t;
@@ -80,15 +78,14 @@ void test_point_lookup_correct()
         for (int x = MIN_X; x <= MAX_X; x++)
         {
             Point test_point = {(double)x, (double)y};
-            int a, b, naive_a, naive_b;
-            m.get_point_location(test_point, a, b);
-            m.get_point_location_naive(test_point, naive_a, naive_b);
-            if (a != naive_a || b != naive_b)
+            PointLocation pl       = m.get_point_location(test_point),
+                          pl_naive = m.get_point_location_naive(test_point);
+            // Do some checks: continue if it's the same.
+            if (pl != pl_naive)
             {
-                if (a == naive_b && b == naive_a) continue;
                 cout << "Found discrepancy at " << test_point << endl;
-                cout << "Method gives " << a << " " << b << endl;
-                cout << "Naive gives " << naive_a << " " << naive_b << endl;
+                cout << "Method gives " << pl << endl;
+                cout << "Naive gives " << pl_naive << endl;
             }
         }
     }
@@ -150,9 +147,9 @@ int main(int argc, char* argv[])
     cout << "using point " << tp << endl;
     // test_io();
     // test_containment(tp);
-    // test_point_lookup_correct();
+    test_point_lookup_correct();
     benchmark_point_lookup_average();
-    // benchmark_point_lookup_single(tp);
+    benchmark_point_lookup_single(tp);
     test_projection_asserts();
     test_reflection_asserts();
     test_h_value_asserts();

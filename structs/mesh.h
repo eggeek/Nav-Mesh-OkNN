@@ -60,6 +60,132 @@ struct PolyContainment
     }
 };
 
+
+struct PointLocation
+{
+    enum Type
+    {
+        // Does not use any ints.
+        NOT_ON_MESH,
+
+        // Uses poly1 (the polygon it is on).
+        IN_POLYGON,
+
+        // Uses poly1 (the polygon it is on) and both vertices.
+        ON_MESH_BORDER,       // edge: a polygon is not traversable
+
+        // Uses poly1, poly2 and both vertices.
+        ON_EDGE,              // edge: both polygons are traversable
+
+        // Uses vertex1.
+        // Can use poly1 to specify the "grid corrected poly".
+        // Will need to manually assign poly1, though.
+        ON_CORNER_VERTEX,     // vertex; a polygon is not traversable
+
+        // Uses vertex1. Also returns an arbitrary adjacent polygon in poly1.
+        ON_NON_CORNER_VERTEX, // vertex: all polygons are traversable
+    };
+
+    Type type;
+    int poly1, poly2;
+    // If on edge, vertex1/vertex2 represents the left/right vertices of the
+    // edge when looking from a point in poly1.
+    int vertex1, vertex2;
+
+    friend std::ostream& operator<<(std::ostream& stream,
+                                    const PointLocation& pl)
+    {
+        switch (pl.type)
+        {
+            case PointLocation::NOT_ON_MESH:
+                return stream << "NOT_ON_MESH";
+
+            case PointLocation::IN_POLYGON:
+                return stream << "IN_POLYGON (" << pl.poly1 << ")";
+
+            case PointLocation::ON_MESH_BORDER:
+                return stream << "ON_MESH_BORDER (poly " << pl.poly1
+                              << ", vertices " << pl.vertex1 << ", "
+                              << pl.vertex2 << ")";
+
+            case PointLocation::ON_EDGE:
+                return stream << "ON_EDGE (polys "
+                              << pl.poly1 << ", " << pl.poly2 << ", vertices "
+                              << pl.vertex1 << ", " << pl.vertex2 << ")";
+
+            case PointLocation::ON_CORNER_VERTEX:
+                return stream << "ON_CORNER_VERTEX (" << pl.vertex1
+                              << ", poly? " << pl.poly1 << ")";
+
+            case PointLocation::ON_NON_CORNER_VERTEX:
+                return stream << "ON_NON_CORNER_VERTEX (" << pl.vertex1
+                              << ", poly " << pl.poly1 << ")";
+
+            default:
+                assert(false);
+                return stream;
+        }
+    }
+
+    bool operator==(const PointLocation& other) const
+    {
+        if (type != other.type)
+        {
+            return false;
+        }
+
+        switch (type)
+        {
+            case PointLocation::NOT_ON_MESH:
+                return true;
+
+            case PointLocation::IN_POLYGON:
+                return poly1 == other.poly1;
+
+            case PointLocation::ON_MESH_BORDER:
+                if (poly1 != other.poly1)
+                {
+                    return false;
+                }
+                if (vertex1 == other.vertex1 && vertex2 == other.vertex2)
+                {
+                    return true;
+                }
+                if (vertex1 == other.vertex2 && vertex2 == other.vertex1)
+                {
+                    return true;
+                }
+                return false;
+
+            case PointLocation::ON_EDGE:
+                if (poly1 == other.poly1 && poly2 == other.poly2 &&
+                    vertex1 == other.vertex1 && vertex2 == other.vertex2)
+                {
+                    return true;
+                }
+                if (poly1 == other.poly2 && poly2 == other.poly1 &&
+                    vertex1 == other.vertex2 && vertex2 == other.vertex1)
+                {
+                    return true;
+                }
+                return false;
+
+            case PointLocation::ON_CORNER_VERTEX:
+            case PointLocation::ON_NON_CORNER_VERTEX:
+                return vertex1 == other.vertex1;
+
+            default:
+                assert(false);
+                return false;
+        }
+    }
+
+    bool operator!=(const PointLocation& other) const
+    {
+        return !((*this) == other);
+    }
+};
+
 typedef std::shared_ptr<int> IntPtr;
 
 class Mesh
@@ -76,13 +202,8 @@ class Mesh
         void precalc_point_location();
         void print(std::ostream& outfile);
         PolyContainment poly_contains_point(int poly, Point& p);
-        void get_point_location(Point& p, int& out1, int& out2,
-                                IntPtr left_vertex = nullptr,
-                                IntPtr right_vertex = nullptr);
-        void get_point_location_naive(Point& p, int& out1, int& out2);
-        int get_any_poly_from_point(Point p, int& bonus,
-                                    IntPtr left_vertex = nullptr,
-                                    IntPtr right_vertex = nullptr);
+        PointLocation get_point_location(Point& p);
+        PointLocation get_point_location_naive(Point& p);
 
 
     // TODO: "get polygon index from Point"
