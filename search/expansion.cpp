@@ -156,7 +156,7 @@ void get_successors(SearchNode& node, const Point& goal, const Mesh& mesh,
             }
             const Point& left = mesh_vertices[this_vertex].p,
                          right = mesh_vertices[last_vertex].p;
-            successors.push_back({SuccessorType::OBSERVABLE, left, right, i});
+            successors.push_back({Successor::OBSERVABLE, left, right, i});
             last_vertex = this_vertex;
         }
         return;
@@ -321,7 +321,7 @@ void get_successors(SearchNode& node, const Point& goal, const Mesh& mesh,
             {
                 // Generate last-cur, turning at LAST.
                 successors.push_back({
-                    SuccessorType::RIGHT_COLLINEAR,
+                    Successor::RIGHT_COLLINEAR,
                     index2point(cur_ind), index2point(last_ind),
                     cur_ind
                 });
@@ -335,7 +335,7 @@ void get_successors(SearchNode& node, const Point& goal, const Mesh& mesh,
             {
                 // Generate last-cur, turning at right.
                 successors.push_back({
-                    SuccessorType::RIGHT_NON_OBSERVABLE,
+                    Successor::RIGHT_NON_OBSERVABLE,
                     index2point(cur_ind), index2point(last_ind),
                     cur_ind
                 });
@@ -349,7 +349,7 @@ void get_successors(SearchNode& node, const Point& goal, const Mesh& mesh,
             {
                 // Generate Am1-right_intersect, turning at right.
                 successors.push_back({
-                    SuccessorType::RIGHT_NON_OBSERVABLE,
+                    Successor::RIGHT_NON_OBSERVABLE,
                     right_intersect, Am1_p,
                     normalised_A
                 });
@@ -369,7 +369,7 @@ void get_successors(SearchNode& node, const Point& goal, const Mesh& mesh,
     {
         assert(normalised_A == normalised_Bp1);
         successors.push_back({
-            SuccessorType::OBSERVABLE,
+            Successor::OBSERVABLE,
             left_intersect, right_intersect,
             normalised_A // (the same as normalised_Bp1)
         });
@@ -379,7 +379,7 @@ void get_successors(SearchNode& node, const Point& goal, const Mesh& mesh,
         // Generate first (probably non-maximal) successor
         // (right_intersect-A)
         successors.push_back({
-            SuccessorType::OBSERVABLE,
+            Successor::OBSERVABLE,
             A_p, right_intersect,
             normalised_A
         });
@@ -401,7 +401,7 @@ void get_successors(SearchNode& node, const Point& goal, const Mesh& mesh,
 
             // Generate last-cur.
             successors.push_back({
-                SuccessorType::OBSERVABLE,
+                Successor::OBSERVABLE,
                 index2point(cur_ind), index2point(last_ind),
                 cur_ind
             });
@@ -416,7 +416,7 @@ void get_successors(SearchNode& node, const Point& goal, const Mesh& mesh,
         // Generate last (probably non-maximal) successor
         // (B-left_intersect)
         successors.push_back({
-            SuccessorType::OBSERVABLE,
+            Successor::OBSERVABLE,
             left_intersect, B_p,
             normalised_Bp1
         });
@@ -455,7 +455,7 @@ void get_successors(SearchNode& node, const Point& goal, const Mesh& mesh,
             {
                 // Generate left_intersect-Bp1, turning at left.
                 successors.push_back({
-                    SuccessorType::LEFT_NON_OBSERVABLE,
+                    Successor::LEFT_NON_OBSERVABLE,
                     Bp1_p, left_intersect,
                     normalised_Bp1
                 });
@@ -468,7 +468,7 @@ void get_successors(SearchNode& node, const Point& goal, const Mesh& mesh,
             {
                 // Generate last_ind-cur_ind, turning at left.
                 successors.push_back({
-                    SuccessorType::LEFT_NON_OBSERVABLE,
+                    Successor::LEFT_NON_OBSERVABLE,
                     index2point(cur_ind), index2point(last_ind),
                     cur_ind
                 });
@@ -481,7 +481,7 @@ void get_successors(SearchNode& node, const Point& goal, const Mesh& mesh,
             {
                 // Generate last-cur, turning at CUR.
                 successors.push_back({
-                    SuccessorType::LEFT_COLLINEAR,
+                    Successor::LEFT_COLLINEAR,
                     index2point(cur_ind), index2point(last_ind),
                     cur_ind
                 });

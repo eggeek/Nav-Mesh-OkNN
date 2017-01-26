@@ -4,21 +4,18 @@
 namespace polyanya
 {
 
-// A search node.
-// Only makes sense given a mesh and an endpoint, which the node does not store.
-// This means that the f value needs to be set manually.
-enum struct SuccessorType
-{
-    RIGHT_COLLINEAR,
-    RIGHT_NON_OBSERVABLE,
-    OBSERVABLE,
-    LEFT_NON_OBSERVABLE,
-    LEFT_COLLINEAR,
-};
-
 struct Successor
 {
-    SuccessorType type;
+    enum Type
+    {
+        RIGHT_COLLINEAR,
+        RIGHT_NON_OBSERVABLE,
+        OBSERVABLE,
+        LEFT_NON_OBSERVABLE,
+        LEFT_COLLINEAR,
+    };
+
+    Type type;
 
     Point left, right;
 
