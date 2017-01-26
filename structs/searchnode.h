@@ -1,5 +1,6 @@
 #pragma once
 #include "point.h"
+#include <memory>
 
 namespace polyanya
 {
@@ -9,7 +10,7 @@ namespace polyanya
 // This means that the f value needs to be set manually.
 struct SearchNode
 {
-    SearchNode* parent;
+    std::shared_ptr<SearchNode> parent;
     // Note that all Points here will be in terms of a Cartesian plane.
     Point root;
 
@@ -49,5 +50,7 @@ struct SearchNode
         return this->g > other.g;
     }
 };
+
+typedef std::shared_ptr<SearchNode> SearchNodePtr;
 
 }
