@@ -193,7 +193,7 @@ void Mesh::precalc_point_location()
 {
     for (Vertex& v : mesh_vertices)
     {
-        slabs[v.p.x] = new std::vector<int>;
+        slabs[v.p.x] = std::vector<int>(0); // initialises the vector
     }
     for (int i = 0; i < (int) mesh_polygons.size(); i++)
     {
@@ -203,13 +203,12 @@ void Mesh::precalc_point_location()
 
         for (auto it = low_it; it != high_it; it++)
         {
-            it->second->push_back(i);
+            it->second.push_back(i);
         }
     }
-    for (auto pair : slabs)
+    for (auto& pair : slabs)
     {
-        const auto vec_ref = pair.second;
-        std::sort(vec_ref->begin(), vec_ref->end(),
+        std::sort(pair.second.begin(), pair.second.end(),
             [&](const int& a, const int& b) -> bool
             {
                 // Sorts based on the midpoints.
@@ -329,8 +328,8 @@ void Mesh::get_point_location(Point& p, int& out1, int& out2,
         return;
     }
     slab--;
-    const std::vector<int>* polys = slab->second;
-    const auto close_it = std::lower_bound(polys->begin(), polys->end(), p.y,
+    const std::vector<int>& polys = slab->second;
+    const auto close_it = std::lower_bound(polys.begin(), polys.end(), p.y,
         [&](const int& poly_index, const double& y_coord) -> bool
         {
             // Sorts based on the midpoints.
@@ -339,19 +338,19 @@ void Mesh::get_point_location(Point& p, int& out1, int& out2,
             return poly.min_y + poly.max_y < y_coord * 2;
         }
     );
-    const int close_index = close_it - polys->begin()
-                            - (close_it == polys->end());
+    const int close_index = close_it - polys.begin()
+                            - (close_it == polys.end());
     // The plan is to take an index and repeatedly do:
     // +1, -2, +3, -4, +5, -6, +7, -8, ...
     // until it hits the edge. If it hits an edge, instead iterate normally.
-    const int ps = polys->size();
+    const int ps = polys.size();
     int i = close_index;
     int next_delta = 1;
     int walk_delta = 0; // way to go when walking normally
 
     while (i >= 0 && i < ps)
     {
-        const int polygon = (*polys)[i];
+        const int polygon = polys[i];
         const PolyContainment result = poly_contains_point(polygon, p);
         switch (result.type)
         {
