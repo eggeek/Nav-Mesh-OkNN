@@ -186,8 +186,6 @@ struct PointLocation
     }
 };
 
-typedef std::shared_ptr<int> IntPtr;
-
 class Mesh
 {
     public:
