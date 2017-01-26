@@ -4,6 +4,7 @@
 #include <vector>
 #include <iostream>
 #include <map>
+#include <memory>
 
 namespace polyanya
 {
@@ -22,6 +23,8 @@ inline std::ostream& operator<<(std::ostream& stream, const PolyContainment& pc)
     return stream << lookup[static_cast<int>(pc)];
 }
 
+typedef std::shared_ptr<int> IntPtr;
+
 class Mesh
 {
     public:
@@ -36,10 +39,16 @@ class Mesh
         void precalc_point_location();
         void print(std::ostream& outfile);
         PolyContainment poly_contains_point(int poly, Point& p,
-                                            int& special_index);
-        void get_point_location(Point& p, int& out1, int& out2);
+                                            int& special_index,
+                                            IntPtr left_vertex = nullptr,
+                                            IntPtr right_vertex = nullptr);
+        void get_point_location(Point& p, int& out1, int& out2,
+                                IntPtr left_vertex = nullptr,
+                                IntPtr right_vertex = nullptr);
         void get_point_location_naive(Point& p, int& out1, int& out2);
-        int get_any_poly_from_point(Point p);
+        int get_any_poly_from_point(Point p, int& bonus,
+                                    IntPtr left_vertex = nullptr,
+                                    IntPtr right_vertex = nullptr);
 
 
     // TODO: "get polygon index from Point"
