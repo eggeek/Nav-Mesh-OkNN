@@ -201,7 +201,7 @@ void SearchInstance::gen_initial_nodes()
     const PointLocation pl = get_point_location(start);
     const double h = start.distance(goal);
     #define get_lazy(next, right) SearchNodePtr( \
-        new SearchNode{nullptr, start, start, start, next, right, h, 0})
+        new SearchNode{nullptr, start, start, start, right, next, h, 0})
     switch (pl.type)
     {
         // Don't bother.
