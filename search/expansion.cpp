@@ -229,7 +229,7 @@ void get_successors(SearchNode& node, const Mesh& mesh,
         assert(denom != 0.0);
         assert(root_right_num / denom >= 1 - EPSILON);
         // possibility that t = 0 for segment. if so, use A-1
-        if (segment_num < EPSILON)
+        if (std::abs(segment_num) < EPSILON)
         {
             return Am1_p;
         }
@@ -265,7 +265,7 @@ void get_successors(SearchNode& node, const Mesh& mesh,
         assert(denom != 0.0);
         assert(root_left_num / denom >= 1 - EPSILON);
         // possibility that t = 0 for segment. if so, use B+1
-        if (segment_num < EPSILON)
+        if (std::abs(segment_num) < EPSILON)
         {
             return Bp1_p;
         }
