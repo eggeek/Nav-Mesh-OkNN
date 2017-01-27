@@ -30,8 +30,6 @@ PointLocation SearchInstance::get_point_location(Point p)
         {
             case PointLocation::ON_CORNER_VERTEX:
             case PointLocation::ON_NON_CORNER_VERTEX:
-                std::cerr << "Warning: corrected " << p << "lies on a vertex"
-                          << std::endl;
             case PointLocation::NOT_ON_MESH:
             {
                 // Iterate over the polys of the vertex to see whether there's
