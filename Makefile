@@ -9,7 +9,7 @@ CXXFLAGS = -std=c++11 -pedantic -Wall -Wno-strict-aliasing -Wno-long-long -Wno-d
 FAST_CXXFLAGS = -O3 -DNDEBUG
 DEV_CXXFLAGS = -g -ggdb -O0
 
-TARGETS = test
+TARGETS = test scenariorunner
 BIN_TARGETS = $(addprefix bin/,$(TARGETS))
 
 all: $(TARGETS)
