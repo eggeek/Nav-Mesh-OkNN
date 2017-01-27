@@ -489,4 +489,31 @@ void Mesh::print(std::ostream& outfile)
     }
 }
 
+void Mesh::print_polygon(std::ostream& outfile, int index)
+{
+    if (index == -1)
+    {
+        outfile << "P!!!";
+        return;
+    }
+    outfile << "P" << index << " [";
+    Polygon& poly = mesh_polygons[index];
+    const auto vertices = poly.vertices;
+    const int size = (int) vertices.size();
+    for (int i = 0; i < size; i++)
+    {
+        print_vertex(outfile, vertices[i]);
+        if (i != size - 1)
+        {
+            outfile << ", ";
+        }
+    }
+    outfile << "]";
+}
+
+void Mesh::print_vertex(std::ostream& outfile, int index)
+{
+    outfile << "V" << index << " " <<  mesh_vertices[index].p;
+}
+
 }

@@ -49,6 +49,12 @@ struct SearchNode
         }
         return this->g > other.g;
     }
+
+    friend std::ostream& operator<<(std::ostream& stream, const SearchNode& sn)
+    {
+        return stream << "SearchNode [" << sn.root << ", [" << sn.left << ", "
+                      << sn.right << "]]";
+    }
 };
 
 typedef std::shared_ptr<SearchNode> SearchNodePtr;

@@ -203,6 +203,9 @@ class Mesh
         PointLocation get_point_location(Point& p);
         PointLocation get_point_location_naive(Point& p);
 
+        void print_polygon(std::ostream& outfile, int index);
+        void print_vertex(std::ostream& outfile, int index);
+
 };
 
 }
