@@ -14,6 +14,8 @@ using namespace polyanya;
 
 SearchInstance search;
 
+bool get_path = true;
+
 void print_header()
 {
     cout << "index;length;gridcost" << endl;
@@ -23,9 +25,30 @@ void run_scenario(int index, Scenario scen)
 {
     search.set_start_goal(scen.start, scen.goal);
     search.search();
-    double final_cost = search.get_cost();
-    cout << setprecision(10) << fixed;
-    cout << index << ";" << final_cost << ";" << scen.gridcost << endl;
+    if (get_path)
+    {
+        vector<Point> path;
+        search.get_path(path);
+        const int n = (int) path.size();
+        for (int i = 0; i < n; i++)
+        {
+            cout << path[i];
+            if (i != n-1)
+            {
+                cout << " ";
+            }
+            else
+            {
+                cout << endl;
+            }
+        }
+    }
+    else
+    {
+        double final_cost = search.get_cost();
+        cout << setprecision(10) << fixed;
+        cout << index << ";" << final_cost << ";" << scen.gridcost << endl;
+    }
 }
 
 int main(int argc, char* argv[])
@@ -59,7 +82,10 @@ int main(int argc, char* argv[])
     load_scenarios(scenfile, scenarios);
     scenfile.close();
 
-    print_header();
+    if (!get_path)
+    {
+        print_header();
+    }
     for (int i = 0; i < (int) scenarios.size(); i++)
     {
         run_scenario(i, scenarios[i]);

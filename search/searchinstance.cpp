@@ -10,6 +10,7 @@
 #include <vector>
 #include <cassert>
 #include <iostream>
+#include <algorithm>
 
 namespace polyanya
 {
@@ -291,6 +292,26 @@ bool SearchInstance::search()
     }
 
     return false;
+}
+
+void SearchInstance::get_path(std::vector<Point>& out)
+{
+    if (final_node == nullptr)
+    {
+        return;
+    }
+    out.clear();
+    out.push_back(goal);
+    SearchNodePtr cur_node = final_node;
+    while (cur_node != nullptr)
+    {
+        if (cur_node->root != out.back())
+        {
+            out.push_back(cur_node->root);
+        }
+        cur_node = cur_node->parent;
+    }
+    std::reverse(out.begin(), out.end());
 }
 
 }
