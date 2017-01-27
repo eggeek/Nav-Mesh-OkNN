@@ -260,7 +260,7 @@ void get_successors(SearchNode& node, const Mesh& mesh,
     const Point left_intersect = [&]() -> Point
     {
         double root_left_num, segment_num, denom;
-        line_intersect_time(node.root, right_p, Bp1_p, B_p,
+        line_intersect_time(node.root, left_p, Bp1_p, B_p,
                             root_left_num, segment_num, denom);
         assert(denom != 0.0);
         assert(root_left_num / denom >= 1 - EPSILON);
