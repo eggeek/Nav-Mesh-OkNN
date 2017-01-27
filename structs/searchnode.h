@@ -38,7 +38,7 @@ struct SearchNode
             // is "smaller" to us.
             return this->g > other.g;
         }
-        return this->g < other.g;
+        return this->f < other.f;
     }
 
     bool operator>(const SearchNode& other) const
@@ -47,7 +47,7 @@ struct SearchNode
         {
             return this->g < other.g;
         }
-        return this->g > other.g;
+        return this->f > other.f;
     }
 
     friend std::ostream& operator<<(std::ostream& stream, const SearchNode& sn)
