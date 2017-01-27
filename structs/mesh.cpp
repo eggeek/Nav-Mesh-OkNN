@@ -303,12 +303,6 @@ PolyContainment Mesh::poly_contains_point(int poly, Point& p)
 }
 
 // Finds where the point P lies in the mesh.
-// Returns:
-//   (-1, -1) if P does not lie on the mesh.
-//   (-2, a)  if P is strictly contained within polygon a
-//   (a, b)   if P lies on the edge of polygons a and b.
-//            Note that b can be -1 (if P lies on border of mesh).
-//   (-3, c)  if P lies on a corner c.
 PointLocation Mesh::get_point_location(Point& p)
 {
     // TODO: Find a better way of doing this without going through every poly.

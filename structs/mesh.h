@@ -203,8 +203,6 @@ class Mesh
         PointLocation get_point_location(Point& p);
         PointLocation get_point_location_naive(Point& p);
 
-
-    // TODO: "get polygon index from Point"
 };
 
 }
