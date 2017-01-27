@@ -207,11 +207,11 @@ void get_successors(SearchNode& node, const Mesh& mesh,
     // upper bound is left.
     // the "transition" will lie in the range [A-1, A)
 
-    const Point root_right = right_p - node.root;
+    const Point root_right = node.right - node.root;
     const int A = binary_search(V, N, mesh_vertices, right_ind + 1, left_ind,
-        [&root_right, &right_p](const Vertex& v)
+        [&root_right, &node](const Vertex& v)
         {
-            return root_right * (v.p - right_p) > EPSILON; // STRICTLY CCW.
+            return root_right * (v.p - node.right) > EPSILON; // STRICTLY CCW.
         }, false
     );
     assert(A != -1);
@@ -227,7 +227,7 @@ void get_successors(SearchNode& node, const Mesh& mesh,
     const Point right_intersect = [&]() -> Point
     {
         double root_right_num, segment_num, denom;
-        line_intersect_time(node.root, right_p, Am1_p, A_p,
+        line_intersect_time(node.root, node.right, Am1_p, A_p,
                             root_right_num, segment_num, denom);
         assert(denom != 0.0);
         assert(root_right_num / denom >= 1 - EPSILON);
@@ -248,11 +248,11 @@ void get_successors(SearchNode& node, const Mesh& mesh,
     // lower-bound is A - 1 (in the same segment as A).
     // upper bound is left.
     // the "transition" will lie in the range (B, B+1]
-    const Point root_left = left_p - node.root;
+    const Point root_left = node.left - node.root;
     const int B = binary_search(V, N, mesh_vertices, A - 1, left_ind,
-        [&root_left, &left_p](const Vertex& v)
+        [&root_left, &node](const Vertex& v)
         {
-            return root_left * (v.p - left_p) < -EPSILON; // STRICTLY CW.
+            return root_left * (v.p - node.left) < -EPSILON; // STRICTLY CW.
         }, true
     );
     assert(B != -1);
@@ -263,7 +263,7 @@ void get_successors(SearchNode& node, const Mesh& mesh,
     const Point left_intersect = [&]() -> Point
     {
         double root_left_num, segment_num, denom;
-        line_intersect_time(node.root, left_p, Bp1_p, B_p,
+        line_intersect_time(node.root, node.left, Bp1_p, B_p,
                             root_left_num, segment_num, denom);
         assert(denom != 0.0);
         assert(root_left_num / denom >= 1 - EPSILON);
