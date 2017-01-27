@@ -7,6 +7,7 @@
 #include <fstream>
 #include <string>
 #include <vector>
+#include <iomanip>
 
 using namespace std;
 using namespace polyanya;
@@ -23,6 +24,7 @@ void run_scenario(int index, Scenario scen)
     search.set_start_goal(scen.start, scen.goal);
     search.search();
     double final_cost = search.get_cost();
+    cout << setprecision(10) << fixed;
     cout << index << ";" << final_cost << ";" << scen.gridcost << endl;
 }
 
