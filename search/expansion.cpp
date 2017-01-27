@@ -162,6 +162,9 @@ void get_successors(SearchNode& node, const Mesh& mesh,
         return;
     }
 
+    assert(get_orientation(node.root, node.left, node.right) ==
+           Orientation::CW);
+
     // It is not collinear.
     // Find the starting vertex (the "right" vertex).
 
