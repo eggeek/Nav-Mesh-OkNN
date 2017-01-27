@@ -42,7 +42,7 @@ PointLocation SearchInstance::get_point_location(Point p)
                 {
                     if (poly != -1)
                     {
-                        if (set_poly1 != -1)
+                        if (set_poly1 == -1)
                         {
                             set_poly1 = poly;
                         }
