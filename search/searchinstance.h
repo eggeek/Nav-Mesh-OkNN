@@ -69,7 +69,8 @@ class SearchInstance
 
             return final_node->f;
         }
-        void get_path(std::vector<Point>& out);
+        void get_path_points(std::vector<Point>& out);
+        void print_search_nodes(std::ostream& outfile);
 
 };
 

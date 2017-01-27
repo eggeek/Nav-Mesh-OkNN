@@ -294,7 +294,7 @@ bool SearchInstance::search()
     return false;
 }
 
-void SearchInstance::get_path(std::vector<Point>& out)
+void SearchInstance::get_path_points(std::vector<Point>& out)
 {
     if (final_node == nullptr)
     {
@@ -312,6 +312,22 @@ void SearchInstance::get_path(std::vector<Point>& out)
         cur_node = cur_node->parent;
     }
     std::reverse(out.begin(), out.end());
+}
+
+void SearchInstance::print_search_nodes(std::ostream& outfile)
+{
+    if (final_node == nullptr)
+    {
+        return;
+    }
+    SearchNodePtr cur_node = final_node;
+    while (cur_node != nullptr)
+    {
+        outfile << *cur_node << std::endl;
+        mesh->print_polygon(outfile, cur_node->next_polygon);
+        outfile << std::endl;
+        cur_node = cur_node->parent;
+    }
 }
 
 }

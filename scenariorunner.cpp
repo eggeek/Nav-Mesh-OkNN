@@ -28,7 +28,7 @@ void run_scenario(int index, Scenario scen)
     if (get_path)
     {
         vector<Point> path;
-        search.get_path(path);
+        search.get_path_points(path);
         const int n = (int) path.size();
         for (int i = 0; i < n; i++)
         {
