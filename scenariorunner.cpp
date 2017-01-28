@@ -14,7 +14,7 @@ using namespace polyanya;
 
 SearchInstance search;
 
-bool get_path = true;
+bool get_path = false;
 
 void print_header()
 {
