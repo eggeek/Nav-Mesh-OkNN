@@ -37,7 +37,7 @@ weight of 0.
 #define FORMAT_VERSION 1
 
 const bool HAS_OUTSIDE = false;
-const bool DEBUG = true;
+const bool DEBUG = false;
 
 typedef std::vector<bool> vbool;
 typedef std::vector<int> vint;
@@ -80,6 +80,8 @@ struct search_node
 const int DX[] = {-1, 1, 0, 0};
 const int DY[] = {0, 0, -1, 1};
 
+const int DIAG_X[] = {-1, -1, 1, 1};
+const int DIAG_Y[] = {1, -1, 1, -1};
 
 // Globals
 // From the map
@@ -265,6 +267,39 @@ void get_id_and_elevation()
         polygon_id[y][x] = c.id;
 
         // Go through all neighbours.
+        if (map_traversable[y][x])
+        {
+            for (int i = 0; i < 4; i++)
+            {
+                const int next_x = x + DIAG_X[i], next_y = y + DIAG_Y[i];
+                if (next_x < 0 || next_x >= map_width ||
+                    next_y < 0 || next_y >= map_height)
+                {
+                    continue;
+                }
+
+
+                if (polygon_id[next_y][next_x] != -1)
+                {
+                    // Already seen before, skip.
+                    // Checking this here is optional, but speeds up run time.
+                    continue;
+                }
+
+
+                if (map_traversable[y][x] == map_traversable[next_y][next_x])
+                {
+                    // same elevation, same id
+                    open_list.push({c.elevation, c.id, {next_x, next_y}});
+                }
+                else
+                {
+                    // new elevation, new id
+                    // may have been traversed before but that case is handled above
+                    open_list.push({c.elevation + 1, -1, {next_x, next_y}});
+                }
+            }
+        }
         for (int i = 0; i < 4; i++)
         {
             const int next_x = x + DX[i], next_y = y + DY[i];
@@ -408,35 +443,115 @@ void generate_polygons()
         vpoint *cur_neighbours = &id_to_neighbours[last.second][last.first][id];
         if (DEBUG) cout << "last x = " << last.first << ", y = " << last.second
             << endl << cur_neighbours->size() << endl;
-        vpoint *cur_poly = &id_to_polygon[id];
-        assert(cur_neighbours->size() == 2);
+        // vpoint *cur_poly = &id_to_polygon[id];
+
+        point first_last = {-100, -100};
+
+        assert(cur_neighbours->size() == 2 || cur_neighbours->size() == 4);
         // We now start going an arbitrary direction.
         // To do this, we need to keep track of our "last" point.
         point cur = cur_neighbours->at(0);
 
+        map<point, size_t> p_size;
+
         // Now we keep going, adding corners until we go on the first corner.
         // We know we've reached a corner when the neighbours' x AND y values
         // are different.
-        while (cur_poly->empty() || cur != cur_poly->at(0))
+        while (id_to_polygon[id].empty() || cur != id_to_polygon[id].front() || last != first_last)
         {
+            assert(abs(cur.first - last.first) == 1 || abs(cur.second - last.second) == 1);
             cur_neighbours = &id_to_neighbours[cur.second][cur.first][id];
             if (DEBUG) cout << "cur x = " << cur.first << ", y = " << cur.second
                 << endl << cur_neighbours->size() << endl;
-            assert(cur_neighbours->size() == 2);
-            if (cur_neighbours->at(0).first != cur_neighbours->at(1).first &&
-                cur_neighbours->at(0).second != cur_neighbours->at(1).second)
-            {
-                cur_poly->push_back(cur);
-            }
+            assert(cur_neighbours->size() == 2 || cur_neighbours->size() == 4);
             const point temp = cur;
-            if (cur_neighbours->at(0) == last)
+
+            if (cur_neighbours->size() == 4)
             {
-                cur = cur_neighbours->at(1);
+                if (id_to_polygon[id].empty())
+                {
+                    first_last = last;
+                }
+                id_to_polygon[id].push_back(cur);
+                if (p_size.count(cur) != 0)
+                {
+                    vpoint cut_off(id_to_polygon[id].begin() + p_size[cur], id_to_polygon[id].end());
+                    id_to_polygon.push_back(cut_off);
+                    id_to_polygon[id].resize(p_size[cur]);
+                }
+                else
+                {
+                    p_size[cur] = id_to_polygon[id].size();
+                }
+                // As we're walking around an obstacle, all we need to check is
+                // "this" one.
+                if ((polygon_id[cur.second][cur.first] == id) == (id_to_elevation[id] % 2 == 1))
+                {
+                    // It goes like:
+                    // .@
+                    // @.
+                    // If we came from the right, go up, and vice versa.
+                    // If we came from the left, go down, and vice versa.
+
+                    // Coming from the left/right.
+                    if (cur.first != last.first)
+                    {
+                        // If cur.first - last.first is positive, we came from
+                        // left. Then go down (add).
+                        // Also works for right/up.
+                        cur.second += (cur.first - last.first);
+                    }
+                    else
+                    {
+                        // If cur.second - last.second is positive, we came from
+                        // up. Go right (add).
+                        cur.first += (cur.second - last.second);
+                    }
+                }
+                else
+                {
+                    // It goes like:
+                    // @.
+                    // .@
+                    // If we came from the right, go down, and vice versa.
+                    // If we came from the left, go up, and vice versa.
+                    // Coming from the left/right.
+                    if (cur.first != last.first)
+                    {
+                        // If cur.first - last.first is positive, we came from
+                        // left. Then go up (subtract).
+                        // Also works for right/down.
+                        cur.second -= (cur.first - last.first);
+                    }
+                    else
+                    {
+                        // If cur.second - last.second is positive, we came from
+                        // up. Go left (subtract).
+                        cur.first -= (cur.second - last.second);
+                    }
+                }
             }
             else
             {
-                cur = cur_neighbours->at(0);
+                if (cur_neighbours->at(0).first != cur_neighbours->at(1).first &&
+                    cur_neighbours->at(0).second != cur_neighbours->at(1).second)
+                {
+                    if (id_to_polygon[id].empty())
+                    {
+                        first_last = last;
+                    }
+                    id_to_polygon[id].push_back(cur);
+                }
+                if (cur_neighbours->at(0) == last)
+                {
+                    cur = cur_neighbours->at(1);
+                }
+                else
+                {
+                    cur = cur_neighbours->at(0);
+                }
             }
+
             last = temp;
         }
     }
@@ -458,6 +573,7 @@ void print_polymap()
             num_polys++;
         }
     }
+    num_polys += ((int) id_to_polygon.size()) - next_id;
 
     std::cout << num_polys << std::endl;
 
@@ -486,7 +602,7 @@ void print_polymap()
     }
 
     // Print the polygons.
-    for (int id = 0; id < next_id; id++)
+    for (size_t id = 0; id < id_to_polygon.size(); id++)
     {
         const vpoint& points = id_to_polygon[id];
         const size_t m = points.size();
