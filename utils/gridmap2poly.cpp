@@ -37,6 +37,7 @@ weight of 0.
 #define FORMAT_VERSION 1
 
 const bool HAS_OUTSIDE = false;
+const bool DEBUG = true;
 
 typedef std::vector<bool> vbool;
 typedef std::vector<int> vint;
@@ -369,11 +370,13 @@ void make_edges()
 
 void generate_polygons()
 {
+    using namespace std;
     // Don't forget to initialise id_to_polygon!
     id_to_polygon = std::vector<vpoint>(next_id);
     // For each ID...
     for (int id = 0; id < next_id; id++)
     {
+        if (DEBUG) cout << "this id = " << id << endl;
         // we first want to check whether the elevation is zero.
         if (id_to_elevation[id] == 0)
         {
@@ -403,6 +406,8 @@ void generate_polygons()
         assert(false);
         found_point:
         vpoint *cur_neighbours = &id_to_neighbours[last.second][last.first][id];
+        if (DEBUG) cout << "last x = " << last.first << ", y = " << last.second
+            << endl << cur_neighbours->size() << endl;
         vpoint *cur_poly = &id_to_polygon[id];
         assert(cur_neighbours->size() == 2);
         // We now start going an arbitrary direction.
@@ -414,8 +419,9 @@ void generate_polygons()
         // are different.
         while (cur_poly->empty() || cur != cur_poly->at(0))
         {
-            using namespace std;
             cur_neighbours = &id_to_neighbours[cur.second][cur.first][id];
+            if (DEBUG) cout << "cur x = " << cur.first << ", y = " << cur.second
+                << endl << cur_neighbours->size() << endl;
             assert(cur_neighbours->size() == 2);
             if (cur_neighbours->at(0).first != cur_neighbours->at(1).first &&
                 cur_neighbours->at(0).second != cur_neighbours->at(1).second)
@@ -566,6 +572,12 @@ int main()
     read_map();
     get_id_and_elevation();
     make_edges();
+    if (DEBUG)
+    {
+        print_elevation();
+        std::cout << std::endl;
+        print_ids();
+    }
     generate_polygons();
     print_polymap();
 
