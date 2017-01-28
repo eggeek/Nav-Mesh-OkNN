@@ -113,10 +113,12 @@ Zone2* create_traversable_zone(istream& infile, Fade_2D &dt)
 
     // TODO: Merge the two for loops together
     vector<Zone2*> zones;
+    zones.push_back(dt.createZone(nullptr, ZL_GLOBAL));
     for (auto x : *cgs)
     {
         zones.push_back(dt.createZone(x, ZL_INSIDE));
     }
+    zones.push_back(dt.createZone(nullptr, ZL_GLOBAL));
     assert(!zones.empty());
 
     Zone2* traversable = zones.front();
