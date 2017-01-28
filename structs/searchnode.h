@@ -52,8 +52,8 @@ struct SearchNode
 
     friend std::ostream& operator<<(std::ostream& stream, const SearchNode& sn)
     {
-        return stream << "SearchNode [" << sn.root << ", [" << sn.left << ", "
-                      << sn.right << "]]";
+        return stream << "SearchNode ([" << sn.root << ", [" << sn.left << ", "
+                      << sn.right << "]], f=" << sn.f << ", g=" << sn.g << ")";
     }
 };
 
