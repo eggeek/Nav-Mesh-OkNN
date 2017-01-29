@@ -213,6 +213,12 @@ void SearchInstance::gen_initial_nodes()
                 {
                     continue;
                 }
+                if (poly == end_polygon)
+                {
+                    // Trivial case - we can see the goal from start!
+                    final_node = dummy_init;
+                    return;
+                }
                 std::vector<Successor> successors;
                 // iterate over poly, throwing away vertices if one of them is
                 // pl.vertex1
@@ -252,6 +258,11 @@ bool SearchInstance::search()
     if (mesh == nullptr || end_polygon == -1)
     {
         return false;
+    }
+
+    if (final_node != nullptr)
+    {
+        return true;
     }
 
     while (!open_list.empty())

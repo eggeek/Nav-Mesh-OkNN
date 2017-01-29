@@ -36,6 +36,7 @@ class SearchInstance
         void init_search()
         {
             open_list = pq();
+            final_node = nullptr;
             set_end_polygon();
             gen_initial_nodes();
         }
