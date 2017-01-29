@@ -226,8 +226,8 @@ void SearchInstance::gen_initial_nodes()
 
         case PointLocation::ON_EDGE:
             // Generate all in both polygons except for the shared side.
-            open_list.push(get_lazy(pl.poly1, pl.vertex2, pl.vertex1));
             open_list.push(get_lazy(pl.poly2, pl.vertex1, pl.vertex2));
+            open_list.push(get_lazy(pl.poly1, pl.vertex2, pl.vertex1));
             break;
 
 
