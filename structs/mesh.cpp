@@ -66,6 +66,7 @@ void Mesh::read(std::istream& infile)
     {
         Vertex& v = mesh_vertices[i];
         v.is_corner = false;
+        v.is_ambig = false;
         if (!(infile >> v.p.x >> v.p.y))
         {
             fail("Error getting vertex point");
@@ -95,9 +96,19 @@ void Mesh::read(std::istream& infile)
                 fail("Invalid polygon index when getting vertex");
             }
             v.polygons[j] = polygon_index;
-            if ((!v.is_corner) && (polygon_index != -1))
+            if (polygon_index == -1)
             {
-                v.is_corner = true;
+                if (v.is_corner)
+                {
+                    if (!v.is_ambig)
+                    {
+                        v.is_ambig = true;
+                    }
+                }
+                else
+                {
+                    v.is_corner = true;
+                }
             }
         }
     }
@@ -368,8 +379,19 @@ PointLocation Mesh::get_point_location(Point& p)
                 const Vertex& v = mesh_vertices[result.vertex1];
                 if (v.is_corner)
                 {
-                    return {PointLocation::ON_CORNER_VERTEX, -1, -1,
-                            result.vertex1, -1};
+                    if (v.is_ambig)
+                    {
+                        return {PointLocation::ON_CORNER_VERTEX_AMBIG, -1, -1,
+                                result.vertex1, -1};
+                    }
+                    else
+                    {
+                        const auto& polys = v.polygons;
+                        const int poly = (polys.front() == -1 ?
+                                          polys.back() : polys.front());
+                        return {PointLocation::ON_CORNER_VERTEX_UNAMBIG,
+                                poly, -1, result.vertex1, -1};
+                    }
                 }
                 else
                 {
@@ -448,8 +470,19 @@ PointLocation Mesh::get_point_location_naive(Point& p)
                 const Vertex& v = mesh_vertices[result.vertex1];
                 if (v.is_corner)
                 {
-                    return {PointLocation::ON_CORNER_VERTEX, -1, -1,
-                            result.vertex1, -1};
+                    if (v.is_ambig)
+                    {
+                        return {PointLocation::ON_CORNER_VERTEX_AMBIG, -1, -1,
+                                result.vertex1, -1};
+                    }
+                    else
+                    {
+                        const auto& polys = v.polygons;
+                        const int poly = (polys.front() == -1 ?
+                                          polys.back() : polys.front());
+                        return {PointLocation::ON_CORNER_VERTEX_UNAMBIG,
+                                poly, -1, result.vertex1, -1};
+                    }
                 }
                 else
                 {

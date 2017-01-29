@@ -80,7 +80,11 @@ struct PointLocation
         // Uses vertex1.
         // Can use poly1 to specify the "grid corrected poly".
         // Will need to manually assign poly1, though.
-        ON_CORNER_VERTEX,     // vertex; a polygon is not traversable
+        ON_CORNER_VERTEX_AMBIG,   // vertex; two+ polygons are not traversable
+
+        // Uses vertex1. Also returns an arbirary traversable adjacent
+        // polygon in poly1.
+        ON_CORNER_VERTEX_UNAMBIG, // vertex; one polygon is not traversable
 
         // Uses vertex1. Also returns an arbitrary adjacent polygon in poly1.
         ON_NON_CORNER_VERTEX, // vertex: all polygons are traversable
@@ -113,9 +117,13 @@ struct PointLocation
                               << pl.poly1 << ", " << pl.poly2 << ", vertices "
                               << pl.vertex1 << ", " << pl.vertex2 << ")";
 
-            case PointLocation::ON_CORNER_VERTEX:
-                return stream << "ON_CORNER_VERTEX (" << pl.vertex1
+            case PointLocation::ON_CORNER_VERTEX_AMBIG:
+                return stream << "ON_CORNER_VERTEX_AMBIG (" << pl.vertex1
                               << ", poly? " << pl.poly1 << ")";
+
+            case PointLocation::ON_CORNER_VERTEX_UNAMBIG:
+                return stream << "ON_CORNER_VERTEX_UNAMBIG (" << pl.vertex1
+                              << ", poly " << pl.poly1 << ")";
 
             case PointLocation::ON_NON_CORNER_VERTEX:
                 return stream << "ON_NON_CORNER_VERTEX (" << pl.vertex1
@@ -170,7 +178,8 @@ struct PointLocation
                 }
                 return false;
 
-            case PointLocation::ON_CORNER_VERTEX:
+            case PointLocation::ON_CORNER_VERTEX_AMBIG:
+            case PointLocation::ON_CORNER_VERTEX_UNAMBIG:
             case PointLocation::ON_NON_CORNER_VERTEX:
                 return vertex1 == other.vertex1;
 

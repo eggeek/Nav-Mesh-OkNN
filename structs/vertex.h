@@ -13,6 +13,7 @@ struct Vertex
     std::vector<int> polygons;
 
     bool is_corner;
+    bool is_ambig;
 };
 
 }

@@ -20,52 +20,27 @@ PointLocation SearchInstance::get_point_location(Point p)
 {
     assert(mesh != nullptr);
     PointLocation out = mesh->get_point_location(p);
-    if (out.type == PointLocation::ON_CORNER_VERTEX)
+    if (out.type == PointLocation::ON_CORNER_VERTEX_AMBIG)
     {
         // Add a few EPSILONS to the point and try again.
         static const Point CORRECTOR = {EPSILON * 10, EPSILON * 10};
         Point corrected = p + CORRECTOR;
         PointLocation corrected_loc = mesh->get_point_location(corrected);
 
+        std::cerr << p << " " << corrected_loc << std::endl;
+        return out;
+
         switch (corrected_loc.type)
         {
-            case PointLocation::ON_CORNER_VERTEX:
+            case PointLocation::ON_CORNER_VERTEX_AMBIG:
+            case PointLocation::ON_CORNER_VERTEX_UNAMBIG:
             case PointLocation::ON_NON_CORNER_VERTEX:
+                std::cerr << "Warning: corrected " << p << " lies on vertex"
+                          << std::endl;
             case PointLocation::NOT_ON_MESH:
-            {
-                // Iterate over the polys of the vertex to see whether there's
-                // only one non-traversable on the point.
-                bool has_seen = false;
-                int set_poly1 = -1;
-                for (int& poly : mesh->mesh_vertices[out.vertex1].polygons)
-                {
-                    if (poly != -1)
-                    {
-                        if (set_poly1 == -1)
-                        {
-                            set_poly1 = poly;
-                        }
-                        continue;
-                    }
-                    if (has_seen)
-                    {
-                        set_poly1 = -1;
-                        break;
-                    }
-                    has_seen = true;
-                }
-                assert(has_seen);
-                if (set_poly1 == -1)
-                {
-                    std::cerr << "Warning: completely ambiguous point at " << p
-                              << std::endl;
-                }
-                else
-                {
-                    out.poly1 = set_poly1;
-                }
+                std::cerr << "Warning: completely ambiguous point at " << p
+                          << std::endl;
                 break;
-            }
 
             case PointLocation::IN_POLYGON:
             case PointLocation::ON_MESH_BORDER:
@@ -211,7 +186,8 @@ void SearchInstance::gen_initial_nodes()
         case PointLocation::IN_POLYGON:
         case PointLocation::ON_MESH_BORDER:
         // Generate all in an arbirary polygon.
-        case PointLocation::ON_CORNER_VERTEX:
+        case PointLocation::ON_CORNER_VERTEX_AMBIG:
+        case PointLocation::ON_CORNER_VERTEX_UNAMBIG:
             open_list.push(get_lazy(pl.poly1, -1));
             break;
 
