@@ -14,7 +14,10 @@ struct Point
 
     bool operator==(const Point& other) const
     {
-        return this->distance_sq(other) < EPSILON;
+        // TODO: Possibly change this to check the x and y manually.
+        // Will result in possible false-positives, as we're checking a square
+        // instead of a circle, but should be much faster (no multiplication).
+        return this->distance_sq(other) < EPSILON * EPSILON;
     }
 
     bool operator!=(const Point& other) const
