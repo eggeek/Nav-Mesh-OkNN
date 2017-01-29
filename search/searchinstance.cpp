@@ -298,15 +298,19 @@ bool SearchInstance::search()
         return true;
     }
 
+    const std::vector<Polygon>& mesh_polys = mesh->mesh_polygons;
+
     while (!open_list.empty())
     {
         SearchNodePtr node = open_list.top(); open_list.pop();
-        if (node->next_polygon == end_polygon)
+        const int next_poly = node->next_polygon;
+        if (next_poly == end_polygon)
         {
             final_node = node;
             return true;
         }
         std::vector<Successor> successors;
+        successors.reserve(mesh_polys[next_poly].vertices.size() + 2);
         get_successors(*node, start, *mesh, successors);
         push_successors(node, successors);
     }
