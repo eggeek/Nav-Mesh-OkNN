@@ -33,8 +33,24 @@ class SearchInstance
         SearchNodePtr final_node;
         int end_polygon; // set by init_search
         pq open_list;
+
+        // Best g value for a specific vertex.
+        std::vector<double> root_g_values;
+        // Contains the current search id if the root has been reached by
+        // the search.
+        std::vector<int> root_search_ids;  // also used for root-level pruning
+        int search_id;
+        void init_root_pruning()
+        {
+            assert(mesh != nullptr);
+            search_id = 0;
+            size_t num_vertices = mesh->mesh_vertices.size();
+            root_g_values.resize(num_vertices);
+            root_search_ids.resize(num_vertices);
+        }
         void init_search()
         {
+            search_id++;
             open_list = pq();
             final_node = nullptr;
             set_end_polygon();
@@ -49,9 +65,9 @@ class SearchInstance
 
     public:
         SearchInstance() { }
-        SearchInstance(MeshPtr m) : mesh(m) { }
+        SearchInstance(MeshPtr m) : mesh(m) { init_root_pruning(); }
         SearchInstance(MeshPtr m, Point s, Point g) :
-            mesh(m), start(s), goal(g) {}
+            mesh(m), start(s), goal(g) { init_root_pruning(); }
 
         void set_start_goal(Point s, Point g)
         {

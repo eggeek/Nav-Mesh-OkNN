@@ -86,9 +86,39 @@ void SearchInstance::push_successors(
         // Note that g is evaluated twice here.
         // Always try to precompute before using this macro.
         // h is fine, though.
-        #define p(root, g, h) open_list.push(SearchNodePtr(new SearchNode \
-            {parent, root, succ.left, succ.right, left_vertex, right_vertex, \
-             next_polygon, g+h, g}))
+        const auto p = [&](const int root, const double g,
+                                  const double h)
+        {
+            if (root != -1)
+            {
+                assert(root >= 0 && root < (int) root_g_values.size());
+                // Can POSSIBLY prune?
+                if (root_search_ids[root] != search_id)
+                {
+                    // First time reaching root
+                    root_search_ids[root] = search_id;
+                    root_g_values[root] = g;
+                }
+                else
+                {
+                    // We've been here before!
+                    // Check whether we've done better.
+                    if (root_g_values[root] + EPSILON < g)
+                    {
+                        // We've done better!
+                        return;
+                    }
+                    else
+                    {
+                        // This is better.
+                        root_g_values[root] = g;
+                    }
+                }
+            }
+            open_list.push(SearchNodePtr(new SearchNode
+                {parent, root, succ.left, succ.right, left_vertex, right_vertex,
+                 next_polygon, g+h, g}));
+        };
 
         const Point& parent_root = (parent->root == -1 ?
                                     start :
@@ -160,7 +190,6 @@ void SearchInstance::push_successors(
         }
         #undef get_h
         #undef get_g
-        #undef p
     }
 }
 
