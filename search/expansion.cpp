@@ -123,7 +123,7 @@ inline int binary_search(const std::vector<int>& arr, const int N,
 // over and over again
 // Generates the successors of the search node and appends them to the successor
 // vector.
-void get_successors(SearchNode& node, const Mesh& mesh,
+void get_successors(SearchNode& node, const Point& start, const Mesh& mesh,
                     std::vector<Successor>& successors)
 {
     // If the next polygon is -1, we did a bad job at pruning...
@@ -135,10 +135,12 @@ void get_successors(SearchNode& node, const Mesh& mesh,
     const std::vector<int>& V = polygon.vertices, P = polygon.polygons;
     const int N = (int) V.size();
 
+    const Point& root = (node.root == -1 ? start : mesh_vertices[node.root].p);
+
     // Is this node collinear?
     // If so, generate all other intervals in the polygon.
     // Assume that the interval is maximal across the edge.
-    if (node.left == node.root || node.right == node.root)
+    if (node.left == root || node.right == root)
     {
         // We can be lazy and start iterating from any point.
         // We still need to exclude the current interval as a successor, though.
@@ -162,7 +164,7 @@ void get_successors(SearchNode& node, const Mesh& mesh,
         return;
     }
 
-    assert(get_orientation(node.root, node.left, node.right) ==
+    assert(get_orientation(root, node.left, node.right) ==
            Orientation::CW);
 
     // It is not collinear.
@@ -188,6 +190,7 @@ void get_successors(SearchNode& node, const Mesh& mesh,
     const int left_ind = N + right_ind - 1;
 
 
+    assert(V[normalise(left_ind)] == node.left_vertex);
 
     // Find whether we can turn at either endpoint.
     const Vertex& right_vertex_obj = mesh_vertices[node.right_vertex],
@@ -207,7 +210,7 @@ void get_successors(SearchNode& node, const Mesh& mesh,
     // upper bound is left.
     // the "transition" will lie in the range [A-1, A)
 
-    const Point root_right = node.right - node.root;
+    const Point root_right = node.right - root;
     const int A = binary_search(V, N, mesh_vertices, right_ind + 1, left_ind,
         [&root_right, &node](const Vertex& v)
         {
@@ -227,7 +230,7 @@ void get_successors(SearchNode& node, const Mesh& mesh,
     const Point right_intersect = [&]() -> Point
     {
         double root_right_num, segment_num, denom;
-        line_intersect_time(node.root, node.right, Am1_p, A_p,
+        line_intersect_time(root, node.right, Am1_p, A_p,
                             root_right_num, segment_num, denom);
         assert(denom != 0.0);
         assert(root_right_num / denom >= 1 - EPSILON);
@@ -248,7 +251,7 @@ void get_successors(SearchNode& node, const Mesh& mesh,
     // lower-bound is A - 1 (in the same segment as A).
     // upper bound is left.
     // the "transition" will lie in the range (B, B+1]
-    const Point root_left = node.left - node.root;
+    const Point root_left = node.left - root;
     const int B = binary_search(V, N, mesh_vertices, A - 1, left_ind,
         [&root_left, &node](const Vertex& v)
         {
@@ -263,7 +266,7 @@ void get_successors(SearchNode& node, const Mesh& mesh,
     const Point left_intersect = [&]() -> Point
     {
         double root_left_num, segment_num, denom;
-        line_intersect_time(node.root, node.left, Bp1_p, B_p,
+        line_intersect_time(root, node.left, Bp1_p, B_p,
                             root_left_num, segment_num, denom);
         assert(denom != 0.0);
         assert(root_left_num / denom >= 1 - EPSILON);

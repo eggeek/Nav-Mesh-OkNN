@@ -77,6 +77,7 @@ void SearchInstance::push_successors(
         {
             continue;
         }
+        const int left_vertex  = V[succ.poly_left_ind];
         const int right_vertex = succ.poly_left_ind ?
                                  V[succ.poly_left_ind - 1] :
                                  V.back();
@@ -86,10 +87,13 @@ void SearchInstance::push_successors(
         // Always try to precompute before using this macro.
         // h is fine, though.
         #define p(root, g, h) open_list.push(SearchNodePtr(new SearchNode \
-            {parent, root, succ.left, succ.right, right_vertex, next_polygon, \
-             g+h, g}))
+            {parent, root, succ.left, succ.right, left_vertex, right_vertex, \
+             next_polygon, g+h, g}))
 
-        #define get_g(new_root) parent->g + parent->root.distance(new_root)
+        const Point& parent_root = (parent->root == -1 ?
+                                    start :
+                                    mesh->mesh_vertices[parent->root].p);
+        #define get_g(new_root) parent->g + parent_root.distance(new_root)
         #define get_h(new_root) get_h_value(new_root, goal, \
                                             succ.left, succ.right)
 
@@ -103,12 +107,12 @@ void SearchInstance::push_successors(
                         right_g = get_g(parent->right);
                     }
                     // use right_g
-                    p(succ.right, right_g, succ.right.distance(goal));
+                    p(right_vertex, right_g, succ.right.distance(goal));
                 }
                 else
                 {
                     const double g = get_g(succ.right);
-                    p(succ.right, g, succ.right.distance(goal));
+                    p(right_vertex, g, succ.right.distance(goal));
                 }
                 break;
 
@@ -118,11 +122,11 @@ void SearchInstance::push_successors(
                 {
                     right_g = get_g(parent->right);
                 }
-                p(parent->right, right_g, get_h(parent->right));
+                p(parent->right_vertex, right_g, get_h(parent->right));
                 break;
 
             case Successor::OBSERVABLE:
-                p(parent->root, parent->g, get_h(parent->root));
+                p(parent->root, parent->g, get_h(parent_root));
                 break;
 
             case Successor::LEFT_NON_OBSERVABLE:
@@ -130,7 +134,7 @@ void SearchInstance::push_successors(
                 {
                     left_g = get_g(parent->left);
                 }
-                p(parent->left, left_g, get_h(parent->left));
+                p(parent->left_vertex, left_g, get_h(parent->left));
                 break;
 
             case Successor::LEFT_COLLINEAR:
@@ -141,12 +145,12 @@ void SearchInstance::push_successors(
                         left_g = get_g(parent->left);
                     }
                     // use left_g
-                    p(succ.left, left_g, succ.left.distance(goal));
+                    p(left_vertex, left_g, succ.left.distance(goal));
                 }
                 else
                 {
                     const double g = get_g(succ.left);
-                    p(succ.left, g, succ.left.distance(goal));
+                    p(left_vertex, g, succ.left.distance(goal));
                 }
                 break;
 
@@ -174,8 +178,8 @@ void SearchInstance::gen_initial_nodes()
     // and we can set right_vertex if we want to omit generating an interval.
     const PointLocation pl = get_point_location(start);
     const double h = start.distance(goal);
-    #define get_lazy(next, right) SearchNodePtr( \
-        new SearchNode{nullptr, start, start, start, right, next, h, 0})
+    #define get_lazy(next, left, right) SearchNodePtr( \
+        new SearchNode{nullptr, -1, start, start, left, right, next, h, 0})
     switch (pl.type)
     {
         // Don't bother.
@@ -188,13 +192,13 @@ void SearchInstance::gen_initial_nodes()
         // Generate all in an arbirary polygon.
         case PointLocation::ON_CORNER_VERTEX_AMBIG:
         case PointLocation::ON_CORNER_VERTEX_UNAMBIG:
-            open_list.push(get_lazy(pl.poly1, -1));
+            open_list.push(get_lazy(pl.poly1, -1, -1));
             break;
 
         case PointLocation::ON_EDGE:
             // Generate all in both polygons except for the shared side.
-            open_list.push(get_lazy(pl.poly1, pl.vertex2));
-            open_list.push(get_lazy(pl.poly2, pl.vertex1));
+            open_list.push(get_lazy(pl.poly1, pl.vertex1, pl.vertex2));
+            open_list.push(get_lazy(pl.poly2, pl.vertex2, pl.vertex1));
             break;
 
 
@@ -208,7 +212,7 @@ void SearchInstance::gen_initial_nodes()
             #define v(vertex) mesh->mesh_vertices[vertex]
             for (int& poly : v(pl.vertex1).polygons)
             {
-                SearchNodePtr dummy_init = get_lazy(poly, -1);
+                SearchNodePtr dummy_init = get_lazy(poly, -1, -1);
                 if (poly == -1)
                 {
                     continue;
@@ -274,7 +278,7 @@ bool SearchInstance::search()
             return true;
         }
         std::vector<Successor> successors;
-        get_successors(*node, *mesh, successors);
+        get_successors(*node, start, *mesh, successors);
         push_successors(node, successors);
     }
 
@@ -290,11 +294,14 @@ void SearchInstance::get_path_points(std::vector<Point>& out)
     out.clear();
     out.push_back(goal);
     SearchNodePtr cur_node = final_node;
+
+    #define root_to_point(root) mesh->mesh_vertices[root].p
+
     while (cur_node != nullptr)
     {
-        if (cur_node->root != out.back())
+        if (root_to_point(cur_node->root) != out.back())
         {
-            out.push_back(cur_node->root);
+            out.push_back(root_to_point(cur_node->root));
         }
         cur_node = cur_node->parent;
     }

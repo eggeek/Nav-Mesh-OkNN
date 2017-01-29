@@ -12,11 +12,15 @@ struct SearchNode
 {
     std::shared_ptr<SearchNode> parent;
     // Note that all Points here will be in terms of a Cartesian plane.
-    Point root;
+    int root; // -1 if start
 
     // If possible, set the orientation of left / root / right to be
     // "if I'm standing at 'root' and look at 'left', 'right' is on my right"
     Point left, right;
+
+    // The left vertex of the edge the interval is lying on.
+    // When generating the successors of this node, end there.
+    int left_vertex;
 
     // The right vertex of the edge the interval is lying on.
     // When generating the successors of this node, start there.
