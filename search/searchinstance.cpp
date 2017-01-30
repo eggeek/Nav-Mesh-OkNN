@@ -309,6 +309,22 @@ bool SearchInstance::search()
             final_node = node;
             return true;
         }
+        // We will never update our root list here.
+        const int root = node->root;
+        if (root != -1)
+        {
+            assert(root >= 0 && root < (int) root_g_values.size());
+            if (root_search_ids[root] == search_id)
+            {
+                // We've been here before!
+                // Check whether we've done better.
+                if (root_g_values[root] + EPSILON < node->g)
+                {
+                    // We've done better!
+                    continue;
+                }
+            }
+        }
         std::vector<Successor> successors;
         successors.reserve(mesh_polys[next_poly].vertices.size() + 2);
         get_successors(*node, start, *mesh, successors);
