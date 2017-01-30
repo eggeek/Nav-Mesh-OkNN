@@ -43,11 +43,10 @@ load_paths <- function(filename, path_colour="red")
 
 # txt_path should be a vector of strings each having the form
 # (x1, y1) (x2, y2) ... (xn, yn)
-draw_path <- function(rawpaths, path_colour="red")
+draw_path <- function(rawpaths, path_colour="red", prev_path_col="black")
 {
     symbol_sz = 0.6
     line_width = 1
-    prev_path_col = "lightblue"
 
     prev_xy <- c()
     for(i in seq_len(length(rawpaths)))
