@@ -13,7 +13,7 @@ FADE2DFLAGS = -Ifade2d -Llib/ubuntu16.10_x86_64 -lfade2d -Wl,-rpath=lib/ubuntu16
 TARGETS = visualiser poly2mesh
 BIN_TARGETS = $(addprefix bin/,$(TARGETS))
 
-all: $(TARGETS) gridmap2poly
+all: $(TARGETS) gridmap2poly meshpacker meshunpacker
 fast: CXXFLAGS += $(FAST_CXXFLAGS)
 dev: CXXFLAGS += $(DEV_CXXFLAGS)
 fast dev: all
@@ -23,7 +23,7 @@ clean:
 	rm -f $(PU_OBJ)
 
 .PHONY: $(TARGETS) gridmap2poly
-$(TARGETS) gridmap2poly: % : bin/%
+$(TARGETS) gridmap2poly meshpacker meshunpacker: % : bin/%
 
 $(BIN_TARGETS): bin/%: %.cpp $(PU_OBJ)
 	@mkdir -p ./bin
@@ -32,6 +32,14 @@ $(BIN_TARGETS): bin/%: %.cpp $(PU_OBJ)
 bin/gridmap2poly:
 	@mkdir -p ./bin
 	$(CXX) $(CXXFLAGS) gridmap2poly.cpp -o ./bin/gridmap2poly
+
+bin/meshpacker: meshpacker.cpp
+	@mkdir -p ./bin
+	$(CXX) $(CXXFLAGS) $(FAST_CXXFLAGS) meshpacker.cpp -o ./bin/meshpacker
+
+bin/meshunpacker: meshunpacker.cpp
+	@mkdir -p ./bin
+	$(CXX) $(CXXFLAGS) $(FAST_CXXFLAGS) meshunpacker.cpp -o ./bin/meshunpacker
 
 %.o: %.cpp
 	$(CXX) $(CXXFLAGS) $(FADE2DFLAGS) $(INCLUDES) $< -c -o $@
