@@ -69,10 +69,10 @@ int main(int argc, char* argv[])
         cerr << "Unable to open mesh" << endl;
         return 1;
     }
-    MeshPtr m = MeshPtr(new Mesh(meshfile));
+    Mesh m = Mesh(meshfile);
     meshfile.close();
 
-    si = new SearchInstance(m);
+    si = new SearchInstance(&m);
 
     vector<Scenario> scenarios;
     temp = argv[2];

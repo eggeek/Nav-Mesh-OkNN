@@ -21,7 +21,7 @@ struct PointerComp
     }
 };
 
-typedef std::shared_ptr<Mesh> MeshPtr;
+typedef Mesh* MeshPtr;
 
 class SearchInstance
 {
