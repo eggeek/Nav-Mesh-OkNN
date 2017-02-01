@@ -76,9 +76,9 @@ class SearchInstance
         PointLocation get_point_location(Point p);
         void set_end_polygon();
         void gen_initial_nodes();
-        void push_successors(
+        int succ_to_node(
             SearchNodePtr parent, std::vector<Successor>& successors,
-            int num_succ
+            int num_succ, std::vector<SearchNodePtr>& nodes
         );
 
     public:

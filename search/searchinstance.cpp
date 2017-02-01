@@ -60,8 +60,9 @@ PointLocation SearchInstance::get_point_location(Point p)
     return out;
 }
 
-void SearchInstance::push_successors(
-    SearchNodePtr parent, std::vector<Successor>& successors, int num_succ
+int SearchInstance::succ_to_node(
+    SearchNodePtr parent, std::vector<Successor>& successors, int num_succ,
+    std::vector<SearchNodePtr>& nodes
 )
 {
     assert(mesh != nullptr);
@@ -71,6 +72,7 @@ void SearchInstance::push_successors(
 
     double right_g = -1, left_g = -1;
 
+    int out = 0;
     for (int i = 0; i < num_succ; i++)
     {
         const Successor& succ = successors[i];
@@ -125,8 +127,7 @@ void SearchInstance::push_successors(
                     }
                 }
             }
-            nodes_generated++;
-            open_list.push(new (node_pool->allocate()) SearchNode
+            nodes[out++] = new (node_pool->allocate()) SearchNode(
                 {parent, root, succ.left, succ.right, left_vertex, right_vertex,
                  next_polygon, g+h, g});
         };
@@ -202,7 +203,8 @@ void SearchInstance::push_successors(
         #undef get_h
         #undef get_g
     }
-    nodes_expanded++;
+
+    return out;
 }
 
 void SearchInstance::set_end_polygon()
@@ -284,7 +286,13 @@ void SearchInstance::gen_initial_nodes()
                     num_succ++;
                     last_vertex = vertex;
                 }
-                push_successors(dummy_init, successors, num_succ);
+                std::vector<SearchNodePtr> nodes(num_succ);
+                const int num_nodes = succ_to_node(dummy_init, successors,
+                                                   num_succ, nodes);
+                for (int i = 0; i < num_nodes; i++)
+                {
+                    open_list.push(nodes[i]);
+                }
             }
             #undef v
         }
@@ -314,7 +322,9 @@ bool SearchInstance::search()
     }
 
     std::vector<Successor> successors;
+    std::vector<SearchNodePtr> nodes_to_push;
     successors.resize(mesh->max_poly_sides + 2);
+    nodes_to_push.resize(mesh->max_poly_sides + 2);
     while (!open_list.empty())
     {
         SearchNodePtr node = open_list.top(); open_list.pop();
@@ -342,7 +352,14 @@ bool SearchInstance::search()
             }
         }
         const int num_succ = get_successors(*node, start, *mesh, successors);
-        push_successors(node, successors, num_succ);
+        const int num_nodes = succ_to_node(node, successors,
+                                           num_succ, nodes_to_push);
+        for (int i = 0; i < num_nodes; i++)
+        {
+            open_list.push(nodes_to_push[i]);
+        }
+        nodes_generated += num_nodes;
+        nodes_expanded++;
     }
 
     return false;
