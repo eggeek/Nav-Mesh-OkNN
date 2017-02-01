@@ -43,9 +43,7 @@ class SearchInstance
         int search_id;
         void init()
         {
-            std::cerr << "making pool\n";
             node_pool = new warthog::mem::cpool(sizeof(SearchNode));
-            std::cerr << "pool made\n";
             init_root_pruning();
         }
         void init_root_pruning()
@@ -78,6 +76,8 @@ class SearchInstance
         SearchInstance(MeshPtr m) : mesh(m) { init(); }
         SearchInstance(MeshPtr m, Point s, Point g) :
             mesh(m), start(s), goal(g) { init(); }
+        SearchInstance(SearchInstance const &) = delete;
+        void operator=(SearchInstance const &x) = delete;
         ~SearchInstance()
         {
             if (node_pool)

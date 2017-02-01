@@ -12,7 +12,7 @@
 using namespace std;
 using namespace polyanya;
 
-SearchInstance si;
+SearchInstance* si;
 
 bool get_path = false;
 
@@ -23,12 +23,12 @@ void print_header()
 
 void run_scenario(int index, Scenario scen)
 {
-    si.set_start_goal(scen.start, scen.goal);
-    si.search();
+    si->set_start_goal(scen.start, scen.goal);
+    si->search();
     if (get_path)
     {
         vector<Point> path;
-        si.get_path_points(path);
+        si->get_path_points(path);
         const int n = (int) path.size();
         for (int i = 0; i < n; i++)
         {
@@ -45,7 +45,7 @@ void run_scenario(int index, Scenario scen)
     }
     else
     {
-        double final_cost = si.get_cost();
+        double final_cost = si->get_cost();
         cout << setprecision(10) << fixed;
         cout << index << ";" << final_cost << ";" << scen.gridcost << endl;
     }
@@ -69,7 +69,7 @@ int main(int argc, char* argv[])
     MeshPtr m = MeshPtr(new Mesh(meshfile));
     meshfile.close();
 
-    si = SearchInstance(m);
+    si = new SearchInstance(m);
 
     vector<Scenario> scenarios;
     temp = argv[2];
@@ -90,5 +90,7 @@ int main(int argc, char* argv[])
     {
         run_scenario(i, scenarios[i]);
     }
+
+    delete si;
     return 0;
 }

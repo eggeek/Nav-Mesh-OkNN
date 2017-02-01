@@ -180,8 +180,6 @@ class cpool
         {
             for(size_t i=0; i < num_chunks_; i++)
             {
-                std::cerr << current_chunk_ << std::endl;
-                std::cerr << chunks_[0] << std::endl;
                 chunks_[i]->reclaim();
             }
         }
@@ -279,7 +277,6 @@ class cpool
                 add_chunk(warthog::mem::DEFAULT_CHUNK_SIZE);
             }
             current_chunk_ = chunks_[0];
-            std::cerr << "init: " << chunks_ << std::endl;
         }
 
 
