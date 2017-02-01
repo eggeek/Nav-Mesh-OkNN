@@ -6,6 +6,7 @@
 #include "cpool.h"
 #include <queue>
 #include <vector>
+#include <ctime>
 
 namespace polyanya
 {
@@ -41,6 +42,12 @@ class SearchInstance
         // the search.
         std::vector<int> root_search_ids;  // also used for root-level pruning
         int search_id;
+
+        clock_t search_time;
+
+        int nodes_expanded;
+        int nodes_generated;
+
         void init()
         {
             node_pool = new warthog::mem::cpool(sizeof(SearchNode));
@@ -61,6 +68,8 @@ class SearchInstance
             search_id++;
             open_list = pq();
             final_node = nullptr;
+            nodes_expanded = 0;
+            nodes_generated = 0;
             set_end_polygon();
             gen_initial_nodes();
         }
@@ -104,6 +113,22 @@ class SearchInstance
 
             return final_node->f;
         }
+
+        double get_search_micro()
+        {
+            return ((double) search_time) / CLOCKS_PER_SEC * 1e6;
+        }
+
+        int get_nodes_expanded()
+        {
+            return nodes_expanded;
+        }
+
+        int get_nodes_generated()
+        {
+            return nodes_generated;
+        }
+
         void get_path_points(std::vector<Point>& out);
         void print_search_nodes(std::ostream& outfile);
 

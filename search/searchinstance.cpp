@@ -11,6 +11,7 @@
 #include <cassert>
 #include <iostream>
 #include <algorithm>
+#include <ctime>
 
 namespace polyanya
 {
@@ -116,6 +117,7 @@ void SearchInstance::push_successors(
                     }
                 }
             }
+            nodes_generated++;
             open_list.push(new (node_pool->allocate()) SearchNode
                 {parent, root, succ.left, succ.right, left_vertex, right_vertex,
                  next_polygon, g+h, g});
@@ -192,6 +194,7 @@ void SearchInstance::push_successors(
         #undef get_h
         #undef get_g
     }
+    nodes_expanded++;
 }
 
 void SearchInstance::set_end_polygon()
@@ -290,6 +293,7 @@ void SearchInstance::gen_initial_nodes()
 
 bool SearchInstance::search()
 {
+    const clock_t start_time = clock();
     init_search();
     if (mesh == nullptr || end_polygon == -1)
     {
@@ -309,6 +313,7 @@ bool SearchInstance::search()
         const int next_poly = node->next_polygon;
         if (next_poly == end_polygon)
         {
+            search_time = clock() - start_time;
             final_node = node;
             return true;
         }

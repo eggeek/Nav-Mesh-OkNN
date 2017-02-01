@@ -18,7 +18,7 @@ bool get_path = false;
 
 void print_header()
 {
-    cout << "index;length;gridcost" << endl;
+    cout << "index;micro;expanded;generated;length;gridcost" << endl;
 }
 
 void run_scenario(int index, Scenario scen)
@@ -45,9 +45,12 @@ void run_scenario(int index, Scenario scen)
     }
     else
     {
-        double final_cost = si->get_cost();
-        cout << setprecision(10) << fixed;
-        cout << index << ";" << final_cost << ";" << scen.gridcost << endl;
+        cout << index << ";"
+             << si->get_search_micro() << ";"
+             << si->get_nodes_expanded() << ";"
+             << si->get_nodes_generated() << ";"
+             << setprecision(10) << fixed << si->get_cost() << ";"
+             << setprecision(6) << defaultfloat << scen.gridcost << endl;
     }
 }
 
