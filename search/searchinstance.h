@@ -3,9 +3,9 @@
 #include "successor.h"
 #include "mesh.h"
 #include "point.h"
+#include "cpool.h"
 #include <queue>
 #include <vector>
-#include <memory>
 
 namespace polyanya
 {
@@ -13,8 +13,8 @@ namespace polyanya
 template<typename T, typename Compare = std::greater<T> >
 struct PointerComp
 {
-    bool operator()(const std::shared_ptr<T> x,
-                    const std::shared_ptr<T> y) const
+    bool operator()(const T* x,
+                    const T* y) const
     {
         return Compare()(*x, *y);
     }
@@ -27,6 +27,7 @@ class SearchInstance
     typedef std::priority_queue<SearchNodePtr, std::vector<SearchNodePtr>,
                                 PointerComp<SearchNode> > pq;
     private:
+        warthog::mem::cpool* node_pool;
         MeshPtr mesh;
         Point start, goal;
 
@@ -40,6 +41,13 @@ class SearchInstance
         // the search.
         std::vector<int> root_search_ids;  // also used for root-level pruning
         int search_id;
+        void init()
+        {
+            std::cerr << "making pool\n";
+            node_pool = new warthog::mem::cpool(sizeof(SearchNode));
+            std::cerr << "pool made\n";
+            init_root_pruning();
+        }
         void init_root_pruning()
         {
             assert(mesh != nullptr);
@@ -50,6 +58,8 @@ class SearchInstance
         }
         void init_search()
         {
+            assert(node_pool);
+            node_pool->reclaim();
             search_id++;
             open_list = pq();
             final_node = nullptr;
@@ -65,9 +75,16 @@ class SearchInstance
 
     public:
         SearchInstance() { }
-        SearchInstance(MeshPtr m) : mesh(m) { init_root_pruning(); }
+        SearchInstance(MeshPtr m) : mesh(m) { init(); }
         SearchInstance(MeshPtr m, Point s, Point g) :
-            mesh(m), start(s), goal(g) { init_root_pruning(); }
+            mesh(m), start(s), goal(g) { init(); }
+        ~SearchInstance()
+        {
+            if (node_pool)
+            {
+                delete node_pool;
+            }
+        }
 
         void set_start_goal(Point s, Point g)
         {

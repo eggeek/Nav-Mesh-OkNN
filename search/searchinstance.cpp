@@ -115,9 +115,9 @@ void SearchInstance::push_successors(
                     }
                 }
             }
-            open_list.push(SearchNodePtr(new SearchNode
+            open_list.push(new (node_pool->allocate()) SearchNode
                 {parent, root, succ.left, succ.right, left_vertex, right_vertex,
-                 next_polygon, g+h, g}));
+                 next_polygon, g+h, g});
         };
 
         const Point& parent_root = (parent->root == -1 ?
@@ -207,8 +207,8 @@ void SearchInstance::gen_initial_nodes()
     // and we can set right_vertex if we want to omit generating an interval.
     const PointLocation pl = get_point_location(start);
     const double h = start.distance(goal);
-    #define get_lazy(next, left, right) SearchNodePtr( \
-        new SearchNode{nullptr, -1, start, start, left, right, next, h, 0})
+    #define get_lazy(next, left, right) new (node_pool->allocate()) SearchNode \
+        {nullptr, -1, start, start, left, right, next, h, 0}
     switch (pl.type)
     {
         // Don't bother.
