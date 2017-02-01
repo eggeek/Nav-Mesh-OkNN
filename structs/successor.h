@@ -34,7 +34,8 @@ struct Successor
             "LEFT_COLLINEAR",
         };
         return stream << "Successor(" << lookup[static_cast<int>(succ.type)]
-                      << ", " << succ.left << " " << succ.right << ")";
+                      << ", " << succ.left << " " << succ.right << ", "
+                      << "poly_left=" << succ.poly_left_ind << ")";
     }
 };
 
