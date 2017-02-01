@@ -300,6 +300,7 @@ bool SearchInstance::search()
 
     const std::vector<Polygon>& mesh_polys = mesh->mesh_polygons;
 
+    std::vector<Successor> successors;
     while (!open_list.empty())
     {
         SearchNodePtr node = open_list.top(); open_list.pop();
@@ -325,7 +326,7 @@ bool SearchInstance::search()
                 }
             }
         }
-        std::vector<Successor> successors;
+        successors.clear();
         successors.reserve(mesh_polys[next_poly].vertices.size() + 2);
         get_successors(*node, start, *mesh, successors);
         push_successors(node, successors);
