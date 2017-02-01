@@ -391,11 +391,8 @@ PointLocation Mesh::get_point_location(Point& p)
                     }
                     else
                     {
-                        const auto& polys = v.polygons;
-                        const int poly = (polys.front() == -1 ?
-                                          polys.back() : polys.front());
                         return {PointLocation::ON_CORNER_VERTEX_UNAMBIG,
-                                poly, -1, result.vertex1, -1};
+                                polygon, -1, result.vertex1, -1};
                     }
                 }
                 else
@@ -482,11 +479,8 @@ PointLocation Mesh::get_point_location_naive(Point& p)
                     }
                     else
                     {
-                        const auto& polys = v.polygons;
-                        const int poly = (polys.front() == -1 ?
-                                          polys.back() : polys.front());
                         return {PointLocation::ON_CORNER_VERTEX_UNAMBIG,
-                                poly, -1, result.vertex1, -1};
+                                polygon, -1, result.vertex1, -1};
                     }
                 }
                 else
