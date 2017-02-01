@@ -398,7 +398,7 @@ PointLocation Mesh::get_point_location(Point& p)
                 else
                 {
                     return {PointLocation::ON_NON_CORNER_VERTEX,
-                            v.polygons.front(), -1,
+                            polygon, -1,
                             result.vertex1, -1};
                 }
             }
@@ -486,7 +486,7 @@ PointLocation Mesh::get_point_location_naive(Point& p)
                 else
                 {
                     return {PointLocation::ON_NON_CORNER_VERTEX,
-                            v.polygons.front(), -1,
+                            polygon, -1,
                             result.vertex1, -1};
                 }
             }
