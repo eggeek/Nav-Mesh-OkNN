@@ -60,7 +60,7 @@ PointLocation SearchInstance::get_point_location(Point p)
 }
 
 void SearchInstance::push_successors(
-    SearchNodePtr parent, std::vector<Successor>& successors
+    SearchNodePtr parent, std::vector<Successor>& successors, int num_succ
 )
 {
     assert(mesh != nullptr);
@@ -70,8 +70,9 @@ void SearchInstance::push_successors(
 
     double right_g = -1, left_g = -1;
 
-    for (Successor& succ : successors)
+    for (int i = 0; i < num_succ; i++)
     {
+        const Successor& succ = successors[i];
         const int next_polygon = P[succ.poly_left_ind];
         if (next_polygon == -1)
         {
@@ -258,6 +259,7 @@ void SearchInstance::gen_initial_nodes()
                 const std::vector<int>& vertices =
                     mesh->mesh_polygons[poly].vertices;
                 int last_vertex = vertices.back();
+                int num_succ = 0;
                 for (int i = 0; i < (int) vertices.size(); i++)
                 {
                     const int vertex = vertices[i];
@@ -268,9 +270,10 @@ void SearchInstance::gen_initial_nodes()
                     }
                     successors.push_back({Successor::OBSERVABLE, v(vertex).p,
                                           v(last_vertex).p, i});
+                    num_succ++;
                     last_vertex = vertex;
                 }
-                push_successors(dummy_init, successors);
+                push_successors(dummy_init, successors, num_succ);
             }
             #undef v
         }
@@ -299,7 +302,7 @@ bool SearchInstance::search()
     }
 
     std::vector<Successor> successors;
-    successors.reserve(mesh->max_poly_sides + 2);
+    successors.resize(mesh->max_poly_sides + 2);
     while (!open_list.empty())
     {
         SearchNodePtr node = open_list.top(); open_list.pop();
@@ -325,9 +328,8 @@ bool SearchInstance::search()
                 }
             }
         }
-        successors.clear();
-        get_successors(*node, start, *mesh, successors);
-        push_successors(node, successors);
+        const int num_succ = get_successors(*node, start, *mesh, successors);
+        push_successors(node, successors, num_succ);
     }
 
     return false;

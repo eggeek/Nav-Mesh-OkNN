@@ -12,8 +12,8 @@ namespace polyanya
 double get_h_value(const Point& root, Point goal,
                    const Point& l, const Point& r);
 
-// Generates the successors of the search node and appends them to the successor
-// vector.
-void get_successors(SearchNode& node, const Point& start, const Mesh& mesh,
-                    std::vector<Successor>& successors);
+// Generates the successors of the search node and sets them in the successor
+// vector. Returns number of successors generated.
+int get_successors(SearchNode& node, const Point& start, const Mesh& mesh,
+                   std::vector<Successor>& successors);
 }

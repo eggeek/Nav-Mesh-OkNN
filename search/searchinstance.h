@@ -68,7 +68,8 @@ class SearchInstance
         void set_end_polygon();
         void gen_initial_nodes();
         void push_successors(
-            SearchNodePtr parent, std::vector<Successor>& successors
+            SearchNodePtr parent, std::vector<Successor>& successors,
+            int num_succ
         );
 
     public:
