@@ -351,9 +351,26 @@ bool SearchInstance::search()
                 }
             }
         }
-        const int num_succ = get_successors(*node, start, *mesh, successors);
-        const int num_nodes = succ_to_node(node, successors,
-                                           num_succ, nodes_to_push);
+        int num_nodes = 1;
+        nodes_to_push[0] = node;
+
+        // We use a do while here because the first iteration is guaranteed
+        // to work.
+        do
+        {
+            SearchNodePtr cur_node = nodes_to_push[0];
+            // don't forget this!!!
+            if (cur_node->next_polygon == end_polygon)
+            {
+                break;
+            }
+            int num_succ = get_successors(*cur_node, start, *mesh,
+                                          successors);
+            num_nodes = succ_to_node(cur_node, successors,
+                                     num_succ, nodes_to_push);
+        }
+        while (num_nodes == 1); // if num_nodes == 0, we still want to break
+
         for (int i = 0; i < num_nodes; i++)
         {
             open_list.push(nodes_to_push[i]);
