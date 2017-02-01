@@ -49,8 +49,8 @@ void run_scenario(int index, Scenario scen)
              << si->get_search_micro() << ";"
              << si->get_nodes_expanded() << ";"
              << si->get_nodes_generated() << ";"
-             << setprecision(10) << fixed << si->get_cost() << ";"
-             << setprecision(6) << defaultfloat << scen.gridcost << endl;
+             << setprecision(16) << si->get_cost() << ";"
+             << setprecision(8) << scen.gridcost << endl;
     }
 }
 
