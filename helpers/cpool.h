@@ -1,5 +1,4 @@
-#ifndef WARTHOG_CPOOL_H
-#define WARTHOG_CPOOL_H
+#pragma once
 
 // cpool.h
 //
@@ -7,14 +6,13 @@
 // single structs of a fixed size.
 // To achieve efficient re-allocation each pre-allocated
 // chunk of memory has associated with it a stack of memory offsets
-// which have been previously freed. 
+// which have been previously freed.
 // This introduces a 12.5% overhead to total memory consumption.
 //
 // @author: dharabor
 // @created: 23/08/2012
 //
 
-#include <algorithm>
 #include <cassert>
 #include <iostream>
 
@@ -31,7 +29,7 @@ class cchunk
     public:
 
         cchunk(size_t obj_size, size_t pool_size) :
-            obj_size_(obj_size), 
+            obj_size_(obj_size),
             pool_size_(pool_size - (pool_size % obj_size)) // round down
         {
             if(pool_size_ < obj_size_)
@@ -49,7 +47,7 @@ class cchunk
             stack_size_ = 0;
         }
 
-        ~cchunk() 
+        ~cchunk()
         {
             delete [] mem_;
             delete [] freed_stack_;
@@ -110,7 +108,7 @@ class cchunk
             return false;
         }
 
-        inline char* 
+        inline char*
         first_addr()
         {
             return mem_;
@@ -121,7 +119,7 @@ class cchunk
         {
             return pool_size_;
         }
-        
+
         inline size_t
         mem()
         {
@@ -134,7 +132,7 @@ class cchunk
         void
         print(std::ostream& out)
         {
-            out << "warthog::mem::cchunk pool_size: "<<pool_size_ 
+            out << "warthog::mem::cchunk pool_size: "<<pool_size_
                 << " obj_size: "<<obj_size_<< " freed_stack_ size: "<<stack_size_;
         }
 
@@ -143,8 +141,8 @@ class cchunk
         char* next_;
         char* max_;
 
-        size_t obj_size_;  
-        size_t pool_size_; 
+        size_t obj_size_;
+        size_t pool_size_;
 
         // keep a stack of freed objects
         int* freed_stack_;
@@ -216,7 +214,7 @@ class cpool
         {
             for(unsigned int i=0; i < num_chunks_; i++)
             {
-                if((unsigned)(addr-chunks_[i]->first_addr()) 
+                if((unsigned)(addr-chunks_[i]->first_addr())
                         < chunks_[i]->pool_size())
                 {
                     chunks_[i]->deallocate(addr);
@@ -245,7 +243,7 @@ class cpool
         void
         print(std::ostream& out)
         {
-            out << "warthog::mem::cpool #chunks: "<<num_chunks_ 
+            out << "warthog::mem::cpool #chunks: "<<num_chunks_
             <<  " #max_chunks "<<max_chunks_ << " obj_size: "<<obj_size_;
             out << std::endl;
             for(unsigned int i = 0; i < num_chunks_; i++)
@@ -264,7 +262,7 @@ class cpool
         size_t obj_size_;
 
         // no copy
-        cpool(const warthog::mem::cpool& other) { } 
+        cpool(const warthog::mem::cpool& other) { }
         warthog::mem::cpool&
         operator=(const warthog::mem::cpool& other) { return *this; }
 
@@ -312,6 +310,3 @@ class cpool
 }
 
 }
-
-#endif
-
