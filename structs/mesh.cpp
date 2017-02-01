@@ -180,6 +180,8 @@ void Mesh::read(std::istream& infile)
             max_y = std::max(max_y, p.max_y);
         }
 
+        bool found_trav = false;
+        p.is_one_way = true;
         for (int j = 0; j < n; j++)
         {
             int polygon_index;
@@ -192,6 +194,20 @@ void Mesh::read(std::istream& infile)
                 std::cerr << "Got a polygon index of " \
                           << polygon_index << std::endl;
                 fail("Invalid polygon index when getting polygon");
+            }
+            if (polygon_index != -1)
+            {
+                if (found_trav)
+                {
+                    if (p.is_one_way)
+                    {
+                        p.is_one_way = false;
+                    }
+                }
+                else
+                {
+                    found_trav = true;
+                }
             }
             p.polygons[j] = polygon_index;
         }

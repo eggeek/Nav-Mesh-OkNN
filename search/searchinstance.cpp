@@ -79,6 +79,14 @@ void SearchInstance::push_successors(
         {
             continue;
         }
+
+        // If the successor we're about to push pushes into a one-way polygon,
+        // and the polygon isn't the end polygon, just continue.
+        if (mesh->mesh_polygons[next_polygon].is_one_way &&
+            next_polygon != end_polygon)
+        {
+            continue;
+        }
         const int left_vertex  = V[succ.poly_left_ind];
         const int right_vertex = succ.poly_left_ind ?
                                  V[succ.poly_left_ind - 1] :
