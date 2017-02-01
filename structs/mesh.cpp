@@ -114,6 +114,7 @@ void Mesh::read(std::istream& infile)
     }
 
 
+    max_poly_sides = 0;
     for (int i = 0; i < P; i++)
     {
         Polygon& p = mesh_polygons[i];
@@ -129,6 +130,10 @@ void Mesh::read(std::istream& infile)
         }
         p.vertices.resize(n);
         p.polygons.resize(n);
+        if (n > max_poly_sides)
+        {
+            max_poly_sides = n;
+        }
 
         for (int j = 0; j < n; j++)
         {

@@ -206,6 +206,7 @@ class Mesh
         Mesh(std::istream& infile);
         std::vector<Vertex> mesh_vertices;
         std::vector<Polygon> mesh_polygons;
+        int max_poly_sides;
 
         void read(std::istream& infile);
         void precalc_point_location();
