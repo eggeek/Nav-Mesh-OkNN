@@ -236,12 +236,16 @@ void SearchInstance::gen_initial_nodes()
         case PointLocation::ON_CORNER_VERTEX_AMBIG:
         case PointLocation::ON_CORNER_VERTEX_UNAMBIG:
             open_list.push(get_lazy(pl.poly1, -1, -1));
+            nodes_generated++;
+            nodes_pushed++;
             break;
 
         case PointLocation::ON_EDGE:
             // Generate all in both polygons except for the shared side.
             open_list.push(get_lazy(pl.poly2, pl.vertex1, pl.vertex2));
             open_list.push(get_lazy(pl.poly1, pl.vertex2, pl.vertex1));
+            nodes_generated += 2;
+            nodes_pushed += 2;
             break;
 
 
@@ -293,6 +297,8 @@ void SearchInstance::gen_initial_nodes()
                 {
                     open_list.push(nodes[i]);
                 }
+                nodes_generated += num_nodes;
+                nodes_pushed += num_nodes;
             }
             #undef v
         }
@@ -328,6 +334,7 @@ bool SearchInstance::search()
     while (!open_list.empty())
     {
         SearchNodePtr node = open_list.top(); open_list.pop();
+        nodes_popped++;
         const int next_poly = node->next_polygon;
         if (next_poly == end_polygon)
         {
@@ -346,6 +353,7 @@ bool SearchInstance::search()
                 // Check whether we've done better.
                 if (root_g_values[root] + EPSILON < node->g)
                 {
+                    nodes_pruned_post_pop++;
                     // We've done better!
                     continue;
                 }
@@ -368,6 +376,7 @@ bool SearchInstance::search()
                                           successors);
             num_nodes = succ_to_node(cur_node, successors,
                                      num_succ, nodes_to_push);
+            nodes_generated += num_nodes;
         }
         while (num_nodes == 1); // if num_nodes == 0, we still want to break
 
@@ -375,8 +384,7 @@ bool SearchInstance::search()
         {
             open_list.push(nodes_to_push[i]);
         }
-        nodes_generated += num_nodes;
-        nodes_expanded++;
+        nodes_pushed += num_nodes;
     }
 
     return false;
