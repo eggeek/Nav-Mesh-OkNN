@@ -3,6 +3,7 @@
 #include "searchinstance.h"
 #include "point.h"
 #include "mesh.h"
+#include "cfg.h"
 #include <iostream>
 #include <fstream>
 #include <string>
@@ -14,7 +15,7 @@ using namespace polyanya;
 
 SearchInstance* si;
 
-bool get_path = false;
+int get_path = 0;
 
 void print_header()
 {
@@ -59,13 +60,21 @@ void run_scenario(int index, Scenario scen)
 
 int main(int argc, char* argv[])
 {
-    if (argc != 3)
+    warthog::util::param valid_args[] =
     {
-        cerr << "usage: " << argv[0] << " <mesh> <scenario>" << endl;
+        {"path", no_argument, &get_path, 1}
+    };
+
+    warthog::util::cfg cfg;
+    cfg.parse_args(argc, argv, valid_args);
+
+    if (argc - optind != 2)
+    {
+        cerr << "usage: " << argv[0] << "[--path] <mesh> <scenario>" << endl;
         return 1;
     }
 
-    string temp = argv[1];;
+    string temp = argv[optind];;
     ifstream meshfile(temp);
     if (!meshfile.is_open())
     {
@@ -78,7 +87,7 @@ int main(int argc, char* argv[])
     si = new SearchInstance(m);
 
     vector<Scenario> scenarios;
-    temp = argv[2];
+    temp = argv[optind+1];
     ifstream scenfile(temp);
     if (!scenfile.is_open())
     {
