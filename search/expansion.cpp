@@ -17,6 +17,10 @@ namespace polyanya
 double get_h_value(const Point& root, Point goal,
                    const Point& l, const Point& r)
 {
+    if (root == l || root == r)
+    {
+        return root.distance(goal);
+    }
     // First, check whether goal and root are on the same side of the interval.
     // If either are collinear with r/l, reflecting does nothing.
     const Point lr = r - l;

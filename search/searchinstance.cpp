@@ -95,11 +95,10 @@ int SearchInstance::succ_to_node(
                                  V.back();
 
 
-        // Note that g is evaluated twice here.
+        // Note that g is evaluated twice here. (But this is a lambda!)
         // Always try to precompute before using this macro.
-        // h is fine, though.
-        const auto p = [&](const int root, const double g,
-                                  const double h)
+        // We implicitly set h to be zero and let search() update it.
+        const auto p = [&](const int root, const double g)
         {
             if (root != -1)
             {
@@ -129,16 +128,13 @@ int SearchInstance::succ_to_node(
             }
             nodes[out++] = new (node_pool->allocate()) SearchNode(
                 {parent, root, succ.left, succ.right, left_vertex, right_vertex,
-                 next_polygon, g+h, g});
+                 next_polygon, g, g});
         };
 
         const Point& parent_root = (parent->root == -1 ?
                                     start :
                                     mesh->mesh_vertices[parent->root].p);
         #define get_g(new_root) parent->g + parent_root.distance(new_root)
-        #define get_h(new_root) get_h_value(new_root, goal, \
-                                            succ.left, succ.right)
-
         switch (succ.type)
         {
             case Successor::RIGHT_COLLINEAR:
@@ -149,12 +145,12 @@ int SearchInstance::succ_to_node(
                         right_g = get_g(parent->right);
                     }
                     // use right_g
-                    p(right_vertex, right_g, succ.right.distance(goal));
+                    p(right_vertex, right_g);
                 }
                 else
                 {
                     const double g = get_g(succ.right);
-                    p(right_vertex, g, succ.right.distance(goal));
+                    p(right_vertex, g);
                 }
                 break;
 
@@ -164,11 +160,11 @@ int SearchInstance::succ_to_node(
                 {
                     right_g = get_g(parent->right);
                 }
-                p(parent->right_vertex, right_g, get_h(parent->right));
+                p(parent->right_vertex, right_g);
                 break;
 
             case Successor::OBSERVABLE:
-                p(parent->root, parent->g, get_h(parent_root));
+                p(parent->root, parent->g);
                 break;
 
             case Successor::LEFT_NON_OBSERVABLE:
@@ -176,7 +172,7 @@ int SearchInstance::succ_to_node(
                 {
                     left_g = get_g(parent->left);
                 }
-                p(parent->left_vertex, left_g, get_h(parent->left));
+                p(parent->left_vertex, left_g);
                 break;
 
             case Successor::LEFT_COLLINEAR:
@@ -187,12 +183,12 @@ int SearchInstance::succ_to_node(
                         left_g = get_g(parent->left);
                     }
                     // use left_g
-                    p(left_vertex, left_g, succ.left.distance(goal));
+                    p(left_vertex, left_g);
                 }
                 else
                 {
                     const double g = get_g(succ.left);
-                    p(left_vertex, g, succ.left.distance(goal));
+                    p(left_vertex, g);
                 }
                 break;
 
@@ -382,7 +378,12 @@ bool SearchInstance::search()
 
         for (int i = 0; i < num_nodes; i++)
         {
-            open_list.push(nodes_to_push[i]);
+            // We need to update the h value before we push!
+            const SearchNodePtr n = nodes_to_push[i];
+            const Point& n_root = (n->root == -1 ? start :
+                                   mesh->mesh_vertices[n->root].p);
+            n->f += get_h_value(n_root, goal, n->left, n->right);
+            open_list.push(n);
         }
         nodes_pushed += num_nodes;
     }
