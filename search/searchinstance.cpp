@@ -367,7 +367,7 @@ bool SearchInstance::search()
 
         if (verbose)
         {
-            std::cerr << std::endl << "popped off: ";
+            std::cerr << "popped off: ";
             print_node(node, std::cerr);
             std::cerr << std::endl;
         }
@@ -380,8 +380,7 @@ bool SearchInstance::search()
 
             if (verbose)
             {
-                std::cerr << "found end - terminating!" << std::endl
-                          << std::endl;
+                std::cerr << "found end - terminating!" << std::endl;
             }
 
             final_node = node;
@@ -419,7 +418,7 @@ bool SearchInstance::search()
         {
             if (verbose)
             {
-                std::cerr << "expanding: ";
+                std::cerr << "\tintermediate: ";
                 print_node(nodes_to_push[0], std::cerr);
                 std::cerr << std::endl;
             }
@@ -448,7 +447,7 @@ bool SearchInstance::search()
 
             if (verbose)
             {
-                std::cerr << "pushing onto open: ";
+                std::cerr << "\tpushing: ";
                 print_node(n, std::cerr);
                 std::cerr << std::endl;
             }
@@ -467,7 +466,8 @@ bool SearchInstance::search()
 void SearchInstance::print_node(SearchNodePtr node, std::ostream& outfile)
 {
     outfile << "root=" << root_to_point(node->root) << "; left=" << node->left
-            << "; right=" << node->right;
+            << "; right=" << node->right << ", f=" << node->f << ", g="
+            << node->g;
 }
 
 void SearchInstance::get_path_points(std::vector<Point>& out)
