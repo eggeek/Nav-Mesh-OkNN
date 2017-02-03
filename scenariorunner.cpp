@@ -16,6 +16,7 @@ using namespace polyanya;
 SearchInstance* si;
 
 int get_path = 0;
+int verbose = 0;
 
 void print_header()
 {
@@ -63,7 +64,8 @@ int main(int argc, char* argv[])
 {
     warthog::util::param valid_args[] =
     {
-        {"path", no_argument, &get_path, 1}
+        {"path", no_argument, &get_path, 1},
+        {"verbose", no_argument, &verbose, 1},
     };
 
     warthog::util::cfg cfg;
@@ -71,7 +73,8 @@ int main(int argc, char* argv[])
 
     if (argc - optind != 2)
     {
-        cerr << "usage: " << argv[0] << "[--path] <mesh> <scenario>" << endl;
+        cerr << "usage: " << argv[0] << "[--path] [--verbose]"
+             << "<mesh> <scenario>" << endl;
         return 1;
     }
 
@@ -86,6 +89,11 @@ int main(int argc, char* argv[])
     meshfile.close();
 
     si = new SearchInstance(m);
+
+    if (verbose)
+    {
+        si->verbose = true;
+    }
 
     vector<Scenario> scenarios;
     temp = argv[optind+1];

@@ -231,15 +231,37 @@ void SearchInstance::gen_initial_nodes()
         // Generate all in an arbirary polygon.
         case PointLocation::ON_CORNER_VERTEX_AMBIG:
         case PointLocation::ON_CORNER_VERTEX_UNAMBIG:
-            open_list.push(get_lazy(pl.poly1, -1, -1));
+        {
+            SearchNodePtr lazy = get_lazy(pl.poly1, -1, -1);
+            if (verbose)
+            {
+                std::cerr << "generating init node: ";
+                print_node(lazy, std::cerr);
+                std::cerr << std::endl;
+            }
+            open_list.push(lazy);
+        }
             nodes_generated++;
             nodes_pushed++;
             break;
 
         case PointLocation::ON_EDGE:
             // Generate all in both polygons except for the shared side.
-            open_list.push(get_lazy(pl.poly2, pl.vertex1, pl.vertex2));
-            open_list.push(get_lazy(pl.poly1, pl.vertex2, pl.vertex1));
+        {
+            SearchNodePtr lazy1 = get_lazy(pl.poly2, pl.vertex1, pl.vertex2);
+            SearchNodePtr lazy2 = get_lazy(pl.poly1, pl.vertex2, pl.vertex1);
+            if (verbose)
+            {
+                std::cerr << "generating init node: ";
+                print_node(lazy1, std::cerr);
+                std::cerr << std::endl;
+                std::cerr << "generating init node: ";
+                print_node(lazy2, std::cerr);
+                std::cerr << std::endl;
+            }
+            open_list.push(lazy1);
+            open_list.push(lazy2);
+        }
             nodes_generated += 2;
             nodes_pushed += 2;
             break;
@@ -264,6 +286,10 @@ void SearchInstance::gen_initial_nodes()
                 {
                     // Trivial case - we can see the goal from start!
                     final_node = dummy_init;
+                    if (verbose)
+                    {
+                        std::cerr << "got a trivial case!" << std::endl;
+                    }
                     return;
                 }
                 std::vector<Successor> successors;
@@ -291,6 +317,12 @@ void SearchInstance::gen_initial_nodes()
                                                    num_succ, nodes);
                 for (int i = 0; i < num_nodes; i++)
                 {
+                    if (verbose)
+                    {
+                        std::cerr << "generating init node: ";
+                        print_node(nodes[i], std::cerr);
+                        std::cerr << std::endl;
+                    }
                     open_list.push(nodes[i]);
                 }
                 nodes_generated += num_nodes;
@@ -332,11 +364,26 @@ bool SearchInstance::search()
     while (!open_list.empty())
     {
         SearchNodePtr node = open_list.top(); open_list.pop();
+
+        if (verbose)
+        {
+            std::cerr << std::endl << "popped off: ";
+            print_node(node, std::cerr);
+            std::cerr << std::endl;
+        }
+
         nodes_popped++;
         const int next_poly = node->next_polygon;
         if (next_poly == end_polygon)
         {
             timer.stop();
+
+            if (verbose)
+            {
+                std::cerr << "found end - terminating!" << std::endl
+                          << std::endl;
+            }
+
             final_node = node;
             return true;
         }
@@ -352,6 +399,12 @@ bool SearchInstance::search()
                 if (root_g_values[root] + EPSILON < node->g)
                 {
                     nodes_pruned_post_pop++;
+
+                    if (verbose)
+                    {
+                        std::cerr << "node is dominated!" << std::endl;
+                    }
+
                     // We've done better!
                     continue;
                 }
@@ -364,6 +417,13 @@ bool SearchInstance::search()
         // to work.
         do
         {
+            if (verbose)
+            {
+                std::cerr << "expanding: ";
+                print_node(nodes_to_push[0], std::cerr);
+                std::cerr << std::endl;
+            }
+
             SearchNodePtr cur_node = nodes_to_push[0];
             // don't forget this!!!
             if (cur_node->next_polygon == end_polygon)
@@ -385,6 +445,14 @@ bool SearchInstance::search()
             const Point& n_root = (n->root == -1 ? start :
                                    mesh->mesh_vertices[n->root].p);
             n->f += get_h_value(n_root, goal, n->left, n->right);
+
+            if (verbose)
+            {
+                std::cerr << "pushing onto open: ";
+                print_node(n, std::cerr);
+                std::cerr << std::endl;
+            }
+
             open_list.push(n);
         }
         nodes_pushed += num_nodes;
@@ -392,6 +460,14 @@ bool SearchInstance::search()
 
     timer.stop();
     return false;
+}
+
+#define root_to_point(root) ((root) == -1 ? start : mesh->mesh_vertices[root].p)
+
+void SearchInstance::print_node(SearchNodePtr node, std::ostream& outfile)
+{
+    outfile << "root=" << root_to_point(node->root) << "; left=" << node->left
+            << "; right=" << node->right;
 }
 
 void SearchInstance::get_path_points(std::vector<Point>& out)
@@ -403,9 +479,6 @@ void SearchInstance::get_path_points(std::vector<Point>& out)
     out.clear();
     out.push_back(goal);
     SearchNodePtr cur_node = final_node;
-
-    #define root_to_point(root) ((root) == -1 ? start : \
-                                  mesh->mesh_vertices[root].p)
 
     while (cur_node != nullptr)
     {
@@ -433,5 +506,7 @@ void SearchInstance::print_search_nodes(std::ostream& outfile)
         cur_node = cur_node->parent;
     }
 }
+
+#undef root_to_point
 
 }

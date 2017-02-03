@@ -48,6 +48,7 @@ class SearchInstance
 
         void init()
         {
+            verbose = false;
             node_pool = new warthog::mem::cpool(sizeof(SearchNode));
             init_root_pruning();
         }
@@ -80,12 +81,14 @@ class SearchInstance
             SearchNodePtr parent, std::vector<Successor>& successors,
             int num_succ, std::vector<SearchNodePtr>& nodes
         );
+        void print_node(SearchNodePtr node, std::ostream& outfile);
 
     public:
         int nodes_generated;        // Nodes stored in memory
         int nodes_pushed;           // Nodes pushed onto open
         int nodes_popped;           // Nodes popped off open
         int nodes_pruned_post_pop;  // Nodes we prune right after popping off
+        bool verbose;
 
         SearchInstance() { }
         SearchInstance(MeshPtr m) : mesh(m) { init(); }
