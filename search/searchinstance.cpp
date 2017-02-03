@@ -311,15 +311,17 @@ void SearchInstance::gen_initial_nodes()
 
 bool SearchInstance::search()
 {
-    const clock_t start_time = clock();
+    timer.start();
     init_search();
     if (mesh == nullptr || end_polygon == -1)
     {
+        timer.stop();
         return false;
     }
 
     if (final_node != nullptr)
     {
+        timer.stop();
         return true;
     }
 
@@ -334,7 +336,7 @@ bool SearchInstance::search()
         const int next_poly = node->next_polygon;
         if (next_poly == end_polygon)
         {
-            search_time = clock() - start_time;
+            timer.stop();
             final_node = node;
             return true;
         }
@@ -388,6 +390,7 @@ bool SearchInstance::search()
         nodes_pushed += num_nodes;
     }
 
+    timer.stop();
     return false;
 }
 

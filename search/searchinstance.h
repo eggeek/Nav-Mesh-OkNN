@@ -4,6 +4,7 @@
 #include "mesh.h"
 #include "point.h"
 #include "cpool.h"
+#include "timer.h"
 #include <queue>
 #include <vector>
 #include <ctime>
@@ -43,7 +44,7 @@ class SearchInstance
         std::vector<int> root_search_ids;  // also used for root-level pruning
         int search_id;
 
-        clock_t search_time;
+        warthog::timer timer;
 
         void init()
         {
@@ -120,7 +121,7 @@ class SearchInstance
 
         double get_search_micro()
         {
-            return ((double) search_time) / CLOCKS_PER_SEC * 1e6;
+            return timer.elapsed_time_micro();
         }
 
         void get_path_points(std::vector<Point>& out);
