@@ -32,6 +32,7 @@ void run_scenario(int index, Scenario scen)
         vector<Point> path;
         si->get_path_points(path);
         const int n = (int) path.size();
+        cout << index << "; ";
         for (int i = 0; i < n; i++)
         {
             cout << path[i];
