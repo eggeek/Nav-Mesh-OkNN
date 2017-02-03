@@ -404,7 +404,8 @@ void SearchInstance::get_path_points(std::vector<Point>& out)
     out.push_back(goal);
     SearchNodePtr cur_node = final_node;
 
-    #define root_to_point(root) mesh->mesh_vertices[root].p
+    #define root_to_point(root) ((root) == -1 ? start : \
+                                  mesh->mesh_vertices[root].p)
 
     while (cur_node != nullptr)
     {
