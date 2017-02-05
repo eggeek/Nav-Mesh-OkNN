@@ -416,13 +416,6 @@ bool SearchInstance::search()
         // to work.
         do
         {
-            if (verbose)
-            {
-                std::cerr << "\tintermediate: ";
-                print_node(nodes_to_push[0], std::cerr);
-                std::cerr << std::endl;
-            }
-
             SearchNodePtr cur_node = nodes_to_push[0];
             // don't forget this!!!
             if (cur_node->next_polygon == end_polygon)
@@ -434,6 +427,18 @@ bool SearchInstance::search()
             num_nodes = succ_to_node(cur_node, successors,
                                      num_succ, nodes_to_push);
             nodes_generated += num_nodes;
+
+            if (verbose)
+            {
+                if(cur_node != node)
+                //if(cur_node != node && num_nodes == 1)
+                {
+                    std::cerr << "\tintermediate: ";
+                    print_node(cur_node, std::cerr);
+                    std::cerr << std::endl;
+                }
+            }
+
         }
         while (num_nodes == 1); // if num_nodes == 0, we still want to break
 
@@ -466,7 +471,7 @@ bool SearchInstance::search()
 void SearchInstance::print_node(SearchNodePtr node, std::ostream& outfile)
 {
     outfile << "root=" << root_to_point(node->root) << "; left=" << node->left
-            << "; right=" << node->right << ", f=" << node->f << ", g="
+            << "; right=" << node->right << "; f=" << node->f << ", g="
             << node->g;
 }
 
