@@ -120,10 +120,12 @@ draw_expansion <- function(exp_trace, prev=FALSE)
 
     # parent node colour and symbol
     p_col = "red"
+    p_col2 = "brown"
     p_pch = 20
 
     # current successor node colour and symbol
     c_col = "green"
+    c_col2 = "green3"
     c_pch = 20
 
     begin <- which(exp_trace$expanded)[1]
@@ -164,11 +166,19 @@ draw_expansion <- function(exp_trace, prev=FALSE)
         {
             points(root_xy[1], root_xy[2], pch=mypch, col=mycol, bg=mycol)
         }
-        lines(c(left_xy[1], right_xy[1]), c(left_xy[2], right_xy[2]) , col=mycol)
+        lines(c(left_xy[1], right_xy[1]), c(left_xy[2], right_xy[2]) , col=mycol, lwd=2)
 
         if(!prev)
         {
             readline(prompt="Press [enter] to continue")
+            if(mycol == c_col)
+            {
+                lines(c(left_xy[1], right_xy[1]), c(left_xy[2], right_xy[2]) , col=c_col2, lwd=2)
+            }
+            else if(mycol == p_col)
+            {
+                lines(c(left_xy[1], right_xy[1]), c(left_xy[2], right_xy[2]) , col=p_col2, lwd=2)
+            }
         }
     }
 }
