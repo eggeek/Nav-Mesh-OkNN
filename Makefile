@@ -9,6 +9,14 @@ CXXFLAGS = -std=c++11 -pedantic -Wall -Wno-strict-aliasing -Wno-long-long -Wno-d
 FAST_CXXFLAGS = -O3 -DNDEBUG
 DEV_CXXFLAGS = -g -ggdb -O0
 
+ifeq ("$(findstring Darwin, "$(shell uname -s)")", "Darwin")
+  CXXFLAGS += -DOS_MAC
+else
+  ifeq ("$(findstring Linux, "$(shell uname -s)")", "Linux")
+    CXXFLAGS += -lrt
+  endif
+endif
+
 TARGETS = test scenariorunner
 BIN_TARGETS = $(addprefix bin/,$(TARGETS))
 
