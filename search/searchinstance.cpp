@@ -547,7 +547,8 @@ void SearchInstance::print_search_nodes(std::ostream& outfile)
     SearchNodePtr cur_node = final_node;
     while (cur_node != nullptr)
     {
-        outfile << *cur_node << std::endl;
+        print_node(cur_node, outfile);
+        outfile << std::endl;
         mesh->print_polygon(outfile, cur_node->next_polygon);
         outfile << std::endl;
         cur_node = cur_node->parent;
