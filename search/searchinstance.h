@@ -46,9 +46,15 @@ class SearchInstance
 
         warthog::timer timer;
 
+        // Pre-initialised variables to use in search().
+        Successor* search_successors;
+        SearchNodePtr* search_nodes_to_push;
+
         void init()
         {
             verbose = false;
+            search_successors = new Successor [mesh->max_poly_sides + 2];
+            search_nodes_to_push = new SearchNodePtr [mesh->max_poly_sides + 2];
             node_pool = new warthog::mem::cpool(sizeof(SearchNode));
             init_root_pruning();
         }
@@ -102,6 +108,8 @@ class SearchInstance
             {
                 delete node_pool;
             }
+            delete[] search_successors;
+            delete[] search_nodes_to_push;
         }
 
         void set_start_goal(Point s, Point g)

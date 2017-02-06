@@ -383,8 +383,6 @@ bool SearchInstance::search()
         return true;
     }
 
-    Successor* successors = new Successor [mesh->max_poly_sides + 2];
-    SearchNodePtr* nodes_to_push = new SearchNodePtr [mesh->max_poly_sides + 2];
     while (!open_list.empty())
     {
         SearchNodePtr node = open_list.top(); open_list.pop();
@@ -412,8 +410,6 @@ bool SearchInstance::search()
             #endif
 
             final_node = node;
-            delete[] successors;
-            delete[] nodes_to_push;
             return true;
         }
         // We will never update our root list here.
@@ -442,22 +438,22 @@ bool SearchInstance::search()
             }
         }
         int num_nodes = 1;
-        nodes_to_push[0] = node;
+        search_nodes_to_push[0] = node;
 
         // We use a do while here because the first iteration is guaranteed
         // to work.
         do
         {
-            SearchNodePtr cur_node = nodes_to_push[0];
+            SearchNodePtr cur_node = search_nodes_to_push[0];
             // don't forget this!!!
             if (cur_node->next_polygon == end_polygon)
             {
                 break;
             }
             int num_succ = get_successors(*cur_node, start, *mesh,
-                                          successors);
-            num_nodes = succ_to_node(cur_node, successors,
-                                     num_succ, nodes_to_push);
+                                          search_successors);
+            num_nodes = succ_to_node(cur_node, search_successors,
+                                     num_succ, search_nodes_to_push);
             nodes_generated += num_nodes;
 
             #ifndef NDEBUG
@@ -477,7 +473,7 @@ bool SearchInstance::search()
         for (int i = 0; i < num_nodes; i++)
         {
             // We need to update the h value before we push!
-            const SearchNodePtr n = nodes_to_push[i];
+            const SearchNodePtr n = search_nodes_to_push[i];
             const Point& n_root = (n->root == -1 ? start :
                                    mesh->mesh_vertices[n->root].p);
             n->f += get_h_value(n_root, goal, n->left, n->right);
@@ -497,8 +493,6 @@ bool SearchInstance::search()
     }
 
     timer.stop();
-    delete[] successors;
-    delete[] nodes_to_push;
     return false;
 }
 
