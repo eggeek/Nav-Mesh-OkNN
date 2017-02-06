@@ -69,7 +69,8 @@ int SearchInstance::succ_to_node(
     assert(mesh != nullptr);
     assert(parent != nullptr);
     const Polygon& polygon = mesh->mesh_polygons[parent->next_polygon];
-    const std::vector<int>& V = polygon.vertices, P = polygon.polygons;
+    const std::vector<int>& V = polygon.vertices;
+    const std::vector<int>& P = polygon.polygons;
 
     double right_g = -1, left_g = -1;
 
