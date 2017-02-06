@@ -136,7 +136,7 @@ int get_successors(SearchNode& node, const Point& start, const Mesh& mesh,
     const Polygon& polygon = mesh.mesh_polygons[node.next_polygon];
     const std::vector<Vertex>& mesh_vertices = mesh.mesh_vertices;
     // V, P and N are solely used for conciseness
-    const std::vector<int>& V = polygon.vertices, P = polygon.polygons;
+    const std::vector<int>& V = polygon.vertices;
     const int N = (int) V.size();
 
     const Point& root = (node.root == -1 ? start : mesh_vertices[node.root].p);
@@ -199,11 +199,11 @@ int get_successors(SearchNode& node, const Point& start, const Mesh& mesh,
     assert(V[normalise(left_ind)] == node.left_vertex);
 
     // Find whether we can turn at either endpoint.
-    const Vertex& right_vertex_obj = mesh_vertices[node.right_vertex],
-                  left_vertex_obj  = mesh_vertices[V[normalise(left_ind)]];
+    const Vertex& right_vertex_obj = mesh_vertices[node.right_vertex];
+    const Vertex& left_vertex_obj  = mesh_vertices[V[normalise(left_ind)]];
 
-    const Point& right_p = right_vertex_obj.p,
-                 left_p  = left_vertex_obj.p;
+    const Point& right_p = right_vertex_obj.p;
+    const Point& left_p  = left_vertex_obj.p;
     const bool can_turn_right = right_p == node.right &&
                                 right_vertex_obj.is_corner,
                can_turn_left  = left_p == node.left &&
@@ -231,8 +231,8 @@ int get_successors(SearchNode& node, const Point& start, const Mesh& mesh,
     #define index2point(index) mesh_vertices[V[index]].p
 
 
-    const Point& A_p = index2point(normalised_A),
-                 Am1_p = index2point(normalised_Am1);
+    const Point& A_p = index2point(normalised_A);
+    const Point& Am1_p = index2point(normalised_Am1);
     const Point right_intersect = [&]() -> Point
     {
         double root_right_num, segment_num, denom;
@@ -267,8 +267,8 @@ int get_successors(SearchNode& node, const Point& start, const Mesh& mesh,
     assert(B != -1);
     const int normalised_B = normalise(B),
               normalised_Bp1 = normalise(B+1);
-    const Point& B_p = index2point(normalised_B),
-                 Bp1_p = index2point(normalised_Bp1);
+    const Point& B_p = index2point(normalised_B);
+    const Point& Bp1_p = index2point(normalised_Bp1);
     const Point left_intersect = [&]() -> Point
     {
         double root_left_num, segment_num, denom;
