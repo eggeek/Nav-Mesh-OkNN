@@ -1,6 +1,6 @@
 load_mesh <- function(filename)
 {
-    rawmesh <- read.csv(filename, sep="\n", header=TRUE)
+    rawmesh <- read.csv(filename, sep="\n", header=TRUE, stringsAsFactors=FALSE)
     mesh_maxcols <- max(count.fields(filename))
     rawmesh <- as.data.frame( 
                     read.table(filename, header=FALSE, sep=" ", 
@@ -79,7 +79,7 @@ mesh2lines <- function(rawmesh)
 # load 
 load_trace <- function(filename)
 {
-    trace <- read.csv(filename, sep=";", header=FALSE, col.names=c("root", "left", "right", "priority"))
+    trace <- read.csv(filename, sep=";", header=FALSE, col.names=c("root", "left", "right", "priority"), stringsAsFactors=FALSE)
     trace$expanded <- grepl("popped off", trace$root)
     trace$start <- grepl("generating", trace$root)
     trace$root <- gsub("[\tA-Za-z: =()]+", "", trace$root)
@@ -94,7 +94,7 @@ load_trace <- function(filename)
 
 load_trace2 <- function(filename)
 {
-    rawout <- read.csv(filename, sep="\n", header=FALSE)
+    rawout <- read.csv(filename, sep="\n", header=FALSE, stringsAsFactors=FALSE)
     pathrows <- grepl("path", rawout[,1])
     exprows <- grepl("root", rawout[,1])
 
@@ -221,7 +221,7 @@ draw_expansion <- function(exp_trace, prev=FALSE)
 
 load_paths <- function(filename, path_colour="red")
 {
-    rawpaths <- read.csv(filename, sep="\n", header=FALSE)
+    rawpaths <- read.csv(filename, sep="\n", header=FALSE, stringsAsFactors=FALSE)
     unlist(rawpaths)
 }
 
