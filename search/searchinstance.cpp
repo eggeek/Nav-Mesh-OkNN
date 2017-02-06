@@ -29,27 +29,33 @@ PointLocation SearchInstance::get_point_location(Point p)
         Point corrected = p + CORRECTOR;
         PointLocation corrected_loc = mesh->get_point_location(corrected);
 
+        #ifndef NDEBUG
         if (verbose)
         {
             std::cerr << p << " " << corrected_loc << std::endl;
         }
+        #endif
 
         switch (corrected_loc.type)
         {
             case PointLocation::ON_CORNER_VERTEX_AMBIG:
             case PointLocation::ON_CORNER_VERTEX_UNAMBIG:
             case PointLocation::ON_NON_CORNER_VERTEX:
+                #ifndef NDEBUG
                 if (verbose)
                 {
                     std::cerr << "Warning: corrected " << p << " lies on vertex"
                               << std::endl;
                 }
+                #endif
             case PointLocation::NOT_ON_MESH:
+                #ifndef NDEBUG
                 if (verbose)
                 {
                     std::cerr << "Warning: completely ambiguous point at " << p
                               << std::endl;
                 }
+                #endif
                 break;
 
             case PointLocation::IN_POLYGON:
@@ -243,12 +249,14 @@ void SearchInstance::gen_initial_nodes()
         case PointLocation::ON_CORNER_VERTEX_UNAMBIG:
         {
             SearchNodePtr lazy = get_lazy(pl.poly1, -1, -1);
+            #ifndef NDEBUG
             if (verbose)
             {
                 std::cerr << "generating init node: ";
                 print_node(lazy, std::cerr);
                 std::cerr << std::endl;
             }
+            #endif
             open_list.push(lazy);
         }
             nodes_generated++;
@@ -260,6 +268,7 @@ void SearchInstance::gen_initial_nodes()
         {
             SearchNodePtr lazy1 = get_lazy(pl.poly2, pl.vertex1, pl.vertex2);
             SearchNodePtr lazy2 = get_lazy(pl.poly1, pl.vertex2, pl.vertex1);
+            #ifndef NDEBUG
             if (verbose)
             {
                 std::cerr << "generating init node: ";
@@ -269,6 +278,7 @@ void SearchInstance::gen_initial_nodes()
                 print_node(lazy2, std::cerr);
                 std::cerr << std::endl;
             }
+            #endif
             open_list.push(lazy1);
             open_list.push(lazy2);
         }
@@ -296,10 +306,12 @@ void SearchInstance::gen_initial_nodes()
                 {
                     // Trivial case - we can see the goal from start!
                     final_node = dummy_init;
+                    #ifndef NDEBUG
                     if (verbose)
                     {
                         std::cerr << "got a trivial case!" << std::endl;
                     }
+                    #endif
                     return;
                 }
                 // iterate over poly, throwing away vertices if one of them is
@@ -328,12 +340,14 @@ void SearchInstance::gen_initial_nodes()
                 delete[] successors;
                 for (int i = 0; i < num_nodes; i++)
                 {
+                    #ifndef NDEBUG
                     if (verbose)
                     {
                         std::cerr << "generating init node: ";
                         print_node(nodes[i], std::cerr);
                         std::cerr << std::endl;
                     }
+                    #endif
                     open_list.push(nodes[i]);
                 }
                 delete[] nodes;
@@ -375,12 +389,14 @@ bool SearchInstance::search()
     {
         SearchNodePtr node = open_list.top(); open_list.pop();
 
+        #ifndef NDEBUG
         if (verbose)
         {
             std::cerr << "popped off: ";
             print_node(node, std::cerr);
             std::cerr << std::endl;
         }
+        #endif
 
         nodes_popped++;
         const int next_poly = node->next_polygon;
@@ -388,10 +404,12 @@ bool SearchInstance::search()
         {
             timer.stop();
 
+            #ifndef NDEBUG
             if (verbose)
             {
                 std::cerr << "found end - terminating!" << std::endl;
             }
+            #endif
 
             final_node = node;
             delete[] successors;
@@ -411,10 +429,12 @@ bool SearchInstance::search()
                 {
                     nodes_pruned_post_pop++;
 
+                    #ifndef NDEBUG
                     if (verbose)
                     {
                         std::cerr << "node is dominated!" << std::endl;
                     }
+                    #endif
 
                     // We've done better!
                     continue;
@@ -428,12 +448,14 @@ bool SearchInstance::search()
         // to work.
         do
         {
+            #ifndef NDEBUG
             if (verbose)
             {
                 std::cerr << "\tintermediate: ";
                 print_node(nodes_to_push[0], std::cerr);
                 std::cerr << std::endl;
             }
+            #endif
 
             SearchNodePtr cur_node = nodes_to_push[0];
             // don't forget this!!!
@@ -457,12 +479,14 @@ bool SearchInstance::search()
                                    mesh->mesh_vertices[n->root].p);
             n->f += get_h_value(n_root, goal, n->left, n->right);
 
+            #ifndef NDEBUG
             if (verbose)
             {
                 std::cerr << "\tpushing: ";
                 print_node(n, std::cerr);
                 std::cerr << std::endl;
             }
+            #endif
 
             open_list.push(n);
         }
