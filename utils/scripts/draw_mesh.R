@@ -139,7 +139,10 @@ draw_trace <- function(search_trace)
         #print(paste(begin[i], end[i]))
         draw_expansion(search_trace$trace[begin[i] : end[i], ], FALSE)
         #print(search_trace$path[i])
-        draw_path(search_trace$path[i])
+        if(length(search_trace$path) > i)
+        {
+            draw_path(search_trace$path[i])
+        }
         readline(prompt="Press [enter] to show next instance")
     }
 }
