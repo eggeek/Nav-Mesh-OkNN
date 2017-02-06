@@ -128,7 +128,7 @@ inline int binary_search(const std::vector<int>& arr, const int N,
 // Generates the successors of the search node and sets them in the successor
 // vector. Returns number of successors generated.
 int get_successors(SearchNode& node, const Point& start, const Mesh& mesh,
-                   std::vector<Successor>& successors)
+                   Successor* successors)
 {
     // If the next polygon is -1, we did a bad job at pruning...
     assert(node.next_polygon != -1);

@@ -62,8 +62,8 @@ PointLocation SearchInstance::get_point_location(Point p)
 }
 
 int SearchInstance::succ_to_node(
-    SearchNodePtr parent, std::vector<Successor>& successors, int num_succ,
-    std::vector<SearchNodePtr>& nodes
+    SearchNodePtr parent, Successor* successors, int num_succ,
+    SearchNodePtr* nodes
 )
 {
     assert(mesh != nullptr);
@@ -293,11 +293,11 @@ void SearchInstance::gen_initial_nodes()
                     }
                     return;
                 }
-                std::vector<Successor> successors;
                 // iterate over poly, throwing away vertices if one of them is
                 // pl.vertex1
                 const std::vector<int>& vertices =
                     mesh->mesh_polygons[poly].vertices;
+                Successor* successors = new Successor [vertices.size()];
                 int last_vertex = vertices.back();
                 int num_succ = 0;
                 for (int i = 0; i < (int) vertices.size(); i++)
@@ -308,14 +308,15 @@ void SearchInstance::gen_initial_nodes()
                         last_vertex = vertex;
                         continue;
                     }
-                    successors.push_back({Successor::OBSERVABLE, v(vertex).p,
-                                          v(last_vertex).p, i});
-                    num_succ++;
+                    successors[num_succ++] =
+                        {Successor::OBSERVABLE, v(vertex).p,
+                         v(last_vertex).p, i};
                     last_vertex = vertex;
                 }
-                std::vector<SearchNodePtr> nodes(num_succ);
+                SearchNodePtr* nodes = new SearchNodePtr [num_succ];
                 const int num_nodes = succ_to_node(dummy_init, successors,
                                                    num_succ, nodes);
+                delete[] successors;
                 for (int i = 0; i < num_nodes; i++)
                 {
                     if (verbose)
@@ -326,6 +327,7 @@ void SearchInstance::gen_initial_nodes()
                     }
                     open_list.push(nodes[i]);
                 }
+                delete[] nodes;
                 nodes_generated += num_nodes;
                 nodes_pushed += num_nodes;
             }
@@ -358,10 +360,8 @@ bool SearchInstance::search()
         return true;
     }
 
-    std::vector<Successor> successors;
-    std::vector<SearchNodePtr> nodes_to_push;
-    successors.resize(mesh->max_poly_sides + 2);
-    nodes_to_push.resize(mesh->max_poly_sides + 2);
+    Successor* successors = new Successor [mesh->max_poly_sides + 2];
+    SearchNodePtr* nodes_to_push = new SearchNodePtr [mesh->max_poly_sides + 2];
     while (!open_list.empty())
     {
         SearchNodePtr node = open_list.top(); open_list.pop();
@@ -385,6 +385,8 @@ bool SearchInstance::search()
             }
 
             final_node = node;
+            delete[] successors;
+            delete[] nodes_to_push;
             return true;
         }
         // We will never update our root list here.
@@ -459,6 +461,8 @@ bool SearchInstance::search()
     }
 
     timer.stop();
+    delete[] successors;
+    delete[] nodes_to_push;
     return false;
 }
 
