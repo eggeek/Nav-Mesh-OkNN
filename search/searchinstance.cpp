@@ -29,19 +29,27 @@ PointLocation SearchInstance::get_point_location(Point p)
         Point corrected = p + CORRECTOR;
         PointLocation corrected_loc = mesh->get_point_location(corrected);
 
-        std::cerr << p << " " << corrected_loc << std::endl;
-        return out;
+        if (verbose)
+        {
+            std::cerr << p << " " << corrected_loc << std::endl;
+        }
 
         switch (corrected_loc.type)
         {
             case PointLocation::ON_CORNER_VERTEX_AMBIG:
             case PointLocation::ON_CORNER_VERTEX_UNAMBIG:
             case PointLocation::ON_NON_CORNER_VERTEX:
-                std::cerr << "Warning: corrected " << p << " lies on vertex"
-                          << std::endl;
+                if (verbose)
+                {
+                    std::cerr << "Warning: corrected " << p << " lies on vertex"
+                              << std::endl;
+                }
             case PointLocation::NOT_ON_MESH:
-                std::cerr << "Warning: completely ambiguous point at " << p
-                          << std::endl;
+                if (verbose)
+                {
+                    std::cerr << "Warning: completely ambiguous point at " << p
+                              << std::endl;
+                }
                 break;
 
             case PointLocation::IN_POLYGON:
