@@ -142,7 +142,7 @@ int SearchInstance::succ_to_node(
             case Successor::RIGHT_COLLINEAR:
                 if (succ.right == parent->right)
                 {
-                    if (right_g < -0.5)
+                    if (right_g == -1)
                     {
                         right_g = get_g(parent->right);
                     }
@@ -158,7 +158,7 @@ int SearchInstance::succ_to_node(
 
             case Successor::RIGHT_NON_OBSERVABLE:
                 // equivalent to right_g == -1
-                if (right_g < -0.5)
+                if (right_g == -1)
                 {
                     right_g = get_g(parent->right);
                 }
@@ -170,7 +170,7 @@ int SearchInstance::succ_to_node(
                 break;
 
             case Successor::LEFT_NON_OBSERVABLE:
-                if (left_g < -0.5)
+                if (left_g == -1)
                 {
                     left_g = get_g(parent->left);
                 }
@@ -180,7 +180,7 @@ int SearchInstance::succ_to_node(
             case Successor::LEFT_COLLINEAR:
                 if (succ.left == parent->left)
                 {
-                    if (left_g < -0.5)
+                    if (left_g == -1)
                     {
                         left_g = get_g(parent->left);
                     }
