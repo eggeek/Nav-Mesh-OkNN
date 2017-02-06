@@ -48,13 +48,13 @@ class SearchInstance
 
         // Pre-initialised variables to use in search().
         Successor* search_successors;
-        SearchNodePtr* search_nodes_to_push;
+        SearchNode* search_nodes_to_push;
 
         void init()
         {
             verbose = false;
             search_successors = new Successor [mesh->max_poly_sides + 2];
-            search_nodes_to_push = new SearchNodePtr [mesh->max_poly_sides + 2];
+            search_nodes_to_push = new SearchNode [mesh->max_poly_sides + 2];
             node_pool = new warthog::mem::cpool(sizeof(SearchNode));
             init_root_pruning();
         }
@@ -85,7 +85,7 @@ class SearchInstance
         void gen_initial_nodes();
         int succ_to_node(
             SearchNodePtr parent, Successor* successors,
-            int num_succ, SearchNodePtr* nodes
+            int num_succ, SearchNode* nodes
         );
         void print_node(SearchNodePtr node, std::ostream& outfile);
 

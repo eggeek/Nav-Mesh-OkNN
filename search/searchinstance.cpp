@@ -77,11 +77,10 @@ PointLocation SearchInstance::get_point_location(Point p)
 
 int SearchInstance::succ_to_node(
     SearchNodePtr parent, Successor* successors, int num_succ,
-    SearchNodePtr* nodes
+    SearchNode* nodes
 )
 {
     assert(mesh != nullptr);
-    assert(parent != nullptr);
     const Polygon& polygon = mesh->mesh_polygons[parent->next_polygon];
     const std::vector<int>& V = polygon.vertices;
     const std::vector<int>& P = polygon.polygons;
@@ -142,9 +141,8 @@ int SearchInstance::succ_to_node(
                     }
                 }
             }
-            nodes[out++] = new (node_pool->allocate()) SearchNode(
-                {parent, root, succ.left, succ.right, left_vertex, right_vertex,
-                 next_polygon, g, g});
+            nodes[out++] = {nullptr, root, succ.left, succ.right, left_vertex,
+                right_vertex, next_polygon, g, g};
         };
 
         const Point& parent_root = (parent->root == -1 ?
@@ -334,21 +332,23 @@ void SearchInstance::gen_initial_nodes()
                          v(last_vertex).p, i};
                     last_vertex = vertex;
                 }
-                SearchNodePtr* nodes = new SearchNodePtr [num_succ];
+                SearchNode* nodes = new SearchNode [num_succ];
                 const int num_nodes = succ_to_node(dummy_init, successors,
                                                    num_succ, nodes);
                 delete[] successors;
                 for (int i = 0; i < num_nodes; i++)
                 {
+                    SearchNodePtr to_push = new (node_pool->allocate())
+                        SearchNode(nodes[i]);
                     #ifndef NDEBUG
                     if (verbose)
                     {
                         std::cerr << "generating init node: ";
-                        print_node(nodes[i], std::cerr);
+                        print_node(to_push, std::cerr);
                         std::cerr << std::endl;
                     }
                     #endif
-                    open_list.push(nodes[i]);
+                    open_list.push(to_push);
                 }
                 delete[] nodes;
                 nodes_generated += num_nodes;
@@ -438,45 +438,58 @@ bool SearchInstance::search()
             }
         }
         int num_nodes = 1;
-        search_nodes_to_push[0] = node;
+        search_nodes_to_push[0] = *node;
 
         // We use a do while here because the first iteration is guaranteed
         // to work.
         do
         {
-            SearchNodePtr cur_node = search_nodes_to_push[0];
+            SearchNode cur_node = search_nodes_to_push[0];
             // don't forget this!!!
-            if (cur_node->next_polygon == end_polygon)
+            if (cur_node.next_polygon == end_polygon)
             {
                 break;
             }
-            int num_succ = get_successors(*cur_node, start, *mesh,
+            int num_succ = get_successors(cur_node, start, *mesh,
                                           search_successors);
-            num_nodes = succ_to_node(cur_node, search_successors,
+            num_nodes = succ_to_node(&cur_node, search_successors,
                                      num_succ, search_nodes_to_push);
-            nodes_generated += num_nodes;
-
-            #ifndef NDEBUG
-            if (verbose)
+            if (num_nodes == 1)
             {
-                if(cur_node != node)
+                // Did we turn?
+                if (cur_node.g != search_nodes_to_push[0].g)
+                {
+                    // Turned. Set the parent of this, and set the current
+                    // node pointer to this after allocating space for it.
+                    search_nodes_to_push[0].parent = node;
+                    node = new (node_pool->allocate())
+                        SearchNode(search_nodes_to_push[0]);
+                    nodes_generated++;
+                }
+
+                #ifndef NDEBUG
+                if (verbose)
                 {
                     std::cerr << "\tintermediate: ";
-                    print_node(cur_node, std::cerr);
+                    print_node(&search_nodes_to_push[0], std::cerr);
                     std::cerr << std::endl;
                 }
+                #endif
             }
-            #endif
         }
         while (num_nodes == 1); // if num_nodes == 0, we still want to break
 
         for (int i = 0; i < num_nodes; i++)
         {
             // We need to update the h value before we push!
-            const SearchNodePtr n = search_nodes_to_push[i];
+            const SearchNodePtr n = new (node_pool->allocate())
+                SearchNode(search_nodes_to_push[i]);
             const Point& n_root = (n->root == -1 ? start :
                                    mesh->mesh_vertices[n->root].p);
             n->f += get_h_value(n_root, goal, n->left, n->right);
+
+            // This node's parent should be nullptr, so we should set it.
+            n->parent = node;
 
             #ifndef NDEBUG
             if (verbose)
@@ -489,6 +502,7 @@ bool SearchInstance::search()
 
             open_list.push(n);
         }
+        nodes_generated += num_nodes;
         nodes_pushed += num_nodes;
     }
 
