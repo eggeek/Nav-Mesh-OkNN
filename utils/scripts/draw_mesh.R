@@ -92,23 +92,55 @@ load_trace <- function(filename)
     trace
 }
 
+load_trace2 <- function(filename)
+{
+    rawout <- read.csv(filename, sep="\n", header=FALSE)
+    pathrows <- grepl("path", rawout[,1])
+    exprows <- grepl("root", rawout[,1])
+
+    # parse the lines for nodes expanded
+    tmp <- rawout[exprows,]
+    tmp <- unlist(strsplit(tmp, ";"))
+    tmp_roots <- tmp[seq(1, length(tmp), by=4)]
+    tmp_lefts <- tmp[seq(2, length(tmp), by=4)]
+    tmp_rights <- tmp[seq(3, length(tmp), by=4)]
+    tmp_priority <- tmp[seq(4, length(tmp), by=4)]
+    trace <- data.frame(list("root"=tmp_roots, "left"=tmp_lefts, "right"=tmp_rights, "priority"=tmp_priority))
+    trace$expanded <- grepl("popped off", trace$root)
+    trace$start <- grepl("generating", trace$root)
+    trace$root <- gsub("[\tA-Za-z: =()]+", "", trace$root)
+    trace$left <- gsub("[\tA-Za-z: =()]+", "", trace$left)
+    trace$right <- gsub("[\tA-Za-z: =()]+", "", trace$right)
+    repeating_node <- which(trace$start)+1
+    trace <- trace[-repeating_node,]
+    trace$expanded <- trace$expanded | trace$start
+
+    trace <- list("trace"=trace, "path"=rawout[pathrows,])
+    trace$path <- gsub("^path [0-9]+;[ ]+", "", trace$path)
+    trace
+}
+
 # visualses polyanya search instances from a trace file
 # used in combination with load_trace
 # e.g. draw_trace(load_trace(search_output_file))
 draw_trace <- function(search_trace)
 {
-    begin <- which(search_trace$start)
-    end <- c(begin[-1]-1, nrow(search_trace))
+    begin <- which(search_trace$trace$start)
+    end <- c(begin[-1]-1, nrow(search_trace$trace))
     for(i in seq(1, length(begin)))
     {
 
         if(i > 1)
         {
-            print(paste(begin[i-1], end[i-1]))
-            draw_expansion(search_trace[begin[i-1] : end[i-1], ], TRUE)
+            #print(paste(begin[i-1], end[i-1]))
+            draw_path(search_trace$path[i-1], TRUE)
+            draw_expansion(search_trace$trace[begin[i-1] : end[i-1], ], TRUE)
         }
-        print(paste(begin[i], end[i]))
-        draw_expansion(search_trace[begin[i] : end[i], ], FALSE)
+        #print(paste(begin[i], end[i]))
+        draw_expansion(search_trace$trace[begin[i] : end[i], ], FALSE)
+        #print(search_trace$path[i])
+        draw_path(search_trace$path[i])
+        readline(prompt="Press [enter] to show next instance")
     }
 }
 
@@ -132,7 +164,7 @@ draw_expansion <- function(exp_trace, prev=FALSE)
     current_root <- c()
     for(i in seq(begin, nrow(exp_trace)))
     {
-        print(exp_trace[i,])
+        #print(exp_trace[i,])
         root_xy <- as.numeric(unlist(strsplit(exp_trace$root[i], ",")))
         left_xy <- as.numeric(unlist(strsplit(exp_trace$left[i], ",")))
         right_xy <- as.numeric(unlist(strsplit(exp_trace$right[i], ",")))
@@ -170,7 +202,7 @@ draw_expansion <- function(exp_trace, prev=FALSE)
 
         if(!prev)
         {
-            readline(prompt="Press [enter] to continue")
+            readline(prompt="Press [enter] for next search step")
             if(mycol == c_col)
             {
                 lines(c(left_xy[1], right_xy[1]), c(left_xy[2], right_xy[2]) , col=c_col2, lwd=2)
@@ -192,31 +224,32 @@ load_paths <- function(filename, path_colour="red")
 
 # txt_path should be a vector of strings each having the form
 # (x1, y1) (x2, y2) ... (xn, yn)
-draw_path <- function(rawpaths, path_colour="red", prev_path_col="black")
+draw_path <- function(rawpaths, prev=FALSE)
 {
     symbol_sz = 0.6
     line_width = 1
+    path_col="blue"
 
-    prev_xy <- c()
     for(i in seq_len(length(rawpaths)))
     {
-        tmp <- as.numeric(unlist(strsplit(gsub("\\(|\\)|,", "", rawpaths[i]), " ")))
-        if(i > 1)
-        {
-            lines(prev_xy$points[prev_xy$x], prev_xy$points[prev_xy$y], col=prev_path_col, lwd=line_width)
-            points(prev_xy$points[prev_xy$x], prev_xy$points[prev_xy$y], col=prev_path_col, lwd=line_width, cex=symbol_sz)
-        }
+        tmp <- gsub("^path [0-9]+;", "", rawpaths[i])
+        tmp <- as.numeric(unlist(strsplit(gsub("\\(|\\)|,", "", tmp), " ")))
         path_xy <- list(
                         "points"=tmp,
                         "x"=seq(1, length(tmp), by=2),
                         "y"=seq(2, length(tmp), by=2))
-        print(as.vector(rawpaths[i]))
-        lines(path_xy$points[path_xy$x], path_xy$points[path_xy$y], col=path_colour, lwd=line_width)
-        points(path_xy$points[path_xy$x], path_xy$points[path_xy$y], col=path_colour, lwd=line_width, cex=symbol_sz)
-        readline(prompt="Press [enter] to continue")
-        prev_xy <- path_xy
+        #print(as.vector(rawpaths[i]))
+        if(prev)
+        {
+            path_col = "lightgray"
+            lines(path_xy$points[path_xy$x], path_xy$points[path_xy$y], col=path_col, lwd=line_width)
+            points(path_xy$points[path_xy$x], path_xy$points[path_xy$y], col=path_col, lwd=line_width, cex=symbol_sz)
+        }
+        else
+        {
+            lines(path_xy$points[path_xy$x], path_xy$points[path_xy$y], col=path_col, lwd=line_width)
+            points(path_xy$points[path_xy$x], path_xy$points[path_xy$y], col=path_col, lwd=line_width, cex=symbol_sz)
+        }
     }
 }
-
-
 
