@@ -1,5 +1,6 @@
 #include "searchinstance.h"
 #include "expansion.h"
+#include "geometry.h"
 #include "searchnode.h"
 #include "successor.h"
 #include "vertex.h"
@@ -479,6 +480,52 @@ void SearchInstance::get_path_points(std::vector<Point>& out)
     out.clear();
     out.push_back(goal);
     SearchNodePtr cur_node = final_node;
+
+    {
+        // Recreate the h value heuristic to see whether we need to add the
+        // left or right endpoint of the final node's interval.
+        const Point& root = root_to_point(cur_node->root),
+                        l = cur_node->left,
+                        r = cur_node->right;
+        const Point lr = r - l;
+        Point fixed_goal;
+        if (((root - l) * lr > 0) == ((goal - l) * lr > 0))
+        {
+            fixed_goal = reflect_point(goal, l, r);
+        }
+        else
+        {
+            fixed_goal = goal;
+        }
+        double rg_num, lr_num, denom;
+        line_intersect_time(root, fixed_goal, l, r, rg_num, lr_num, denom);
+
+        if (denom != 0.0)
+        {
+            switch (line_intersect_bound_check(lr_num, denom))
+            {
+                case ZeroOnePos::LT_ZERO:
+                    // Use left end point.
+                    out.push_back(l);
+                    break;
+
+                case ZeroOnePos::EQ_ZERO:
+                case ZeroOnePos::IN_RANGE:
+                case ZeroOnePos::EQ_ONE:
+                    // h value heuristic uses straight line.
+                    break;
+
+                case ZeroOnePos::GT_ONE:
+                    // Use right end point.
+                    out.push_back(r);
+                    break;
+
+                default:
+                    assert(false);
+            }
+        }
+
+    }
 
     while (cur_node != nullptr)
     {
