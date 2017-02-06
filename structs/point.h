@@ -35,7 +35,7 @@ struct Point
 
     Point operator-(const Point& other) const
     {
-        return *this + (-other);
+        return {x - other.x, y - other.y};
     }
 
     // Cross product.
