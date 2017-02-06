@@ -50,7 +50,7 @@ void run_scenario(int index, Scenario scen)
         }
         #endif
 
-        cout << index << "; ";
+        cout << "path "<< index << "; ";
         for (int i = 0; i < n; i++)
         {
             cout << path[i];
