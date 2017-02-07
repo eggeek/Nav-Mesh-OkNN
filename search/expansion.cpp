@@ -155,6 +155,224 @@ int get_successors(SearchNode& node, const Point& start, const Mesh& mesh,
     assert(get_orientation(root, node.left, node.right) ==
            Orientation::CW);
 
+
+    if (N == 3)
+    {
+        int p1; // V[p1] = t2. Used for poly_left_ind for 1-2 successors.
+        int p2; // V[p2] = t3. Used for poly_left_ind for 2-3 successors.
+        // Note that p3 is redundant, as that's the polygon we came from.
+
+        // The right point of the triangle.
+        const Point& t1 = mesh_vertices[node.right_vertex].p;
+        // The middle point of the triangle.
+        const Point& t2 = [&]() -> const Point&
+        {
+            // horrible hacky lambda which also sets p1/p2
+
+            // Let's get p1, p2 and t2.
+            if (V[0] == node.right_vertex)
+            {
+                // t1 = V[0], t2 = V[1], t3 = V[2]
+                p1 = 1;
+                p2 = 2;
+                return mesh_vertices[V[1]].p;
+            }
+            else if (V[0] == node.left_vertex)
+            {
+                // t1 = V[1], t2 = V[2], t3 = V[0]
+                p1 = 2;
+                p2 = 0;
+                return mesh_vertices[V[2]].p;
+            }
+            else
+            {
+                // t1 = V[2], t2 = V[0], t3 = V[1]
+                p1 = 0;
+                p2 = 1;
+                return mesh_vertices[V[0]].p;
+            }
+        }();
+        // The left point of the triangle.
+        const Point& t3 = mesh_vertices[node.left_vertex].p;
+
+
+
+        const Point& L = node.left;
+        const Point& R = node.right;
+
+        // Now we need to check the orientation of root-L-t2.
+        // TODO: precompute a shared term for getting orientation,
+        // like t2 - root.
+        switch (get_orientation(root, L, t2))
+        {
+            case Orientation::CCW:
+            {
+                // LI in (1, 2)
+                // RI in [1, 2)
+
+                // TODO: precompute shared constants (assuming the compiler
+                // doesn't)
+                const Point LI = line_intersect(t1, t2, root, L);
+                const Point RI = (R == t1 ? t1 :
+                                  line_intersect(t1, t2, root, R));
+
+                // observable(RI, LI)
+                successors[out++] = {
+                    Successor::OBSERVABLE,
+                    LI, RI,
+                    p1 // a 1-2 successor
+                };
+
+                // if we can turn left
+                if (mesh_vertices[node.left_vertex].is_corner && L == t3)
+                {
+                    // left_non_observable(LI, 2)
+                    successors[out++] = {
+                        Successor::LEFT_NON_OBSERVABLE,
+                        t2, LI,
+                        p1 // a 1-2 successor
+                    };
+                    // left_collinear(2, 3)
+                    successors[out++] = {
+                        Successor::LEFT_COLLINEAR,
+                        t3, t2,
+                        p2 // a 2-3 successor
+                    };
+                }
+
+                return out;
+            }
+
+            case Orientation::COLLINEAR:
+            {
+                // LI = 2
+                // RI in [1, 2)
+                const Point RI = (R == t1 ? t1 :
+                                  line_intersect(t1, t2, root, R));
+
+                // observable(RI, 2)
+                successors[out++] = {
+                    Successor::OBSERVABLE,
+                    t2, RI,
+                    p1 // a 1-2 successor
+                };
+
+                // if we can turn left
+                if (mesh_vertices[node.left_vertex].is_corner && L == t3)
+                {
+                    // left_collinear(2, 3)
+                    successors[out++] = {
+                        Successor::LEFT_COLLINEAR,
+                        t3, t2,
+                        p2 // a 2-3 successor
+                    };
+                }
+
+                return out;
+            }
+
+            case Orientation::CW:
+            {
+                // LI in (2, 3]
+                const Point LI = (L == t3 ? t3 :
+                                  line_intersect(t2, t3, root, L));
+
+                // Now we need to check the orientation of root-R-t2.
+                switch (get_orientation(root, R, t2))
+                {
+                    case Orientation::CW:
+                    {
+                        // RI in (2, 3)
+                        const Point RI = line_intersect(t2, t3, root, R);
+
+                        // if we can turn right
+                        if (mesh_vertices[node.right_vertex].is_corner &&
+                            R == t1)
+                        {
+                            // right_collinear(1, 2)
+                            successors[out++] = {
+                                Successor::RIGHT_COLLINEAR,
+                                t2, t1,
+                                p1 // a 1-2 successor
+                            };
+
+                            // right_non_observable(2, RI)
+                            successors[out++] = {
+                                Successor::RIGHT_NON_OBSERVABLE,
+                                RI, t2,
+                                p2 // a 2-3 successor
+                            };
+                        }
+
+                        // observable(RI, LI)
+                        successors[out++] = {
+                            Successor::OBSERVABLE,
+                            LI, RI,
+                            p2 // a 2-3 successor
+                        };
+
+                        return out;
+                    }
+
+                    case Orientation::COLLINEAR:
+                    {
+                        // RI = 2
+                        // if we can turn right
+                        if (mesh_vertices[node.right_vertex].is_corner &&
+                            R == t1)
+                        {
+                            // right_collinear(1, 2)
+                            successors[out++] = {
+                                Successor::RIGHT_COLLINEAR,
+                                t2, t1,
+                                p1 // a 1-2 successor
+                            };
+                        }
+
+                        // observable(2, LI)
+                        successors[out++] = {
+                            Successor::OBSERVABLE,
+                            LI, t2,
+                            p2 // a 2-3 successor
+                        };
+
+                        return out;
+                    }
+
+                    case Orientation::CCW:
+                    {
+                        // RI in [1, 2)
+                        const Point RI = (R == t1 ? t1 :
+                                          line_intersect(t1, t2, root, R));
+
+                        // observable(RI, 2)
+                        successors[out++] = {
+                            Successor::OBSERVABLE,
+                            t2, RI,
+                            p1 // a 1-2 successor
+                        };
+
+                        // observable(2, LI)
+                        successors[out++] = {
+                            Successor::OBSERVABLE,
+                            LI, t2,
+                            p2 // a 2-3 successor
+                        };
+
+                        return out;
+                    }
+
+                    default:
+                        assert(false);
+                }
+            }
+
+            default:
+                assert(false);
+        }
+    }
+
+
     // It is not collinear.
     // Find the starting vertex (the "right" vertex).
 
