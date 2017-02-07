@@ -24,35 +24,17 @@ double get_h_value(const Point& root, Point goal,
     // First, check whether goal and root are on the same side of the interval.
     // If either are collinear with r/l, reflecting does nothing.
     const Point lr = r - l;
-    if (((root - l) * lr > 0) == ((goal - l) * lr > 0))
+    const Point lroot = root - l;
+    Point lgoal = goal - l;
+    if ((lroot * lr > 0) == (lgoal * lr > 0))
     {
         // Need to reflect.
         goal = reflect_point(goal, l, r);
+        lgoal = goal - l;
     }
     // Now we do the actual line intersection test.
-    double rg_num, lr_num, denom;
-    line_intersect_time(root, goal, l, r, rg_num, lr_num, denom);
-
-    // Check the edge case first.
-    if (denom == 0.0)
-    {
-        // This is surprisingly tricky!
-        // We need to order root, goal, l and r.
-        // However, we should be guaranteed that the root is either one of l/r,
-        // so we just take the straight line distance.
-        assert(root == l || root == r); // May assert false when testing...
-        return root.distance(goal);
-    }
-
-    // Assuming that root, goal, l and r are not on the same line...
-
-    #ifndef NDEBUG
-    // Double check that the goal and root are on different sides.
-    const ZeroOnePos rg_pos = line_intersect_bound_check(rg_num, denom);
-    assert(rg_pos != ZeroOnePos::LT_ZERO && rg_pos != ZeroOnePos::GT_ONE);
-    #endif
-
-    // Check what place on the interval the line intersects.
+    const double lr_num = lgoal * lroot;
+    const double denom = (goal - root) * lr;
     const ZeroOnePos lr_pos = line_intersect_bound_check(lr_num, denom);
     switch (lr_pos)
     {
