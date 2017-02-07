@@ -20,11 +20,13 @@ load_mesh <- function(filename)
     retval
 }
 
-draw_mesh <- function(rawmesh, poly_colour="lightgray")
+draw_mesh <- function(rawmesh, poly_colour="white", poly_border_col="gray", canvas_col="black")
 {
     yrange <- range(pretty(rawmesh$points[,2]-1))
     xrange <- range(pretty(rawmesh$points[,1])-1)
     plot(NA, xlim=xrange, ylim=yrange, main=rawmesh$filename, yaxt="n", xaxt="n", xlab="", ylab="")
+
+    polygon(c(rep(min(xrange), 2), rep(max(xrange), 2)), c(min(yrange), max(yrange), max(yrange), min(yrange)), col=canvas_col)
 
     axis(1, at=pretty(xrange), tick=TRUE, labels=TRUE)
     axis(2, at=pretty(yrange), tick=TRUE, labels=TRUE)
@@ -35,7 +37,7 @@ draw_mesh <- function(rawmesh, poly_colour="lightgray")
     {
         setTxtProgressBar(pb, i)
         poly_points <- rawmesh$points[rawmesh$polys[i, seq_len(rawmesh$verts_per_poly[i])],]
-        polygon(poly_points, col=poly_colour)
+        polygon(poly_points, col=poly_colour, border=poly_border_col)
     }
 }
 
@@ -82,6 +84,7 @@ load_trace <- function(filename)
     trace <- read.csv(filename, sep=";", header=FALSE, col.names=c("root", "left", "right", "priority"), stringsAsFactors=FALSE)
     trace$expanded <- grepl("popped off", trace$root)
     trace$start <- grepl("generating", trace$root)
+    trace$intermediate <- grepl("intermediate", trace$root)
     trace$root <- gsub("[\tA-Za-z: =()]+", "", trace$root)
     trace$left <- gsub("[\tA-Za-z: =()]+", "", trace$left)
     trace$right <- gsub("[\tA-Za-z: =()]+", "", trace$right)
@@ -108,6 +111,7 @@ load_trace2 <- function(filename)
     trace <- data.frame(list("root"=tmp_roots, "left"=tmp_lefts, "right"=tmp_rights, "priority"=tmp_priority))
     trace$expanded <- grepl("popped off", trace$root)
     trace$start <- grepl("generating", trace$root)
+    trace$intermediate <- grepl("intermediate", trace$root)
     trace$root <- gsub("[\tA-Za-z: =()]+", "", trace$root)
     trace$left <- gsub("[\tA-Za-z: =()]+", "", trace$left)
     trace$right <- gsub("[\tA-Za-z: =()]+", "", trace$right)
@@ -123,7 +127,7 @@ load_trace2 <- function(filename)
 # visualses polyanya search instances from a trace file
 # used in combination with load_trace
 # e.g. draw_trace(load_trace(search_output_file))
-draw_trace <- function(search_trace)
+draw_trace <- function(search_trace, draw_intermediate=TRUE)
 {
     begin <- which(search_trace$trace$start)
     end <- c(begin[-1]-1, nrow(search_trace$trace))
@@ -134,12 +138,12 @@ draw_trace <- function(search_trace)
         {
             #print(paste(begin[i-1], end[i-1]))
             draw_path(search_trace$path[i-1], TRUE)
-            draw_expansion(search_trace$trace[begin[i-1] : end[i-1], ], TRUE)
+            draw_expansion(search_trace$trace[begin[i-1] : end[i-1], ], TRUE, draw_intermediate)
         }
         #print(paste(begin[i], end[i]))
-        draw_expansion(search_trace$trace[begin[i] : end[i], ], FALSE)
+        draw_expansion(search_trace$trace[begin[i] : end[i], ], FALSE, draw_intermediate)
         #print(search_trace$path[i])
-        if(length(search_trace$path) > i)
+        if(i <= length(search_trace$path))
         {
             draw_path(search_trace$path[i])
         }
@@ -147,7 +151,7 @@ draw_trace <- function(search_trace)
     }
 }
 
-draw_expansion <- function(exp_trace, prev=FALSE)
+draw_expansion <- function(exp_trace, prev=FALSE, draw_intermediate=TRUE)
 {
     # start node colour and symbol
     s_col = "orange"
@@ -171,6 +175,8 @@ draw_expansion <- function(exp_trace, prev=FALSE)
         root_xy <- as.numeric(unlist(strsplit(exp_trace$root[i], ",")))
         left_xy <- as.numeric(unlist(strsplit(exp_trace$left[i], ",")))
         right_xy <- as.numeric(unlist(strsplit(exp_trace$right[i], ",")))
+
+        if(exp_trace$intermediate[i] & !draw_intermediate) { next; }
 
         if(exp_trace$start[i])
         {
@@ -196,6 +202,7 @@ draw_expansion <- function(exp_trace, prev=FALSE)
             current_root <- root_xy
             points(root_xy[1], root_xy[2], pch=mypch, col=mycol, bg=mycol)
         }
+
 
         if(!all(current_root == root_xy))
         {
