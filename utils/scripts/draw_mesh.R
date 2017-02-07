@@ -20,18 +20,44 @@ load_mesh <- function(filename)
     retval
 }
 
-draw_mesh <- function(rawmesh, poly_colour="white", poly_border_col="gray", canvas_col="black")
+draw_grid_from_mesh <- function(rawmesh, labels=FALSE, poly_border_col="gray", xlab="", ylab="")
+{
+    draw_mesh(rawmesh, poly_border_col="white", xlab=xlab, ylab=ylab)
+
+    paste("drawing grid")
+    yrange <- range(pretty(rawmesh$points[,2]-1))
+    xrange <- range(pretty(rawmesh$points[,1])-1)
+    print(yrange)
+    print(xrange)
+    for(i in seq(min(yrange), max(yrange)))
+    {
+        lines(xrange, rep(i, 2), col=poly_border_col)
+    }
+    for(i in seq(min(xrange), max(xrange)))
+    {
+        lines(rep(i, 2), yrange, col=poly_border_col)
+    }
+}
+
+draw_mesh <- function(rawmesh, labels=FALSE, poly_colour="white", poly_border_col="gray", canvas_col="black", xlab="", ylab="")
 {
     yrange <- range(pretty(rawmesh$points[,2]-1))
     xrange <- range(pretty(rawmesh$points[,1])-1)
-    plot(NA, xlim=xrange, ylim=yrange, main=rawmesh$filename, yaxt="n", xaxt="n", xlab="", ylab="")
 
-    polygon(c(rep(min(xrange), 2), rep(max(xrange), 2)), c(min(yrange), max(yrange), max(yrange), min(yrange)), col=canvas_col)
-
-    axis(1, at=pretty(xrange), tick=TRUE, labels=TRUE)
-    axis(2, at=pretty(yrange), tick=TRUE, labels=TRUE)
+    if(labels)
+    {
+        plot(NA, xlim=xrange, ylim=yrange, main=rawmesh$filename, yaxt="n", xaxt="n", xlab=xlab, ylab=ylab)
+        axis(1, at=pretty(xrange), tick=TRUE, labels=TRUE)
+        axis(2, at=pretty(yrange), tick=TRUE, labels=TRUE)
+    }
+    else
+    {
+        print(xlab)
+        plot(NA, xlim=xrange, ylim=yrange, yaxt="n", xaxt="n", xlab=xlab, ylab=ylab)
+    }
 
     paste("drawing mesh")
+    polygon(c(rep(min(xrange), 2), rep(max(xrange), 2)), c(min(yrange), max(yrange), max(yrange), min(yrange)), col=canvas_col)
     pb <- txtProgressBar(0, nrow(rawmesh$polys), style=3)
     for(i in seq(1, nrow(rawmesh$polys)))
     {
