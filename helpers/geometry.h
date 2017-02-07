@@ -8,6 +8,16 @@ void line_intersect_time(const Point& a, const Point& b,
                          const Point& c, const Point& d,
                          double& ab_num, double& cd_num, double& denom);
 
+// Returns the line intersect between ab and cd as fast as possible.
+// Uses a and b for the parameterisation.
+// ASSUMES NO COLLINEARITY.
+inline Point line_intersect(const Point& a, const Point& b,
+                            const Point& c, const Point& d)
+{
+    const Point ab = b - a;
+    return a + ab * (((c - a) * (d - a)) / (ab * (d - c)));
+}
+
 enum struct ZeroOnePos
 {
     LT_ZERO,  // n < 0

@@ -233,23 +233,7 @@ int get_successors(SearchNode& node, const Point& start, const Mesh& mesh,
 
     const Point& A_p = index2point(normalised_A);
     const Point& Am1_p = index2point(normalised_Am1);
-    const Point right_intersect = [&]() -> Point
-    {
-        double root_right_num, segment_num, denom;
-        line_intersect_time(root, node.right, Am1_p, A_p,
-                            root_right_num, segment_num, denom);
-        assert(denom != 0.0);
-        assert(root_right_num / denom >= 1 - EPSILON);
-        // possibility that t = 0 for segment. if so, use A-1
-        if (std::abs(segment_num) < EPSILON)
-        {
-            return Am1_p;
-        }
-        // we WILL need to do the division now
-        const double t = segment_num / denom;
-        assert(t < 1 + EPSILON|| t > -EPSILON);
-        return get_point_on_line(Am1_p, A_p, t);
-    }();
+    const Point right_intersect = line_intersect(Am1_p, A_p, root, node.right);
 
     // find the transition between observable and non-observable-left.
     // we will call this B, defined by:
@@ -269,23 +253,7 @@ int get_successors(SearchNode& node, const Point& start, const Mesh& mesh,
               normalised_Bp1 = normalise(B+1);
     const Point& B_p = index2point(normalised_B);
     const Point& Bp1_p = index2point(normalised_Bp1);
-    const Point left_intersect = [&]() -> Point
-    {
-        double root_left_num, segment_num, denom;
-        line_intersect_time(root, node.left, Bp1_p, B_p,
-                            root_left_num, segment_num, denom);
-        assert(denom != 0.0);
-        assert(root_left_num / denom >= 1 - EPSILON);
-        // possibility that t = 0 for segment. if so, use B+1
-        if (std::abs(segment_num) < EPSILON)
-        {
-            return Bp1_p;
-        }
-        // we WILL need to do the division now
-        const double t = segment_num / denom;
-        assert(t < 1 + EPSILON|| t > -EPSILON);
-        return get_point_on_line(Bp1_p, B_p, t);
-    }();
+    const Point left_intersect = line_intersect(Bp1_p, B_p, root, node.left);
 
     // TODO: Check right+2 / left-2 for C/D when the search size exceeds 2.
 
