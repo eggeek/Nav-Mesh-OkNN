@@ -217,7 +217,7 @@ int get_successors(SearchNode& node, const Point& start, const Mesh& mesh,
                                   line_intersect(t1, t2, root, R));
 
                 // observable(RI, LI)
-                successors[out++] = {
+                successors[0] = {
                     Successor::OBSERVABLE,
                     LI, RI,
                     p1 // a 1-2 successor
@@ -227,20 +227,22 @@ int get_successors(SearchNode& node, const Point& start, const Mesh& mesh,
                 if (mesh_vertices[node.left_vertex].is_corner && L == t3)
                 {
                     // left_non_observable(LI, 2)
-                    successors[out++] = {
+                    successors[1] = {
                         Successor::LEFT_NON_OBSERVABLE,
                         t2, LI,
                         p1 // a 1-2 successor
                     };
                     // left_collinear(2, 3)
-                    successors[out++] = {
+                    successors[2] = {
                         Successor::LEFT_COLLINEAR,
                         t3, t2,
                         p2 // a 2-3 successor
                     };
+
+                    return 3;
                 }
 
-                return out;
+                return 1;
             }
 
             case Orientation::COLLINEAR:
@@ -251,7 +253,7 @@ int get_successors(SearchNode& node, const Point& start, const Mesh& mesh,
                                   line_intersect(t1, t2, root, R));
 
                 // observable(RI, 2)
-                successors[out++] = {
+                successors[0] = {
                     Successor::OBSERVABLE,
                     t2, RI,
                     p1 // a 1-2 successor
@@ -261,14 +263,16 @@ int get_successors(SearchNode& node, const Point& start, const Mesh& mesh,
                 if (mesh_vertices[node.left_vertex].is_corner && L == t3)
                 {
                     // left_collinear(2, 3)
-                    successors[out++] = {
+                    successors[1] = {
                         Successor::LEFT_COLLINEAR,
                         t3, t2,
                         p2 // a 2-3 successor
                     };
+
+                    return 2;
                 }
 
-                return out;
+                return 1;
             }
 
             case Orientation::CW:
@@ -290,28 +294,37 @@ int get_successors(SearchNode& node, const Point& start, const Mesh& mesh,
                             R == t1)
                         {
                             // right_collinear(1, 2)
-                            successors[out++] = {
+                            successors[0] = {
                                 Successor::RIGHT_COLLINEAR,
                                 t2, t1,
                                 p1 // a 1-2 successor
                             };
 
                             // right_non_observable(2, RI)
-                            successors[out++] = {
+                            successors[1] = {
                                 Successor::RIGHT_NON_OBSERVABLE,
                                 RI, t2,
                                 p2 // a 2-3 successor
                             };
+
+                            // observable(RI, LI)
+                            successors[2] = {
+                                Successor::OBSERVABLE,
+                                LI, RI,
+                                p2 // a 2-3 successor
+                            };
+
+                            return 3;
                         }
 
                         // observable(RI, LI)
-                        successors[out++] = {
+                        successors[0] = {
                             Successor::OBSERVABLE,
                             LI, RI,
                             p2 // a 2-3 successor
                         };
 
-                        return out;
+                        return 1;
                     }
 
                     case Orientation::COLLINEAR:
@@ -322,21 +335,30 @@ int get_successors(SearchNode& node, const Point& start, const Mesh& mesh,
                             R == t1)
                         {
                             // right_collinear(1, 2)
-                            successors[out++] = {
+                            successors[0] = {
                                 Successor::RIGHT_COLLINEAR,
                                 t2, t1,
                                 p1 // a 1-2 successor
                             };
+
+                            // observable(2, LI)
+                            successors[1] = {
+                                Successor::OBSERVABLE,
+                                LI, t2,
+                                p2 // a 2-3 successor
+                            };
+
+                            return 2;
                         }
 
                         // observable(2, LI)
-                        successors[out++] = {
+                        successors[0] = {
                             Successor::OBSERVABLE,
                             LI, t2,
                             p2 // a 2-3 successor
                         };
 
-                        return out;
+                        return 1;
                     }
 
                     case Orientation::CCW:
@@ -346,20 +368,20 @@ int get_successors(SearchNode& node, const Point& start, const Mesh& mesh,
                                           line_intersect(t1, t2, root, R));
 
                         // observable(RI, 2)
-                        successors[out++] = {
+                        successors[0] = {
                             Successor::OBSERVABLE,
                             t2, RI,
                             p1 // a 1-2 successor
                         };
 
                         // observable(2, LI)
-                        successors[out++] = {
+                        successors[1] = {
                             Successor::OBSERVABLE,
                             LI, t2,
                             p2 // a 2-3 successor
                         };
 
-                        return out;
+                        return 2;
                     }
 
                     default:
