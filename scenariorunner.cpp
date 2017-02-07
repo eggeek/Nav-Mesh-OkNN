@@ -33,6 +33,23 @@ void run_scenario(int index, Scenario scen)
         vector<Point> path;
         si->get_path_points(path);
         const int n = (int) path.size();
+
+        #ifndef NDEBUG
+        double expected = 0;
+        double actual = si->get_cost();
+
+        for (int i = 1; i < n; i++)
+        {
+            expected += path[i].distance(path[i-1]);
+        }
+
+        if (std::abs(expected - actual) > 1e-8)
+        {
+            cerr << "!!! bad path for " << scen.start << " to " << scen.goal
+                 << endl;
+        }
+        #endif
+
         cout << "path "<< index << "; ";
         for (int i = 0; i < n; i++)
         {

@@ -7,7 +7,16 @@ PA_INCLUDES = $(addprefix -I,$(PA_FOLDERS))
 CXX = g++
 CXXFLAGS = -std=c++11 -pedantic -Wall -Wno-strict-aliasing -Wno-long-long -Wno-deprecated -Wno-deprecated-declarations -Werror
 FAST_CXXFLAGS = -O3 -DNDEBUG
-DEV_CXXFLAGS = -g -ggdb -O0
+DEV_CXXFLAGS = -g -ggdb -O0 -fno-omit-frame-pointer
+PROFILE_CXXFLAGS = -g -ggdb -O0 -fno-omit-frame-pointer -DNDEBUG
+
+ifeq ("$(findstring Darwin, "$(shell uname -s)")", "Darwin")
+  CXXFLAGS += -DOS_MAC
+else
+  ifeq ("$(findstring Linux, "$(shell uname -s)")", "Linux")
+    CXXFLAGS += -lrt
+  endif
+endif
 
 ifeq ("$(findstring Darwin, "$(shell uname -s)")", "Darwin")
   CXXFLAGS += -DOS_MAC
@@ -23,7 +32,8 @@ BIN_TARGETS = $(addprefix bin/,$(TARGETS))
 all: $(TARGETS)
 fast: CXXFLAGS += $(FAST_CXXFLAGS)
 dev: CXXFLAGS += $(DEV_CXXFLAGS)
-fast dev: all
+prof: CXXFLAGS += $(PROFILE_CXXFLAGS)
+fast dev prof: all
 
 clean:
 	rm -rf ./bin/*

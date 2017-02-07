@@ -1,5 +1,6 @@
 #include "searchinstance.h"
 #include "expansion.h"
+#include "geometry.h"
 #include "searchnode.h"
 #include "successor.h"
 #include "vertex.h"
@@ -61,14 +62,15 @@ PointLocation SearchInstance::get_point_location(Point p)
 }
 
 int SearchInstance::succ_to_node(
-    SearchNodePtr parent, std::vector<Successor>& successors, int num_succ,
-    std::vector<SearchNodePtr>& nodes
+    SearchNodePtr parent, Successor* successors, int num_succ,
+    SearchNodePtr* nodes
 )
 {
     assert(mesh != nullptr);
     assert(parent != nullptr);
     const Polygon& polygon = mesh->mesh_polygons[parent->next_polygon];
-    const std::vector<int>& V = polygon.vertices, P = polygon.polygons;
+    const std::vector<int>& V = polygon.vertices;
+    const std::vector<int>& P = polygon.polygons;
 
     double right_g = -1, left_g = -1;
 
@@ -292,11 +294,11 @@ void SearchInstance::gen_initial_nodes()
                     }
                     return;
                 }
-                std::vector<Successor> successors;
                 // iterate over poly, throwing away vertices if one of them is
                 // pl.vertex1
                 const std::vector<int>& vertices =
                     mesh->mesh_polygons[poly].vertices;
+                Successor* successors = new Successor [vertices.size()];
                 int last_vertex = vertices.back();
                 int num_succ = 0;
                 for (int i = 0; i < (int) vertices.size(); i++)
@@ -307,14 +309,15 @@ void SearchInstance::gen_initial_nodes()
                         last_vertex = vertex;
                         continue;
                     }
-                    successors.push_back({Successor::OBSERVABLE, v(vertex).p,
-                                          v(last_vertex).p, i});
-                    num_succ++;
+                    successors[num_succ++] =
+                        {Successor::OBSERVABLE, v(vertex).p,
+                         v(last_vertex).p, i};
                     last_vertex = vertex;
                 }
-                std::vector<SearchNodePtr> nodes(num_succ);
+                SearchNodePtr* nodes = new SearchNodePtr [num_succ];
                 const int num_nodes = succ_to_node(dummy_init, successors,
                                                    num_succ, nodes);
+                delete[] successors;
                 for (int i = 0; i < num_nodes; i++)
                 {
                     if (verbose)
@@ -325,6 +328,7 @@ void SearchInstance::gen_initial_nodes()
                     }
                     open_list.push(nodes[i]);
                 }
+                delete[] nodes;
                 nodes_generated += num_nodes;
                 nodes_pushed += num_nodes;
             }
@@ -357,10 +361,8 @@ bool SearchInstance::search()
         return true;
     }
 
-    std::vector<Successor> successors;
-    std::vector<SearchNodePtr> nodes_to_push;
-    successors.resize(mesh->max_poly_sides + 2);
-    nodes_to_push.resize(mesh->max_poly_sides + 2);
+    Successor* successors = new Successor [mesh->max_poly_sides + 2];
+    SearchNodePtr* nodes_to_push = new SearchNodePtr [mesh->max_poly_sides + 2];
     while (!open_list.empty())
     {
         SearchNodePtr node = open_list.top(); open_list.pop();
@@ -384,6 +386,8 @@ bool SearchInstance::search()
             }
 
             final_node = node;
+            delete[] successors;
+            delete[] nodes_to_push;
             return true;
         }
         // We will never update our root list here.
@@ -463,6 +467,8 @@ bool SearchInstance::search()
     }
 
     timer.stop();
+    delete[] successors;
+    delete[] nodes_to_push;
     return false;
 }
 
@@ -485,6 +491,52 @@ void SearchInstance::get_path_points(std::vector<Point>& out)
     out.push_back(goal);
     SearchNodePtr cur_node = final_node;
 
+    {
+        // Recreate the h value heuristic to see whether we need to add the
+        // left or right endpoint of the final node's interval.
+        const Point& root = root_to_point(cur_node->root),
+                        l = cur_node->left,
+                        r = cur_node->right;
+        const Point lr = r - l;
+        Point fixed_goal;
+        if (((root - l) * lr > 0) == ((goal - l) * lr > 0))
+        {
+            fixed_goal = reflect_point(goal, l, r);
+        }
+        else
+        {
+            fixed_goal = goal;
+        }
+        double rg_num, lr_num, denom;
+        line_intersect_time(root, fixed_goal, l, r, rg_num, lr_num, denom);
+
+        if (denom != 0.0)
+        {
+            switch (line_intersect_bound_check(lr_num, denom))
+            {
+                case ZeroOnePos::LT_ZERO:
+                    // Use left end point.
+                    out.push_back(l);
+                    break;
+
+                case ZeroOnePos::EQ_ZERO:
+                case ZeroOnePos::IN_RANGE:
+                case ZeroOnePos::EQ_ONE:
+                    // h value heuristic uses straight line.
+                    break;
+
+                case ZeroOnePos::GT_ONE:
+                    // Use right end point.
+                    out.push_back(r);
+                    break;
+
+                default:
+                    assert(false);
+            }
+        }
+
+    }
+
     while (cur_node != nullptr)
     {
         if (root_to_point(cur_node->root) != out.back())
@@ -505,7 +557,8 @@ void SearchInstance::print_search_nodes(std::ostream& outfile)
     SearchNodePtr cur_node = final_node;
     while (cur_node != nullptr)
     {
-        outfile << *cur_node << std::endl;
+        print_node(cur_node, outfile);
+        outfile << std::endl;
         mesh->print_polygon(outfile, cur_node->next_polygon);
         outfile << std::endl;
         cur_node = cur_node->parent;
