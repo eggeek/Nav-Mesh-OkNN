@@ -244,6 +244,11 @@ void SearchInstance::gen_initial_nodes()
         case PointLocation::ON_MESH_BORDER:
         // Generate all in an arbirary polygon.
         case PointLocation::ON_CORNER_VERTEX_AMBIG:
+            // It's possible that it's -1!
+            if (pl.poly1 == -1)
+            {
+                break;
+            }
         case PointLocation::ON_CORNER_VERTEX_UNAMBIG:
         {
             SearchNodePtr lazy = get_lazy(pl.poly1, -1, -1);
