@@ -9,6 +9,7 @@
 #include <string>
 #include <vector>
 #include <iomanip>
+#include <algorithm>
 
 using namespace std;
 using namespace polyanya;
@@ -35,8 +36,8 @@ void run_scenario(int index, Scenario scen)
         const int n = (int) path.size();
 
         #ifndef NDEBUG
-        double expected = 0;
         double actual = si->get_cost();
+        double expected = min(actual, 0.0);
 
         for (int i = 1; i < n; i++)
         {
@@ -58,11 +59,8 @@ void run_scenario(int index, Scenario scen)
             {
                 cout << " ";
             }
-            else
-            {
-                cout << endl;
-            }
         }
+        cout << endl;
     }
     else
     {
