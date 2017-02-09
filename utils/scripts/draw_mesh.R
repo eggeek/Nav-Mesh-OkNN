@@ -25,8 +25,8 @@ draw_grid_from_mesh <- function(rawmesh, labels=FALSE, poly_border_col="gray", x
     draw_mesh(rawmesh, poly_border_col="white", xlab=xlab, ylab=ylab)
 
     paste("drawing grid")
-    yrange <- range(pretty(rawmesh$points[,2]-1))
-    xrange <- range(pretty(rawmesh$points[,1])-1)
+    yrange <- range(rawmesh$points[,2]) + c(-1, 1)
+    xrange <- range(rawmesh$points[,1]) + c(-1, 1)
     print(yrange)
     print(xrange)
     for(i in seq(min(yrange), max(yrange)))
@@ -41,8 +41,8 @@ draw_grid_from_mesh <- function(rawmesh, labels=FALSE, poly_border_col="gray", x
 
 draw_mesh <- function(rawmesh, labels=FALSE, poly_colour="white", poly_border_col="gray", canvas_col="black", xlab="", ylab="")
 {
-    yrange <- range(pretty(rawmesh$points[,2]-1))
-    xrange <- range(pretty(rawmesh$points[,1])-1)
+    yrange <- range(rawmesh$points[,2]) + c(-1, 1)
+    xrange <- range(rawmesh$points[,1]) + c(-1, 1)
 
     if(labels)
     {
@@ -69,8 +69,8 @@ draw_mesh <- function(rawmesh, labels=FALSE, poly_colour="white", poly_border_co
 
 draw_mesh2 <- function(rawmesh, poly_colour="lightgray")
 {
-    yrange <- range(pretty(rawmesh$points[,2]-1))
-    xrange <- range(pretty(rawmesh$points[,1])-1)
+    yrange <- range(rawmesh$points[,2]) + c(-1, 1)
+    xrange <- range(rawmesh$points[,1]) + c(-1, 1)
     plot(NA, xlim=xrange, ylim=yrange, main=rawmesh$filename, yaxt="n", xaxt="n", xlab="", ylab="")
 
     axis(1, at=pretty(xrange), tick=TRUE, labels=TRUE)
