@@ -3,6 +3,7 @@
 #include <vector>
 #include <string>
 #include <memory>
+#include <cassert>
 using namespace std;
 
 // We need a circular linked list of sorts.
@@ -281,12 +282,16 @@ void print_mesh(ostream& outfile)
 
         outfile << get_p(v.polygons->val);
         {
+            int count = 1;
             ListNodePtr cur_node = v.polygons->next;
             while (cur_node != v.polygons)
             {
+                assert(count < v.num_polygons);
                 outfile << " " << get_p(cur_node->val);
                 cur_node = cur_node->next;
+                count++;
             }
+            assert(count == v.num_polygons);
         }
         outfile << "\n";
     }
@@ -304,23 +309,31 @@ void print_mesh(ostream& outfile)
 
         outfile << get_v(p.vertices->val);
         {
+            int count = 1;
             ListNodePtr cur_node = p.vertices->next;
             while (cur_node != p.vertices)
             {
+                assert(count < p.num_vertices);
                 outfile << " " << get_v(cur_node->val);
                 cur_node = cur_node->next;
+                count++;
             }
+            assert(count == p.num_vertices);
         }
         outfile << "\t";
 
         outfile << get_p(p.polygons->val);
         {
+            int count = 1;
             ListNodePtr cur_node = p.polygons->next;
             while (cur_node != p.polygons)
             {
+                assert(count < p.num_vertices);
                 outfile << " " << get_p(cur_node->val);
                 cur_node = cur_node->next;
+                count++;
             }
+            assert(count == p.num_vertices);
         }
         outfile << "\n";
     }
