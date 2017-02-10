@@ -33,8 +33,32 @@ double get_h_value(const Point& root, Point goal,
         lgoal = goal - l;
     }
     // Now we do the actual line intersection test.
-    const double lr_num = lgoal * lroot;
     const double denom = (goal - root) * lr;
+    if (std::abs(denom) < EPSILON)
+    {
+        // Root, goal, L and R are ALL collinear!
+        // Take the best one of root-L-goal and root-R-goal.
+
+        // We can be sneaky and use the distance squared as we always want the
+        // endpoint which is closest to the root.
+        const double root_l = root.distance_sq(l);
+        const double root_r = root.distance_sq(r);
+
+        // If they're the same or within an epsilon we don't care which one we
+        // use.
+
+        if (root_l < root_r)
+        {
+            // L is better.
+            return std::sqrt(root_l) + l.distance(goal);
+        }
+        else
+        {
+            // R is better.
+            return std::sqrt(root_r) + r.distance(goal);
+        }
+    }
+    const double lr_num = lgoal * lroot;
     const ZeroOnePos lr_pos = line_intersect_bound_check(lr_num, denom);
     switch (lr_pos)
     {
