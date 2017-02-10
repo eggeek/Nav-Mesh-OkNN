@@ -275,9 +275,6 @@ void SearchInstance::gen_initial_nodes()
         case PointLocation::NOT_ON_MESH:
             break;
 
-        // Generate all in the polygon.
-        case PointLocation::IN_POLYGON:
-        case PointLocation::ON_MESH_BORDER:
         // Generate all in an arbirary polygon.
         case PointLocation::ON_CORNER_VERTEX_AMBIG:
             // It's possible that it's -1!
@@ -286,6 +283,9 @@ void SearchInstance::gen_initial_nodes()
                 break;
             }
         case PointLocation::ON_CORNER_VERTEX_UNAMBIG:
+        // Generate all in the polygon.
+        case PointLocation::IN_POLYGON:
+        case PointLocation::ON_MESH_BORDER:
         {
             SearchNodePtr lazy = get_lazy(pl.poly1, -1, -1);
             #ifndef NDEBUG
