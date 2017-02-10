@@ -408,6 +408,8 @@ void SearchInstance::gen_initial_nodes()
     #undef get_lazy
 }
 
+#define root_to_point(root) ((root) == -1 ? start : mesh->mesh_vertices[root].p)
+
 bool SearchInstance::search()
 {
     timer.start();
@@ -441,6 +443,44 @@ bool SearchInstance::search()
         const int next_poly = node->next_polygon;
         if (next_poly == end_polygon)
         {
+            if (node->left != goal || node->right != goal)
+            {
+                // Push on the TRUE final search node.
+
+                // We need to find whether we need to turn left/right to ge
+                // to the goal, so we do an orientation check like how we
+                // special case triangle successors.
+
+                const int final_root = [&]()
+                {
+                    const Point& root = root_to_point(node->root);
+                    const Point root_goal = goal - root;
+                    // If root-left-goal is not CW, use left.
+                    if (root_goal * (node->left - root) < -EPSILON)
+                    {
+                        return node->left_vertex;
+                    }
+                    // If root-right-goal is not CCW, use right.
+                    if ((node->right - root) * root_goal < -EPSILON)
+                    {
+                        return node->right_vertex;
+                    }
+                    // Use the normal root.
+                    return node->root;
+                }();
+
+                const SearchNodePtr true_final =
+                    new (node_pool->allocate()) SearchNode
+                    {node, final_root, goal, goal, -1, -1, end_polygon,
+                     node->f, node->g, SearchNode::NOT};
+
+                open_list.push(true_final);
+                nodes_generated++;
+                nodes_pushed++;
+                continue;
+            }
+
+            // This search node is the true final search node.
             timer.stop();
 
             #ifndef NDEBUG
@@ -551,8 +591,6 @@ bool SearchInstance::search()
     return false;
 }
 
-#define root_to_point(root) ((root) == -1 ? start : mesh->mesh_vertices[root].p)
-
 void SearchInstance::print_node(SearchNodePtr node, std::ostream& outfile)
 {
     outfile << "root=" << root_to_point(node->root) << "; left=" << node->left
@@ -569,52 +607,6 @@ void SearchInstance::get_path_points(std::vector<Point>& out)
     out.clear();
     out.push_back(goal);
     SearchNodePtr cur_node = final_node;
-
-    {
-        // Recreate the h value heuristic to see whether we need to add the
-        // left or right endpoint of the final node's interval.
-        const Point& root = root_to_point(cur_node->root),
-                        l = cur_node->left,
-                        r = cur_node->right;
-        const Point lr = r - l;
-        Point fixed_goal;
-        if (((root - l) * lr > 0) == ((goal - l) * lr > 0))
-        {
-            fixed_goal = reflect_point(goal, l, r);
-        }
-        else
-        {
-            fixed_goal = goal;
-        }
-        double rg_num, lr_num, denom;
-        line_intersect_time(root, fixed_goal, l, r, rg_num, lr_num, denom);
-
-        if (denom != 0.0)
-        {
-            switch (line_intersect_bound_check(lr_num, denom))
-            {
-                case ZeroOnePos::LT_ZERO:
-                    // Use left end point.
-                    out.push_back(l);
-                    break;
-
-                case ZeroOnePos::EQ_ZERO:
-                case ZeroOnePos::IN_RANGE:
-                case ZeroOnePos::EQ_ONE:
-                    // h value heuristic uses straight line.
-                    break;
-
-                case ZeroOnePos::GT_ONE:
-                    // Use right end point.
-                    out.push_back(r);
-                    break;
-
-                default:
-                    assert(false);
-            }
-        }
-
-    }
 
     while (cur_node != nullptr)
     {
