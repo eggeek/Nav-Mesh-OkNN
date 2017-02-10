@@ -15,6 +15,10 @@ Then follows the vertex section of the file, containing V lines.
 Then follows the polygon section of the file, containing P lines.
 End of file.
 
+This is only the recommended format. As the length of each line (in numbers)
+will be known, this format is whitespace insensitive. This means that all
+recommended whitespace (spaces, new lines) can be replaced with any other space.
+
 Each section defines an array of that object, with each line being a single
 object. We will define S[i] to be the ith object in section S. For example,
 polygon[1] is the second polygon of the mesh.
@@ -35,6 +39,12 @@ A vertex is defined by:
         Ordered in counterclockwise order with an arbirary start.
         If the polygon is not defined (it is outside the map or an obstacle),
         a value of -1 is used.
+        Any two "adjacent" obstacles should be merged into one.
+
+        Note that Polyanya usually does not use this at all - all it uses it for
+        will be identifying how many obstacles are around a point, and the
+        array itself is only used when that number is 0. However, even when it
+        is used in this fashion the ordering does not matter.
 
 A polygon is defined by:
     n: integer.
@@ -49,7 +59,7 @@ A polygon is defined by:
         The neighbouring polygons.
         Each integer represents an index of the polygon array.
         Ordered such that for each polygon p[i], p[i] and this polygon share
-        the edge of v[i] and v[i+1], wrapping around at the last polygon.
+        the edge of v[i] and v[i-1], wrapping around for the first polygon.
         If the polygon is not defined (it is outside the map or an obstacle),
         a value of -1 is used.
 
