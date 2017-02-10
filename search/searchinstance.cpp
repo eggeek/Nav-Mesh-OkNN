@@ -443,44 +443,39 @@ bool SearchInstance::search()
         const int next_poly = node->next_polygon;
         if (next_poly == end_polygon)
         {
-            if (node->left != goal || node->right != goal)
+            // Make the TRUE final node.
+            // (We usually push it onto the open list, but we know it's going
+            // to be immediately popped off anyway.)
+
+            // We need to find whether we need to turn left/right to ge
+            // to the goal, so we do an orientation check like how we
+            // special case triangle successors.
+
+            const int final_root = [&]()
             {
-                // Push on the TRUE final search node.
-
-                // We need to find whether we need to turn left/right to ge
-                // to the goal, so we do an orientation check like how we
-                // special case triangle successors.
-
-                const int final_root = [&]()
+                const Point& root = root_to_point(node->root);
+                const Point root_goal = goal - root;
+                // If root-left-goal is not CW, use left.
+                if (root_goal * (node->left - root) < -EPSILON)
                 {
-                    const Point& root = root_to_point(node->root);
-                    const Point root_goal = goal - root;
-                    // If root-left-goal is not CW, use left.
-                    if (root_goal * (node->left - root) < -EPSILON)
-                    {
-                        return node->left_vertex;
-                    }
-                    // If root-right-goal is not CCW, use right.
-                    if ((node->right - root) * root_goal < -EPSILON)
-                    {
-                        return node->right_vertex;
-                    }
-                    // Use the normal root.
-                    return node->root;
-                }();
+                    return node->left_vertex;
+                }
+                // If root-right-goal is not CCW, use right.
+                if ((node->right - root) * root_goal < -EPSILON)
+                {
+                    return node->right_vertex;
+                }
+                // Use the normal root.
+                return node->root;
+            }();
 
-                const SearchNodePtr true_final =
-                    new (node_pool->allocate()) SearchNode
-                    {node, final_root, goal, goal, -1, -1, end_polygon,
-                     node->f, node->g, SearchNode::NOT};
+            const SearchNodePtr true_final =
+                new (node_pool->allocate()) SearchNode
+                {node, final_root, goal, goal, -1, -1, end_polygon,
+                 node->f, node->g, SearchNode::NOT};
 
-                open_list.push(true_final);
-                nodes_generated++;
-                nodes_pushed++;
-                continue;
-            }
+            nodes_generated++;
 
-            // This search node is the true final search node.
             timer.stop();
 
             #ifndef NDEBUG
@@ -490,7 +485,7 @@ bool SearchInstance::search()
             }
             #endif
 
-            final_node = node;
+            final_node = true_final;
             return true;
         }
         // We will never update our root list here.
