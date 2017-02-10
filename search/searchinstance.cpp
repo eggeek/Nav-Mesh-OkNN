@@ -109,6 +109,8 @@ int SearchInstance::succ_to_node(
                                  V[succ.poly_left_ind - 1] :
                                  V.back();
 
+        SearchNode::CollinearType col_type = SearchNode::NOT;
+
 
         // Note that g is evaluated twice here. (But this is a lambda!)
         // Always try to precompute before using this macro.
@@ -142,7 +144,7 @@ int SearchInstance::succ_to_node(
                 }
             }
             nodes[out++] = {nullptr, root, succ.left, succ.right, left_vertex,
-                right_vertex, next_polygon, g, g};
+                right_vertex, next_polygon, g, g, col_type};
         };
 
         const Point& parent_root = (parent->root == -1 ?
@@ -151,23 +153,10 @@ int SearchInstance::succ_to_node(
         #define get_g(new_root) parent->g + parent_root.distance(new_root)
         switch (succ.type)
         {
+            // Collinears are the same as non-observables,
+            // except for changing the CollinearType.
             case Successor::RIGHT_COLLINEAR:
-                if (succ.right == parent->right)
-                {
-                    if (right_g == -1)
-                    {
-                        right_g = get_g(parent->right);
-                    }
-                    // use right_g
-                    p(right_vertex, right_g);
-                }
-                else
-                {
-                    const double g = get_g(succ.right);
-                    p(right_vertex, g);
-                }
-                break;
-
+                col_type = SearchNode::RIGHT;
             case Successor::RIGHT_NON_OBSERVABLE:
                 // equivalent to right_g == -1
                 if (right_g == -1)
@@ -181,29 +170,14 @@ int SearchInstance::succ_to_node(
                 p(parent->root, parent->g);
                 break;
 
+            case Successor::LEFT_COLLINEAR:
+                col_type = SearchNode::LEFT;
             case Successor::LEFT_NON_OBSERVABLE:
                 if (left_g == -1)
                 {
                     left_g = get_g(parent->left);
                 }
                 p(parent->left_vertex, left_g);
-                break;
-
-            case Successor::LEFT_COLLINEAR:
-                if (succ.left == parent->left)
-                {
-                    if (left_g == -1)
-                    {
-                        left_g = get_g(parent->left);
-                    }
-                    // use left_g
-                    p(left_vertex, left_g);
-                }
-                else
-                {
-                    const double g = get_g(succ.left);
-                    p(left_vertex, g);
-                }
                 break;
 
             default:
@@ -232,7 +206,7 @@ void SearchInstance::gen_initial_nodes()
     const PointLocation pl = get_point_location(start);
     const double h = start.distance(goal);
     #define get_lazy(next, left, right) new (node_pool->allocate()) SearchNode \
-        {nullptr, -1, start, start, left, right, next, h, 0}
+        {nullptr, -1, start, start, left, right, next, h, 0, SearchNode::LAZY}
     switch (pl.type)
     {
         // Don't bother.

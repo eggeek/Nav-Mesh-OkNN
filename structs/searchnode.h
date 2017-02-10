@@ -31,6 +31,16 @@ struct SearchNode
 
     double f, g;
 
+    enum CollinearType
+    {
+        NOT,   // not collinear
+        RIGHT, // right collinear
+        LEFT,  // left collinear
+        LAZY,  // lazy initial nodes
+    };
+
+    CollinearType col_type;
+
     // Comparison.
     // Always take the "smallest" search node in a priority queue.
     bool operator<(const SearchNode& other) const

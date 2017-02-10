@@ -152,8 +152,33 @@ int get_successors(SearchNode& node, const Point& start, const Mesh& mesh,
     // Is this node collinear?
     // If so, generate all other intervals in the polygon.
     // Assume that the interval is maximal across the edge.
-    if (node.left == root || node.right == root)
+    if (node.col_type != SearchNode::NOT)
     {
+        // What's the type of our new successors?
+        const Successor::Type succ_type = [&node]()
+        {
+            switch (node.col_type)
+            {
+                case SearchNode::RIGHT:
+                    // A left collinear looks like "root right left"
+                    // so we should turn at right.
+                    return Successor::RIGHT_NON_OBSERVABLE;
+
+                case SearchNode::LEFT:
+                    // A left collinear looks like "right left root"
+                    // so we should turn at left.
+                    return Successor::LEFT_NON_OBSERVABLE;
+
+                case SearchNode::LAZY:
+                    // It's lazy: we shouldn't turn.
+                    return Successor::OBSERVABLE;
+
+                default:
+                    assert(false);
+                    return Successor::OBSERVABLE;
+            }
+        }();
+
         // We can be lazy and start iterating from any point.
         // We still need to exclude the current interval as a successor, though.
         int last_vertex = V.back();
@@ -170,7 +195,7 @@ int get_successors(SearchNode& node, const Point& start, const Mesh& mesh,
             }
             const Point& left = mesh_vertices[this_vertex].p,
                          right = mesh_vertices[last_vertex].p;
-            successors[out++] = {Successor::OBSERVABLE, left, right, i};
+            successors[out++] = {succ_type, left, right, i};
             last_vertex = this_vertex;
         }
         return out;
