@@ -379,6 +379,77 @@ bool can_merge(int x, ListNodePtr v, ListNodePtr p)
     return true;
 }
 
+void check_correct()
+{
+    for (int i = 0; i < (int) mesh_vertices.size(); i++)
+    {
+        Vertex& v = mesh_vertices[i];
+        if (v.num_polygons == 0)
+        {
+            continue;
+        }
+
+        int count = 1;
+        ListNodePtr cur_node = v.polygons->next;
+        while (cur_node != v.polygons)
+        {
+            assert(count < v.num_polygons);
+            cur_node = cur_node->next;
+            count++;
+        }
+        assert(count == v.num_polygons);
+    }
+
+    for (int i = 0; i < (int) mesh_polygons.size(); i++)
+    {
+        Polygon& p = mesh_polygons[i];
+        if (polygon_unions.find(i) != i || p.num_vertices == 0)
+        {
+            // Has been merged.
+            continue;
+        }
+
+        {
+            #define P(ptr) mesh_vertices[(ptr)->val].p
+            int count = 1;
+
+            assert(!cw(P(p.vertices), P(p.vertices->next),
+                       P(p.vertices->next->next)));
+            can_merge(i, p.vertices, p.polygons);
+
+            ListNodePtr cur_node_v = p.vertices->next;
+            ListNodePtr cur_node_p = p.polygons->next;
+            while (cur_node_v != p.vertices)
+            {
+                assert(count < p.num_vertices);
+                assert(!cw(P(cur_node_v), P(cur_node_v->next),
+                           P(cur_node_v->next->next)));
+                can_merge(i, cur_node_v, cur_node_p);
+
+                cur_node_v = cur_node_v->next;
+                cur_node_p = cur_node_p->next;
+                count++;
+            }
+
+            assert(count == p.num_vertices);
+
+            #undef P
+        }
+
+        {
+            int count = 1;
+            ListNodePtr cur_node = p.polygons->next;
+            while (cur_node != p.polygons)
+            {
+                assert(count < p.num_vertices);
+                cur_node = cur_node->next;
+                count++;
+            }
+            assert(count == p.num_vertices);
+        }
+    }
+}
+
 void print_mesh(ostream& outfile)
 {
     outfile << "mesh\n";
@@ -463,37 +534,23 @@ void print_mesh(ostream& outfile)
 
         outfile << get_v(p.vertices->val);
         {
-            #define P(ptr) mesh_vertices[(ptr)->val].p
-            int count = 1;
-            assert(!cw(P(p.vertices), P(p.vertices->next),
-                       P(p.vertices->next->next)));
             ListNodePtr cur_node = p.vertices->next;
             while (cur_node != p.vertices)
             {
-                assert(count < p.num_vertices);
-                assert(!cw(P(cur_node), P(cur_node->next),
-                           P(cur_node->next->next)));
                 outfile << " " << get_v(cur_node->val);
                 cur_node = cur_node->next;
-                count++;
             }
-            assert(count == p.num_vertices);
-            #undef P
         }
         outfile << "\t";
 
         outfile << get_p(p.polygons->val);
         {
-            int count = 1;
             ListNodePtr cur_node = p.polygons->next;
             while (cur_node != p.polygons)
             {
-                assert(count < p.num_vertices);
                 outfile << " " << get_p(cur_node->val);
                 cur_node = cur_node->next;
-                count++;
             }
-            assert(count == p.num_vertices);
         }
         outfile << "\n";
     }
@@ -505,6 +562,7 @@ void print_mesh(ostream& outfile)
 int main()
 {
     read_mesh(cin);
+    check_correct();
     print_mesh(cout);
     return 0;
 }
