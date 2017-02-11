@@ -49,6 +49,7 @@ struct Vertex
 struct Polygon
 {
     int num_vertices;
+    int num_traversable;
     ListNodePtr vertices;
     ListNodePtr polygons;
 };
@@ -208,6 +209,7 @@ void read_mesh(istream& infile)
 
         // don't worry: the old one is still being pointed to
         cur_node = nullptr;
+        p.num_traversable = 0;
         for (int j = 0; j < n; j++)
         {
             int polygon_index;
@@ -220,6 +222,11 @@ void read_mesh(istream& infile)
                 cerr << "Got a polygon index of " \
                           << polygon_index << endl;
                 fail("Invalid polygon index when getting polygon");
+            }
+
+            if (polygon_index != -1)
+            {
+                p.num_traversable++;
             }
             ListNodePtr new_node = make_node(nullptr, polygon_index);
 
