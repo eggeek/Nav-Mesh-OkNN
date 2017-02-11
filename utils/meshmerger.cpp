@@ -8,6 +8,8 @@
 #include <climits>
 using namespace std;
 
+bool pretty = false;
+
 // We need union find!
 struct UnionFind
 {
@@ -577,7 +579,10 @@ void print_mesh(ostream& outfile)
     outfile << "mesh\n";
     outfile << "2\n";
 
-    outfile << "\n";
+    if (pretty)
+    {
+        outfile << "\n";
+    }
 
     vector<int> vertex_mapping;
     vertex_mapping.resize(mesh_vertices.size());
@@ -619,7 +624,10 @@ void print_mesh(ostream& outfile)
     outfile << vertex_mapping.back() + 1 << " " << polygon_mapping.back() + 1
             << "\n";
 
-    outfile << "\n";
+    if (pretty)
+    {
+        outfile << "\n";
+    }
 
     for (int i = 0; i < (int) mesh_vertices.size(); i++)
     {
@@ -628,8 +636,8 @@ void print_mesh(ostream& outfile)
         {
             continue;
         }
-        outfile << v.p.x << " " << v.p.y << "\t";
-        outfile << v.num_polygons << "\t";
+        outfile << v.p.x << " " << v.p.y << " \t"[pretty];
+        outfile << v.num_polygons << " \t"[pretty];
 
         outfile << get_p(v.polygons->val);
         {
@@ -647,7 +655,10 @@ void print_mesh(ostream& outfile)
         outfile << "\n";
     }
 
-    outfile << "\n";
+    if (pretty)
+    {
+        outfile << "\n";
+    }
 
     for (int i = 0; i < (int) mesh_polygons.size(); i++)
     {
@@ -656,7 +667,7 @@ void print_mesh(ostream& outfile)
         {
             continue;
         }
-        outfile << p.num_vertices << "\t";
+        outfile << p.num_vertices << " \t"[pretty];
 
         outfile << get_v(p.vertices->val);
         {
@@ -667,7 +678,7 @@ void print_mesh(ostream& outfile)
                 cur_node = cur_node->next;
             }
         }
-        outfile << "\t";
+        outfile << " \t"[pretty];
 
         outfile << get_p(p.polygons->val);
         {
@@ -685,8 +696,12 @@ void print_mesh(ostream& outfile)
     #undef get_v
 }
 
-int main()
+int main(int argc, char* argv[])
 {
+    if (argc == 2 && string(argv[1]) == "--pretty")
+    {
+        pretty = true;
+    }
     read_mesh(cin);
     naive_merge();
     check_correct();
