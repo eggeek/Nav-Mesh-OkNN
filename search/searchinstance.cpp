@@ -195,7 +195,12 @@ int SearchInstance::succ_to_node(
                      std::abs(root_l.x) < std::abs(root_r.x)
                     )))
                 {
-                    // We should turn at L.
+                    // We should turn at L... if we can!
+                    if (parent->left_vertex != -1 &&
+                        !mesh->mesh_vertices[parent->left_vertex].is_corner)
+                    {
+                        continue;
+                    }
                     col_type = SearchNode::LEFT;
                     // We need to change the root as well!
                     if (left_g == -1)
@@ -206,7 +211,12 @@ int SearchInstance::succ_to_node(
                 }
                 else
                 {
-                    // We should turn at R.
+                    // We should turn at R... if we can!
+                    if (parent->right_vertex != -1 &&
+                        !mesh->mesh_vertices[parent->right_vertex].is_corner)
+                    {
+                        continue;
+                    }
                     col_type = SearchNode::RIGHT;
                     if (right_g == -1)
                     {
