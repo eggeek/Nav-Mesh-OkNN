@@ -19,9 +19,29 @@ struct ListNode
 typedef shared_ptr<ListNode> ListNodePtr;
 #define make_node(next, val) ListNodePtr(new ListNode {next, val})
 
-struct Vertex
+struct Point
 {
     double x, y;
+
+    Point operator+(const Point& other) const
+    {
+        return {x + other.x, y + other.y};
+    }
+
+    Point operator-(const Point& other) const
+    {
+        return {x - other.x, y - other.y};
+    }
+
+    double operator*(const Point& other) const
+    {
+        return x * other.y - y * other.x;
+    }
+};
+
+struct Vertex
+{
+    Point p;
     int num_polygons;
     ListNodePtr polygons;
 };
@@ -92,7 +112,7 @@ void read_mesh(istream& infile)
     for (int i = 0; i < V; i++)
     {
         Vertex& v = mesh_vertices[i];
-        if (!(infile >> v.x >> v.y))
+        if (!(infile >> v.p.x >> v.p.y))
         {
             fail("Error getting vertex point");
         }
@@ -225,6 +245,11 @@ void read_mesh(istream& infile)
     #undef fail
 }
 
+inline bool cw(const Point& a, const Point& b, const Point& c)
+{
+    return (b - a) * (c - b) < -1e-8;
+}
+
 void print_mesh(ostream& outfile)
 {
     outfile << "mesh\n";
@@ -277,7 +302,7 @@ void print_mesh(ostream& outfile)
         {
             continue;
         }
-        outfile << v.x << " " << v.y << "\t";
+        outfile << v.p.x << " " << v.p.y << "\t";
         outfile << v.num_polygons << "\t";
 
         outfile << get_p(v.polygons->val);
@@ -309,16 +334,20 @@ void print_mesh(ostream& outfile)
 
         outfile << get_v(p.vertices->val);
         {
+            #define P(ptr) mesh_vertices[(ptr)->val].p
             int count = 1;
             ListNodePtr cur_node = p.vertices->next;
             while (cur_node != p.vertices)
             {
                 assert(count < p.num_vertices);
+                assert(!cw(P(cur_node), P(cur_node->next),
+                           P(cur_node->next->next)));
                 outfile << " " << get_v(cur_node->val);
                 cur_node = cur_node->next;
                 count++;
             }
             assert(count == p.num_vertices);
+            #undef P
         }
         outfile << "\t";
 
