@@ -151,6 +151,75 @@ int SearchInstance::succ_to_node(
                                     start :
                                     mesh->mesh_vertices[parent->root].p);
         #define get_g(new_root) parent->g + parent_root.distance(new_root)
+
+        if (parent->col_type != SearchNode::NOT)
+        {
+            // Check for collinearity, because the successors may
+            // also be collinear.
+            // New root is parent->right.
+            const Point& root = [&parent, &parent_root]() -> const Point&
+            {
+                switch (parent->col_type)
+                {
+                    case SearchNode::RIGHT:
+                        return parent->right;
+                    case SearchNode::LAZY:
+                        return parent_root;
+                    case SearchNode::LEFT:
+                        return parent->left;
+                    default:
+                        assert(false);
+                        return parent_root;
+                }
+            }();
+            const Point root_l = succ.left - root;
+            const Point root_r = succ.right - root;
+            #define is_zero(n) (std::abs(n) < EPSILON)
+            const bool root_eq_l = is_zero(root_l.x) && is_zero(root_l.y);
+            const bool root_eq_r = is_zero(root_r.x) && is_zero(root_r.y);
+            #undef is_zero
+
+            if (root_eq_l || root_eq_r ||
+                is_collinear(root, succ.right, succ.left))
+            {
+                // It's collinear... but we don't know where to turn.
+                // Find which endpoint is closer.
+                // We can terminate early if we know the root is equal to one
+                // of the endpoints.
+                // Additionally, we can simply compare the absolute values of
+                // the coordinates to find which is closer.
+                if (root_eq_l || (!root_eq_r &&
+                    (std::abs(root_l.x - root_r.x) < EPSILON ?
+                     std::abs(root_l.y) < std::abs(root_r.y) :
+                     std::abs(root_l.x) < std::abs(root_r.x)
+                    )))
+                {
+                    // We should turn at L.
+                    col_type = SearchNode::LEFT;
+                    // We need to change the root as well!
+                    if (left_g == -1)
+                    {
+                        left_g = get_g(parent->left);
+                    }
+                    p(parent->left_vertex, left_g);
+                }
+                else
+                {
+                    // We should turn at R.
+                    col_type = SearchNode::RIGHT;
+                    if (right_g == -1)
+                    {
+                        right_g = get_g(parent->right);
+                    }
+                    p(parent->right_vertex, right_g);
+                }
+                #undef dist
+
+                // Always continue here: we don't want the normal node.
+                continue;
+            }
+        }
+
         switch (succ.type)
         {
             // Collinears are the same as non-observables,
@@ -158,45 +227,6 @@ int SearchInstance::succ_to_node(
             case Successor::RIGHT_COLLINEAR:
                 col_type = SearchNode::RIGHT;
             case Successor::RIGHT_NON_OBSERVABLE:
-                // equivalent to right_g == -1
-                if (parent->col_type == SearchNode::RIGHT)
-                {
-                    // Check for collinearity, because the successors may
-                    // also be collinear.
-                    // New root is parent->right.
-                    const Point& root = parent->right;
-                    if (is_collinear(root, succ.right, succ.left))
-                    {
-                        // It's collinear... but we don't know where to turn.
-                        // Find which endpoint is closer.
-                        const double root_l = root.distance_sq(succ.left);
-                        const double root_r = root.distance_sq(succ.right);
-                        if (root_l < root_r)
-                        {
-                            // We should turn at L.
-                            col_type = SearchNode::LEFT;
-                            // We need to change the root as well!
-                            if (left_g == -1)
-                            {
-                                left_g = get_g(parent->left);
-                            }
-                            p(parent->left_vertex, left_g);
-                        }
-                        else
-                        {
-                            // We should turn at R.
-                            col_type = SearchNode::RIGHT;
-                            if (right_g == -1)
-                            {
-                                right_g = get_g(parent->right);
-                            }
-                            p(parent->right_vertex, right_g);
-                        }
-
-                        // Always break here: we don't want the normal node.
-                        break;
-                    }
-                }
                 if (right_g == -1)
                 {
                     right_g = get_g(parent->right);
@@ -205,88 +235,12 @@ int SearchInstance::succ_to_node(
                 break;
 
             case Successor::OBSERVABLE:
-                if (parent->col_type == SearchNode::LAZY)
-                {
-                    // Check for collinearity, because the successors may
-                    // also be collinear.
-                    // New root is parent->root.
-                    const Point& root = parent_root;
-                    if (is_collinear(root, succ.right, succ.left))
-                    {
-                        // It's collinear... but we don't know where to turn.
-                        // Find which endpoint is closer.
-                        const double root_l = root.distance_sq(succ.left);
-                        const double root_r = root.distance_sq(succ.right);
-                        if (root_l < root_r)
-                        {
-                            // We should turn at L.
-                            col_type = SearchNode::LEFT;
-                            // We need to change the root as well!
-                            if (left_g == -1)
-                            {
-                                left_g = get_g(parent->left);
-                            }
-                            p(parent->left_vertex, left_g);
-                        }
-                        else
-                        {
-                            // We should turn at R.
-                            col_type = SearchNode::RIGHT;
-                            if (right_g == -1)
-                            {
-                                right_g = get_g(parent->right);
-                            }
-                            p(parent->right_vertex, right_g);
-                        }
-
-                        // Always break here: we don't want the normal node.
-                        break;
-                    }
-                }
                 p(parent->root, parent->g);
                 break;
 
             case Successor::LEFT_COLLINEAR:
                 col_type = SearchNode::LEFT;
             case Successor::LEFT_NON_OBSERVABLE:
-                if (parent->col_type == SearchNode::LEFT)
-                {
-                    // Check for collinearity, because the successors may
-                    // also be collinear.
-                    // New root is parent->left.
-                    const Point& root = parent->left;
-                    if (is_collinear(root, succ.right, succ.left))
-                    {
-                        // It's collinear... but we don't know where to turn.
-                        // Find which endpoint is closer.
-                        const double root_l = root.distance_sq(succ.left);
-                        const double root_r = root.distance_sq(succ.right);
-                        if (root_l < root_r)
-                        {
-                            // We should turn at L.
-                            col_type = SearchNode::LEFT;
-                            // We need to change the root as well!
-                            if (left_g == -1)
-                            {
-                                left_g = get_g(parent->left);
-                            }
-                            p(parent->left_vertex, left_g);
-                        }
-                        else
-                        {
-                            // We should turn at R.
-                            col_type = SearchNode::RIGHT;
-                            if (right_g == -1)
-                            {
-                                right_g = get_g(parent->right);
-                            }
-                            p(parent->right_vertex, right_g);
-                        }
-
-                        // Always break here: we don't want the normal node.
-                        break;
-                    }
-                }
                 if (left_g == -1)
                 {
                     left_g = get_g(parent->left);
@@ -642,7 +596,22 @@ void SearchInstance::print_node(SearchNodePtr node, std::ostream& outfile)
 {
     outfile << "root=" << root_to_point(node->root) << "; left=" << node->left
             << "; right=" << node->right << "; f=" << node->f << ", g="
-            << node->g;
+            << node->g << "; col=" << [&]() -> std::string
+            {
+                switch (node->col_type)
+                {
+                    case SearchNode::NOT:
+                        return "NOT";
+                    case SearchNode::RIGHT:
+                        return "RIGHT";
+                    case SearchNode::LEFT:
+                        return "LEFT";
+                    case SearchNode::LAZY:
+                        return "LAZY";
+                    default:
+                        return "";
+                }
+            }();
 }
 
 void SearchInstance::get_path_points(std::vector<Point>& out)
