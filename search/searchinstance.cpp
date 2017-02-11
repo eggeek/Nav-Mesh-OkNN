@@ -167,8 +167,34 @@ int SearchInstance::succ_to_node(
                     const Point& root = parent->right;
                     if (is_collinear(root, succ.right, succ.left))
                     {
-                        // It's collinear, and we're guaranteed to turn right.
-                        col_type = SearchNode::RIGHT;
+                        // It's collinear... but we don't know where to turn.
+                        // Find which endpoint is closer.
+                        const double root_l = root.distance_sq(succ.left);
+                        const double root_r = root.distance_sq(succ.right);
+                        if (root_l < root_r)
+                        {
+                            // We should turn at L.
+                            col_type = SearchNode::LEFT;
+                            // We need to change the root as well!
+                            if (left_g == -1)
+                            {
+                                left_g = get_g(parent->left);
+                            }
+                            p(parent->left_vertex, left_g);
+                        }
+                        else
+                        {
+                            // We should turn at R.
+                            col_type = SearchNode::RIGHT;
+                            if (right_g == -1)
+                            {
+                                right_g = get_g(parent->right);
+                            }
+                            p(parent->right_vertex, right_g);
+                        }
+
+                        // Always break here: we don't want the normal node.
+                        break;
                     }
                 }
                 if (right_g == -1)
@@ -231,8 +257,34 @@ int SearchInstance::succ_to_node(
                     const Point& root = parent->left;
                     if (is_collinear(root, succ.right, succ.left))
                     {
-                        // It's collinear, and we're guaranteed to turn left.
-                        col_type = SearchNode::LEFT;
+                        // It's collinear... but we don't know where to turn.
+                        // Find which endpoint is closer.
+                        const double root_l = root.distance_sq(succ.left);
+                        const double root_r = root.distance_sq(succ.right);
+                        if (root_l < root_r)
+                        {
+                            // We should turn at L.
+                            col_type = SearchNode::LEFT;
+                            // We need to change the root as well!
+                            if (left_g == -1)
+                            {
+                                left_g = get_g(parent->left);
+                            }
+                            p(parent->left_vertex, left_g);
+                        }
+                        else
+                        {
+                            // We should turn at R.
+                            col_type = SearchNode::RIGHT;
+                            if (right_g == -1)
+                            {
+                                right_g = get_g(parent->right);
+                            }
+                            p(parent->right_vertex, right_g);
+                        }
+
+                        // Always break here: we don't want the normal node.
+                        break;
                     }
                 }
                 if (left_g == -1)
