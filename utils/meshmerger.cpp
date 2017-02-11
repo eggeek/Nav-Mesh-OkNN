@@ -627,7 +627,7 @@ void print_mesh(ostream& outfile)
     }
 
     #define get_v(v) ((v) == -1 ? -1 : vertex_mapping[v]);
-    #define get_p(p) ((p) == -1 ? -1 : polygon_mapping[p]);
+    #define get_p(p) ((p) == -1 ? -1 : polygon_mapping[polygon_unions.find(p)]);
 
     outfile << final_v << " " << final_p << "\n";
 
