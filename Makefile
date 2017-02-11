@@ -29,6 +29,7 @@ fast dev prof: all
 
 clean:
 	rm -rf ./bin/*
+	rm -f $(PA_OBJ:.o=.d)
 	rm -f $(PA_OBJ)
 
 .PHONY: $(TARGETS)
@@ -38,5 +39,8 @@ $(BIN_TARGETS): bin/%: %.cpp $(PA_OBJ)
 	@mkdir -p ./bin
 	$(CXX) $(CXXFLAGS) $(PA_INCLUDES) $(PA_OBJ) $(@:bin/%=%).cpp -o $(@)
 
+-include $(PA_OBJ:.o=.d)
+
 %.o: %.cpp
+	$(CXX) $(CXXFLAGS) $(PA_INCLUDES) -MM -MP -MT $@ -MF ${@:.o=.d} $<
 	$(CXX) $(CXXFLAGS) $(PA_INCLUDES) $< -c -o $@

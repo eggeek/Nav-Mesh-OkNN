@@ -20,6 +20,7 @@ fast dev: all
 
 clean:
 	rm -rf ./bin/*
+	rm -f $(PU_OBJ:.o=.d)
 	rm -f $(PU_OBJ)
 
 .PHONY: $(TARGETS) gridmap2poly
@@ -45,5 +46,8 @@ bin/meshmerger: meshmerger.cpp
 	@mkdir -p ./bin
 	$(CXX) $(CXXFLAGS) -O3 meshmerger.cpp -o ./bin/meshmerger
 
+-include $(PU_OBJ:.o=.d)
+
 %.o: %.cpp
+	$(CXX) $(CXXFLAGS) $(FADE2DFLAGS) $(INCLUDES) -MM -MP -MT $@ -MF ${@:.o=.d} $<
 	$(CXX) $(CXXFLAGS) $(FADE2DFLAGS) $(INCLUDES) $< -c -o $@
