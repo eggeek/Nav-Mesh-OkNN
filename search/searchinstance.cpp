@@ -180,7 +180,8 @@ int SearchInstance::succ_to_node(
             #undef is_zero
 
             if (root_eq_l || root_eq_r ||
-                is_collinear(root, succ.right, succ.left))
+                (!(mesh->max_poly_sides == 3) &&
+                 is_collinear(root, succ.right, succ.left)))
             {
                 // It's collinear... but we don't know where to turn.
                 // Find which endpoint is closer.
