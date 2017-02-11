@@ -558,6 +558,8 @@ void naive_merge()
             {
                 merge(i, p.vertices, p.polygons);
                 merged = true;
+                // prevents an infinite loop?
+                continue;
             }
 
             ListNodePtr cur_node_v = p.vertices->next;
@@ -568,6 +570,8 @@ void naive_merge()
                 {
                     merge(i, cur_node_v, cur_node_p);
                     merged = true;
+                    // break just in case
+                    break;
                 }
 
                 cur_node_v = cur_node_v->next;
