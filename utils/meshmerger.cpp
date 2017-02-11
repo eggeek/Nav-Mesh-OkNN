@@ -10,9 +10,9 @@ using namespace std;
 // We need union find!
 struct UnionFind
 {
-    vector<int> parent, rank;
+    vector<int> parent;
 
-    UnionFind(int n) : parent(n), rank(n)
+    UnionFind(int n) : parent(n)
     {
         iota(parent.begin(), parent.end(), 0);
     }
@@ -27,27 +27,12 @@ struct UnionFind
     }
 
     // can't use "union" as that's a keyword!
+    // also: don't use union by rank as we need find(x) == x after merge.
     void merge(int x, int y)
     {
         x = find(x);
         y = find(y);
-        if (x == y)
-        {
-            return;
-        }
-        if (rank[x] < rank[y])
-        {
-            parent[x] = y;
-        }
-        else if (rank[x] > rank[y])
-        {
-            parent[y] = x;
-        }
-        else
-        {
-            parent[y] = x;
-            rank[x]++;
-        }
+        parent[y] = x;
     }
 };
 
@@ -374,7 +359,6 @@ bool can_merge(int x, ListNodePtr v, ListNodePtr p)
     }
 
     #undef P
-    #undef N
 
     return true;
 }
