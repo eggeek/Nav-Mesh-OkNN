@@ -336,6 +336,8 @@ void print_mesh(ostream& outfile)
         {
             #define P(ptr) mesh_vertices[(ptr)->val].p
             int count = 1;
+            assert(!cw(P(p.vertices), P(p.vertices->next),
+                       P(p.vertices->next->next)));
             ListNodePtr cur_node = p.vertices->next;
             while (cur_node != p.vertices)
             {
