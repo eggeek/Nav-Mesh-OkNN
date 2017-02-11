@@ -59,6 +59,16 @@ struct ListNode
 {
     shared_ptr<ListNode> next;
     int val;
+
+    shared_ptr<ListNode> go(int n) const
+    {
+        shared_ptr<ListNode> out = next;
+        for (int i = 1; i < n; i++)
+        {
+            out = out->next;
+        }
+        return out;
+    }
 };
 
 typedef shared_ptr<ListNode> ListNodePtr;
@@ -96,6 +106,8 @@ struct Polygon
     int num_vertices;
     int num_traversable;
     ListNodePtr vertices;
+    // Stores the original polygons.
+    // To get the actual polygon, do polygon_unions.find on the polygon you get.
     ListNodePtr polygons;
 };
 
@@ -303,6 +315,68 @@ void read_mesh(istream& infile)
 inline bool cw(const Point& a, const Point& b, const Point& c)
 {
     return (b - a) * (c - b) < -1e-8;
+}
+
+// Can polygon x merge with the polygon adjacent to the edge
+// (v->next, v->next->next)?
+// (The reason for this is because we don't have back pointers, and we need
+// to have the vertex before the edge starts).
+// Assume that v and p are "aligned", that is, they have been offset by the
+// same amount.
+// This also means that the actual polygon used will be p->next->next.
+// Also assume that x is a valid non-merged polygon.
+bool can_merge(int x, ListNodePtr v, ListNodePtr p)
+{
+    const int merge_index = p->go(2)->val;
+    if (merge_index == -1)
+    {
+        return false;
+    }
+    const Polygon& to_merge = mesh_polygons[polygon_unions.find(merge_index)];
+
+    // Define (v->next, v->next->next).
+    const int A = v->go(1)->val;
+    const int B = v->go(2)->val;
+
+    // We want to find (B, A) inside to_merge's vertices.
+    // In fact, we want to find the one BEFORE B. We'll call this merge_end.
+    // Assert that we have good data - that is, if B appears, A must be next.
+    // Also, we can't iterate for more than to_merge.num_vertices.
+    ListNodePtr merge_end_v = to_merge.vertices;
+    ListNodePtr merge_end_p = to_merge.polygons;
+    int counter;
+    counter = 0;
+    while (merge_end_v->next->val != B)
+    {
+        merge_end_v = merge_end_v->next;
+        merge_end_p = merge_end_p->next;
+        counter++;
+        assert(counter <= to_merge.num_vertices);
+    }
+    // Ensure that A comes after B.
+    assert(merge_end_v->go(2)->val == A);
+    // Ensure that the neighbouring polygon is x.
+    assert(polygon_unions.find(merge_end_p->go(2)->val) == x);
+
+    // The merge will change
+    // (v, A, B) to (v, A, [3 after merge_end_v]) and
+    // (A, B, [3 after v]) to (merge_end_v, B, [3 after v]).
+    // If the new ones are clockwise, we must return false.
+    #define P(ptr) mesh_vertices[(ptr)->val].p
+    if (cw(P(v), P(v->go(1)), P(merge_end_v->go(3))))
+    {
+        return false;
+    }
+
+    if (cw(P(merge_end_v), P(v->go(2)), P(v->go(3))))
+    {
+        return false;
+    }
+
+    #undef P
+    #undef N
+
+    return true;
 }
 
 void print_mesh(ostream& outfile)
