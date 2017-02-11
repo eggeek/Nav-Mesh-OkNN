@@ -4,7 +4,52 @@
 #include <string>
 #include <memory>
 #include <cassert>
+#include <numeric>
 using namespace std;
+
+// We need union find!
+struct UnionFind
+{
+    vector<int> parent, rank;
+
+    UnionFind(int n) : parent(n), rank(n)
+    {
+        iota(parent.begin(), parent.end(), 0);
+    }
+
+    int find(int x)
+    {
+        if (parent[x] != x)
+        {
+            parent[x] = find(parent[x]);
+        }
+        return parent[x];
+    }
+
+    // can't use "union" as that's a keyword!
+    void merge(int x, int y)
+    {
+        x = find(x);
+        y = find(y);
+        if (x == y)
+        {
+            return;
+        }
+        if (rank[x] < rank[y])
+        {
+            parent[x] = y;
+        }
+        else if (rank[x] > rank[y])
+        {
+            parent[y] = x;
+        }
+        else
+        {
+            parent[y] = x;
+            rank[x]++;
+        }
+    }
+};
 
 // We need a circular linked list of sorts.
 // This is going to be used a lot - for polys around point and for merging the
@@ -62,6 +107,8 @@ vector<Vertex> mesh_vertices;
 // We'll also keep all polygons, but we'll throw them out like above.
 vector<Polygon> mesh_polygons;
 
+UnionFind polygon_unions(0);
+
 
 // taken from structs/mesh.cpp
 void read_mesh(istream& infile)
@@ -108,6 +155,7 @@ void read_mesh(istream& infile)
 
     mesh_vertices.resize(V);
     mesh_polygons.resize(P);
+    polygon_unions = UnionFind(P);
 
 
     for (int i = 0; i < V; i++)
