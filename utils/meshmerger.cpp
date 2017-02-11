@@ -379,7 +379,8 @@ void merge(int x, ListNodePtr v, ListNodePtr p)
 {
     assert(can_merge(x, v, p));
     // Note that because of the way we're merging,
-    // the resulting polygon will always have a valid ListNodePtr.
+    // the resulting polygon will NOT always have a valid ListNodePtr, so
+    // we need to set it ourself.
 
     const int merge_index = p->go(2)->val;
 
@@ -396,29 +397,31 @@ void merge(int x, ListNodePtr v, ListNodePtr p)
         merge_end_p = merge_end_p->next;
     }
 
-    // We got all the pointers we need.
-    // Get the ACTUAL pointers we need to swap.
-    ListNodePtr A_v_ptr = v->go(1);
-    ListNodePtr A_p_ptr = p->go(1);
-    ListNodePtr B_v_ptr = v->go(2);
-    ListNodePtr B_p_ptr = p->go(2);
+    // Our A should point to the thing which their A is pointing to.
+    // Their B should point to the thing which our B is pointing to.
+    ListNodePtr our_A_v_ptr = v->go(1);
+    ListNodePtr our_A_p_ptr = p->go(1);
+    ListNodePtr our_B_v_ptr = v->go(2);
+    ListNodePtr our_B_p_ptr = p->go(2);
 
-    // A will point to this.
-    ListNodePtr to_A_v_ptr = merge_end_v->go(3);
-    ListNodePtr to_A_p_ptr = merge_end_p->go(3);
-    // This will point to B.
-    ListNodePtr from_B_v_ptr = merge_end_v;
-    ListNodePtr from_B_p_ptr = merge_end_p;
+    ListNodePtr their_A_v_ptr = merge_end_v->go(2);
+    ListNodePtr their_A_p_ptr = merge_end_p->go(2);
+    ListNodePtr their_B_v_ptr = merge_end_v->go(1);
+    ListNodePtr their_B_p_ptr = merge_end_p->go(1);
 
-    // Do the merge of lists.
-    A_v_ptr->next = to_A_v_ptr;
-    A_p_ptr->next = to_A_p_ptr;
+    our_A_v_ptr->next = their_A_v_ptr->next;
+    our_A_p_ptr->next = their_A_p_ptr->next;
+    their_B_v_ptr->next = our_B_v_ptr->next;
+    their_B_p_ptr->next = our_B_p_ptr->next;
 
-    from_B_v_ptr->next = B_v_ptr;
-    from_B_p_ptr->next = B_p_ptr;
+    // Set the our lists just in case something goes bad.
+    // That is: don't set it to our B.
+    Polygon& merged = mesh_polygons[x];
+    merged.vertices = our_A_v_ptr;
+    merged.polygons = our_A_p_ptr;
+
 
     // Merge the numbers.
-    Polygon& merged = mesh_polygons[x];
     merged.num_vertices += to_merge.num_vertices - 2;
     merged.num_traversable += to_merge.num_traversable - 2;
 
