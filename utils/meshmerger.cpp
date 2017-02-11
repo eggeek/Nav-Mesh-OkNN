@@ -584,6 +584,8 @@ void print_mesh(ostream& outfile)
         outfile << "\n";
     }
 
+    int final_v, final_p;
+
     vector<int> vertex_mapping;
     vertex_mapping.resize(mesh_vertices.size());
     {
@@ -601,6 +603,7 @@ void print_mesh(ostream& outfile)
                 vertex_mapping[i] = INT_MAX;
             }
         }
+        final_v = next_index;
     }
 
     vector<int> polygon_mapping;
@@ -610,19 +613,23 @@ void print_mesh(ostream& outfile)
         int next_index = 0;
         for (int i = 0; i < (int) mesh_polygons.size(); i++)
         {
-            polygon_mapping[i] = next_index;
             if (mesh_polygons[i].num_vertices != 0)
             {
+                polygon_mapping[i] = next_index;
                 next_index++;
             }
+            else
+            {
+                polygon_mapping[i] = INT_MAX;
+            }
         }
+        final_p = next_index;
     }
 
     #define get_v(v) ((v) == -1 ? -1 : vertex_mapping[v]);
     #define get_p(p) ((p) == -1 ? -1 : polygon_mapping[p]);
 
-    outfile << vertex_mapping.back() + 1 << " " << polygon_mapping.back() + 1
-            << "\n";
+    outfile << final_v << " " << final_p << "\n";
 
     if (pretty)
     {
