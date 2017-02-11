@@ -716,9 +716,13 @@ int main(int argc, char* argv[])
     {
         pretty = true;
     }
+    cerr << "reading in" << endl;
     read_mesh(cin);
+    cerr << "merging" << endl;
     naive_merge();
+    cerr << "checking" << endl;
     check_correct();
+    cerr << "outputting" << endl;
     print_mesh(cout);
     return 0;
 }
