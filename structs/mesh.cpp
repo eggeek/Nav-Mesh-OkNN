@@ -337,7 +337,6 @@ PolyContainment Mesh::poly_contains_point(int poly, Point& p)
 // Finds where the point P lies in the mesh.
 PointLocation Mesh::get_point_location(Point& p)
 {
-    // TODO: Find a better way of doing this without going through every poly.
     if (p.x < min_x - EPSILON || p.x > max_x + EPSILON ||
         p.y < min_y - EPSILON || p.y > max_y + EPSILON)
     {
@@ -457,7 +456,6 @@ PointLocation Mesh::get_point_location(Point& p)
 
 PointLocation Mesh::get_point_location_naive(Point& p)
 {
-    // TODO: Find a better way of doing this without going through every poly.
     for (int polygon = 0; polygon < (int) mesh_polygons.size(); polygon++)
     {
         const PolyContainment result = poly_contains_point(polygon, p);

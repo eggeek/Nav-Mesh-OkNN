@@ -89,9 +89,9 @@ Point reflect_point(const Point& p, const Point& l, const Point& r);
 
 enum struct Orientation
 {
-	CCW,      // counterclockwise
+	CCW,       // counterclockwise
 	COLLINEAR, // collinear
-	CW,       // clockwise
+	CW,        // clockwise
 };
 
 inline Orientation get_orientation(

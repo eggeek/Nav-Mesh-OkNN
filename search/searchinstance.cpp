@@ -17,7 +17,6 @@
 namespace polyanya
 {
 
-// "Bonus" contains an additional polygon if p lies on an edge.
 PointLocation SearchInstance::get_point_location(Point p)
 {
     assert(mesh != nullptr);

@@ -1,4 +1,4 @@
-// various testing functions
+// Runs scenarios.
 #include "scenario.h"
 #include "searchinstance.h"
 #include "point.h"
