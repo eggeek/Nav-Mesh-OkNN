@@ -5,6 +5,7 @@
 #include <memory>
 #include <cassert>
 #include <numeric>
+#include <climits>
 using namespace std;
 
 // We need union find!
@@ -312,12 +313,20 @@ inline bool cw(const Point& a, const Point& b, const Point& c)
 // Also assume that x is a valid non-merged polygon.
 bool can_merge(int x, ListNodePtr v, ListNodePtr p)
 {
+    if (polygon_unions.find(x) != x)
+    {
+        return false;
+    }
     const int merge_index = p->go(2)->val;
     if (merge_index == -1)
     {
         return false;
     }
-    const Polygon& to_merge = mesh_polygons[polygon_unions.find(merge_index)];
+    const Polygon& to_merge = mesh_polygons[merge_index];
+    if (to_merge.num_vertices == 0)
+    {
+        return false;
+    }
 
     // Define (v->next, v->next->next).
     const int A = v->go(1)->val;
@@ -361,6 +370,97 @@ bool can_merge(int x, ListNodePtr v, ListNodePtr p)
     #undef P
 
     return true;
+}
+
+// Assuming can_merge like above, merge the polygons.
+void merge(int x, ListNodePtr v, ListNodePtr p)
+{
+    assert(can_merge(x, v, p));
+    // Note that because of the way we're merging,
+    // the resulting polygon will always have a valid ListNodePtr.
+
+    const int merge_index = p->go(2)->val;
+
+    Polygon& to_merge = mesh_polygons[polygon_unions.find(merge_index)];
+
+    const int A = v->go(1)->val;
+    const int B = v->go(2)->val;
+
+    ListNodePtr merge_end_v = to_merge.vertices;
+    ListNodePtr merge_end_p = to_merge.polygons;
+    while (merge_end_v->next->val != B)
+    {
+        merge_end_v = merge_end_v->next;
+        merge_end_p = merge_end_p->next;
+    }
+
+    // We got all the pointers we need.
+    // Get the ACTUAL pointers we need to swap.
+    ListNodePtr A_v_ptr = v->go(1);
+    ListNodePtr A_p_ptr = p->go(1);
+    ListNodePtr B_v_ptr = v->go(2);
+    ListNodePtr B_p_ptr = p->go(2);
+
+    // A will point to this.
+    ListNodePtr to_A_v_ptr = merge_end_v->go(3);
+    ListNodePtr to_A_p_ptr = merge_end_p->go(3);
+    // This will point to B.
+    ListNodePtr from_B_v_ptr = merge_end_v;
+    ListNodePtr from_B_p_ptr = merge_end_p;
+
+    // Do the merge of lists.
+    A_v_ptr->next = to_A_v_ptr;
+    A_p_ptr->next = to_A_p_ptr;
+
+    from_B_v_ptr->next = B_v_ptr;
+    from_B_p_ptr->next = B_p_ptr;
+
+    // Merge the numbers.
+    Polygon& merged = mesh_polygons[x];
+    merged.num_vertices += to_merge.num_vertices - 2;
+    merged.num_traversable += to_merge.num_traversable - 2;
+
+    // "Delete" the old one.
+    to_merge = {0, 0, nullptr, nullptr};
+
+    // We now need to delete these in A and B.
+    // A will go like (merge_index, x)
+    // B will go like (x, merge_index)
+    // We need to set both to just x.
+    {
+        // For A.
+        // Once we find something which points to merge_index, point it to the
+        // one after.
+        ListNodePtr A_polys = mesh_vertices[A].polygons;
+        while (polygon_unions.find(A_polys->next->val) != merge_index)
+        {
+            A_polys = A_polys->next;
+        }
+        A_polys->next = A_polys->next->next;
+        // Set A to be this just in case.
+        mesh_vertices[A].polygons = A_polys;
+        mesh_vertices[A].num_polygons--;
+    }
+    {
+        // For B.
+        // Once we find something which is x, point it to the
+        // one after.
+        ListNodePtr B_polys = mesh_vertices[B].polygons;
+        while (polygon_unions.find(B_polys->val) != x)
+        {
+            B_polys = B_polys->next;
+            // cerr << "maybe even " << merge_index << endl;
+            // cerr << "we want " << x << "but we got" << B_polys->val << endl;
+        }
+        B_polys->next = B_polys->next->next;
+        // Set B to be this just in case.
+        mesh_vertices[B].polygons = B_polys;
+        mesh_vertices[B].num_polygons--;
+    }
+
+    // Do the union-find merge.
+    // THIS NEEDS TO BE LAST.
+    polygon_unions.merge(x, merge_index);
 }
 
 void check_correct()
@@ -434,6 +534,44 @@ void check_correct()
     }
 }
 
+void naive_merge()
+{
+    bool merged = false;
+    do
+    {
+        merged = false;
+        for (int i = 0; i < (int) mesh_polygons.size(); i++)
+        {
+            Polygon& p = mesh_polygons[i];
+            if (polygon_unions.find(i) != i || p.num_vertices == 0)
+            {
+                // Has been merged.
+                continue;
+            }
+
+            if (can_merge(i, p.vertices, p.polygons))
+            {
+                merge(i, p.vertices, p.polygons);
+                merged = true;
+            }
+
+            ListNodePtr cur_node_v = p.vertices->next;
+            ListNodePtr cur_node_p = p.polygons->next;
+            while (cur_node_v != p.vertices)
+            {
+                if (can_merge(i, cur_node_v, cur_node_p))
+                {
+                    merge(i, cur_node_v, cur_node_p);
+                    merged = true;
+                }
+
+                cur_node_v = cur_node_v->next;
+                cur_node_p = cur_node_p->next;
+            }
+        }
+    } while (merged);
+}
+
 void print_mesh(ostream& outfile)
 {
     outfile << "mesh\n";
@@ -448,10 +586,14 @@ void print_mesh(ostream& outfile)
         int next_index = 0;
         for (int i = 0; i < (int) mesh_vertices.size(); i++)
         {
-            vertex_mapping[i] = next_index;
             if (mesh_vertices[i].num_polygons != 0)
             {
+                vertex_mapping[i] = next_index;
                 next_index++;
+            }
+            else
+            {
+                vertex_mapping[i] = INT_MAX;
             }
         }
     }
@@ -546,6 +688,7 @@ void print_mesh(ostream& outfile)
 int main()
 {
     read_mesh(cin);
+    naive_merge();
     check_correct();
     print_mesh(cout);
     return 0;
