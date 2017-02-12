@@ -539,7 +539,62 @@ void check_correct()
     }
 }
 
-void naive_merge()
+void merge_deadend()
+{
+    bool merged = false;
+    do
+    {
+        merged = false;
+        for (int i = 0; i < (int) mesh_polygons.size(); i++)
+        {
+            Polygon& p = mesh_polygons[i];
+            if (polygon_unions.find(i) != i || p.num_vertices == 0)
+            {
+                // Has been merged.
+                continue;
+            }
+            // We want dead ends here.
+            if (p.num_traversable != 1)
+            {
+                continue;
+            }
+
+            // Remember that the polygon we merge with is polygons->go(2).
+
+            {
+                const int merge_index = p.polygons->go(2)->val;
+                if (merge_index != -1 &&
+                    mesh_polygons[merge_index].num_traversable <= 2 &&
+                    can_merge(i, p.vertices, p.polygons))
+                {
+                    merge(i, p.vertices, p.polygons);
+                    merged = true;
+                    continue;
+                }
+            }
+
+            ListNodePtr cur_node_v = p.vertices->next;
+            ListNodePtr cur_node_p = p.polygons->next;
+            while (cur_node_v != p.vertices)
+            {
+                const int merge_index = cur_node_p->go(2)->val;
+                if (merge_index != -1 &&
+                    mesh_polygons[merge_index].num_traversable <= 2 &&
+                    can_merge(i, cur_node_v, cur_node_p))
+                {
+                    merge(i, cur_node_v, cur_node_p);
+                    merged = true;
+                    break;
+                }
+
+                cur_node_v = cur_node_v->next;
+                cur_node_p = cur_node_p->next;
+            }
+        }
+    } while (merged);
+}
+
+void naive_merge(bool keep_deadends = true)
 {
     bool merged = false;
     do
@@ -554,19 +609,35 @@ void naive_merge()
                 continue;
             }
 
-            if (can_merge(i, p.vertices, p.polygons))
+            if (keep_deadends && p.num_traversable == 1)
             {
-                merge(i, p.vertices, p.polygons);
-                merged = true;
-                // prevents an infinite loop?
+                // It's a dead end and we want to keep it.
                 continue;
+            }
+
+            {
+                const int merge_index = p.polygons->go(2)->val;
+                if (merge_index != -1 &&
+                    (!keep_deadends ||
+                     mesh_polygons[merge_index].num_traversable > 1) &&
+                    can_merge(i, p.vertices, p.polygons))
+                {
+                    merge(i, p.vertices, p.polygons);
+                    merged = true;
+                    // prevents an infinite loop?
+                    continue;
+                }
             }
 
             ListNodePtr cur_node_v = p.vertices->next;
             ListNodePtr cur_node_p = p.polygons->next;
             while (cur_node_v != p.vertices)
             {
-                if (can_merge(i, cur_node_v, cur_node_p))
+                const int merge_index = p.polygons->go(2)->val;
+                if (merge_index != -1 &&
+                    (!keep_deadends ||
+                     mesh_polygons[merge_index].num_traversable > 1) &&
+                    can_merge(i, cur_node_v, cur_node_p))
                 {
                     merge(i, cur_node_v, cur_node_p);
                     merged = true;
@@ -718,8 +789,10 @@ int main(int argc, char* argv[])
     }
     cerr << "reading in" << endl;
     read_mesh(cin);
+    cerr << "merging dead ends" << endl;
+    merge_deadend();
     cerr << "merging" << endl;
-    naive_merge();
+    naive_merge(true);
     cerr << "checking" << endl;
     check_correct();
     cerr << "outputting" << endl;
