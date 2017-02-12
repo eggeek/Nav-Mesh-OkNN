@@ -22,6 +22,10 @@ struct UnionFind
 
     int find(int x)
     {
+        if (x == -1)
+        {
+            return -1;
+        }
         if (parent[x] != x)
         {
             parent[x] = find(parent[x]);
