@@ -49,12 +49,12 @@ struct UnionFind
 // We'll just use a std::shared_ptr to handle our memory...
 struct ListNode
 {
-    shared_ptr<ListNode> next;
+    ListNode* next;
     int val;
 
-    shared_ptr<ListNode> go(int n) const
+    ListNode* go(int n) const
     {
-        shared_ptr<ListNode> out = next;
+        ListNode* out = next;
         for (int i = 1; i < n; i++)
         {
             out = out->next;
@@ -63,8 +63,24 @@ struct ListNode
     }
 };
 
-typedef shared_ptr<ListNode> ListNodePtr;
-#define make_node(next, val) ListNodePtr(new ListNode {next, val})
+typedef ListNode* ListNodePtr;
+
+vector<ListNodePtr> list_nodes;
+
+ListNodePtr make_node(ListNodePtr next, int val)
+{
+    ListNodePtr out = new ListNode {next, val};
+    list_nodes.push_back(out);
+    return out;
+}
+
+void delete_nodes()
+{
+    for (auto x : list_nodes)
+    {
+        delete x;
+    }
+}
 
 struct Point
 {
@@ -801,5 +817,6 @@ int main(int argc, char* argv[])
     check_correct();
     cerr << "outputting" << endl;
     print_mesh(cout);
+    delete_nodes();
     return 0;
 }
