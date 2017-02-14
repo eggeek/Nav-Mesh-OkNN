@@ -364,7 +364,7 @@ bool can_merge(int x, ListNodePtr v, ListNodePtr p)
     {
         return false;
     }
-    const int merge_index = p->go(2)->val;
+    const int merge_index = polygon_unions.find(p->go(2)->val);
     if (merge_index == -1)
     {
         return false;
@@ -427,7 +427,7 @@ void merge(int x, ListNodePtr v, ListNodePtr p)
     // the resulting polygon will NOT always have a valid ListNodePtr, so
     // we need to set it ourself.
 
-    const int merge_index = p->go(2)->val;
+    const int merge_index = polygon_unions.find(p->go(2)->val);
 
     Polygon& to_merge = mesh_polygons[polygon_unions.find(merge_index)];
 
@@ -608,7 +608,8 @@ void merge_deadend()
             // Remember that the polygon we merge with is polygons->go(2).
 
             {
-                const int merge_index = p.polygons->go(2)->val;
+                const int merge_index = polygon_unions.find(
+                    p.polygons->go(2)->val);
                 if (merge_index != -1 &&
                     mesh_polygons[merge_index].num_traversable <= 2 &&
                     can_merge(i, p.vertices, p.polygons))
@@ -623,7 +624,8 @@ void merge_deadend()
             ListNodePtr cur_node_p = p.polygons->next;
             while (cur_node_v != p.vertices)
             {
-                const int merge_index = cur_node_p->go(2)->val;
+                const int merge_index = polygon_unions.find(
+                    cur_node_p->go(2)->val);
                 if (merge_index != -1 &&
                     mesh_polygons[merge_index].num_traversable <= 2 &&
                     can_merge(i, cur_node_v, cur_node_p))
@@ -662,7 +664,8 @@ void naive_merge(bool keep_deadends = true)
             }
 
             {
-                const int merge_index = p.polygons->go(2)->val;
+                const int merge_index = polygon_unions.find(
+                    p.polygons->go(2)->val);
                 if (merge_index != -1 &&
                     (!keep_deadends ||
                      mesh_polygons[merge_index].num_traversable > 1) &&
@@ -679,7 +682,8 @@ void naive_merge(bool keep_deadends = true)
             ListNodePtr cur_node_p = p.polygons->next;
             while (cur_node_v != p.vertices)
             {
-                const int merge_index = cur_node_p->go(2)->val;
+                const int merge_index = polygon_unions.find(
+                    cur_node_p->go(2)->val);
                 if (merge_index != -1 &&
                     (!keep_deadends ||
                      mesh_polygons[merge_index].num_traversable > 1) &&
