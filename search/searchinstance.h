@@ -77,6 +77,7 @@ class SearchInstance
             nodes_pushed = 0;
             nodes_popped = 0;
             nodes_pruned_post_pop = 0;
+            successor_calls = 0;
             set_end_polygon();
             gen_initial_nodes();
         }
@@ -94,6 +95,7 @@ class SearchInstance
         int nodes_pushed;           // Nodes pushed onto open
         int nodes_popped;           // Nodes popped off open
         int nodes_pruned_post_pop;  // Nodes we prune right after popping off
+        int successor_calls;        // Times we call get_successors
         bool verbose;
 
         SearchInstance() { }

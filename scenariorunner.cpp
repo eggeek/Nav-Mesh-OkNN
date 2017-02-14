@@ -21,8 +21,8 @@ int verbose = 0;
 
 void print_header()
 {
-    cout << "index;micro;generated;pushed;popped;pruned_post_pop;length;"
-         << "gridcost" << endl;
+    cout << "index;micro;successor_calls;generated;pushed;popped;"
+         << "pruned_post_pop;length;gridcost" << endl;
 }
 
 void run_scenario(int index, Scenario scen)
@@ -66,6 +66,7 @@ void run_scenario(int index, Scenario scen)
     {
         cout << index << ";"
              << si->get_search_micro() << ";"
+             << si->successor_calls << ";"
              << si->nodes_generated << ";"
              << si->nodes_pushed << ";"
              << si->nodes_popped << ";"

@@ -544,6 +544,7 @@ bool SearchInstance::search()
             }
             int num_succ = get_successors(cur_node, start, *mesh,
                                           search_successors);
+            successor_calls++;
             num_nodes = succ_to_node(&cur_node, search_successors,
                                      num_succ, search_nodes_to_push);
             if (num_nodes == 1)
