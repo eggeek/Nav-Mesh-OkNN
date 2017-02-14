@@ -944,12 +944,23 @@ void print_mesh(ostream& outfile)
         outfile << "\n";
     }
 
+    int sum_traversable = 0;
+    int num_deadends = 0;
+
     for (int i = 0; i < (int) mesh_polygons.size(); i++)
     {
         Polygon& p = mesh_polygons[i];
         if (p.num_vertices == 0)
         {
             continue;
+        }
+        if (p.num_traversable == 1)
+        {
+            num_deadends++;
+        }
+        else
+        {
+            sum_traversable += p.num_traversable;
         }
         outfile << p.num_vertices << " \t"[pretty];
 
@@ -975,6 +986,10 @@ void print_mesh(ostream& outfile)
         }
         outfile << "\n";
     }
+
+    cerr << "number of polys: " << final_p << endl;
+    cerr << "number of dead ends: " << num_deadends << endl;
+    cerr << "sum of branching factor (no deads): " << sum_traversable << endl;
 
     #undef get_p
     #undef get_v
