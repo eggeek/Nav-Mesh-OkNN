@@ -987,9 +987,7 @@ void print_mesh(ostream& outfile)
         outfile << "\n";
     }
 
-    cerr << "number of polys: " << final_p << endl;
-    cerr << "number of dead ends: " << num_deadends << endl;
-    cerr << "sum of branching factor (no deads): " << sum_traversable << endl;
+    cerr << final_p << ";" << num_deadends << ";" << final_p << endl;
 
     #undef get_p
     #undef get_v
@@ -1001,16 +999,16 @@ int main(int argc, char* argv[])
     {
         pretty = true;
     }
-    cerr << "reading in" << endl;
+    // cerr << "reading in" << endl;
     read_mesh(cin);
-    cerr << "merging dead ends" << endl;
+    // cerr << "merging dead ends" << endl;
     merge_deadend();
-    cerr << "merging" << endl;
+    // cerr << "merging" << endl;
     smart_merge(true);
     // naive_merge(true);
-    cerr << "checking" << endl;
+    // cerr << "checking" << endl;
     check_correct();
-    cerr << "outputting" << endl;
+    // cerr << "outputting" << endl;
     print_mesh(cout);
     delete_nodes();
     return 0;
