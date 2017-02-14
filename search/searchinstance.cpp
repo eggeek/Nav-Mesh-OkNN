@@ -606,7 +606,9 @@ void SearchInstance::print_node(SearchNodePtr node, std::ostream& outfile)
 {
     outfile << "root=" << root_to_point(node->root) << "; left=" << node->left
             << "; right=" << node->right << "; f=" << node->f << ", g="
-            << node->g << "; col=" << [&]() -> std::string
+            << node->g;
+    /*
+    outfile << "; col=" << [&]() -> std::string
             {
                 switch (node->col_type)
                 {
@@ -622,6 +624,7 @@ void SearchInstance::print_node(SearchNodePtr node, std::ostream& outfile)
                         return "";
                 }
             }();
+    */
 }
 
 void SearchInstance::get_path_points(std::vector<Point>& out)
