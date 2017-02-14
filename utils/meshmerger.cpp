@@ -113,6 +113,7 @@ struct Polygon
 {
     int num_vertices;
     int num_traversable;
+    double area;
     ListNodePtr vertices;
     // Stores the original polygons.
     // To get the actual polygon, do polygon_unions.find on the polygon you get.
@@ -128,6 +129,27 @@ vector<Vertex> mesh_vertices;
 vector<Polygon> mesh_polygons;
 
 UnionFind polygon_unions(0);
+
+// Actually returns double the area of the polygon...
+// Assume that mesh_vertices is populated and is valid.
+double get_area(ListNodePtr vertices)
+{
+    // first point x second point + second point x third point + ...
+    double out = 0;
+
+    ListNodePtr start_vertex = vertices;
+    bool is_first = true;
+
+    while (is_first || start_vertex != vertices)
+    {
+        is_first = false;
+        out += mesh_vertices[vertices->val].p *
+               mesh_vertices[vertices->next->val].p;
+        vertices = vertices->next;
+    }
+
+    return out;
+}
 
 
 // taken from structs/mesh.cpp
@@ -310,6 +332,9 @@ void read_mesh(istream& infile)
             }
         }
         cur_node->next = p.polygons;
+
+        p.area = get_area(p.vertices);
+        assert(p.area > 0);
     }
 
     double temp;
@@ -444,9 +469,10 @@ void merge(int x, ListNodePtr v, ListNodePtr p)
     // Merge the numbers.
     merged.num_vertices += to_merge.num_vertices - 2;
     merged.num_traversable += to_merge.num_traversable - 2;
+    merged.area += to_merge.area;
 
     // "Delete" the old one.
-    to_merge = {0, 0, nullptr, nullptr};
+    to_merge = {0, 0, 0.0, nullptr, nullptr};
 
     // We now need to delete these in A and B.
     // A will go like (merge_index, x)
