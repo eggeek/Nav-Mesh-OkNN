@@ -6,6 +6,8 @@
 #include <cassert>
 #include <numeric>
 #include <climits>
+#include <cmath>
+#include <queue>
 using namespace std;
 
 bool pretty = false;
@@ -118,6 +120,26 @@ struct Polygon
     // Stores the original polygons.
     // To get the actual polygon, do polygon_unions.find on the polygon you get.
     ListNodePtr polygons;
+};
+
+struct SearchNode
+{
+    // Index of poly.
+    int index;
+    // Area of the best tentative merge.
+    double area;
+
+    // Comparison.
+    // Always take the "biggest" search node in a priority queue.
+    bool operator<(const SearchNode& other) const
+    {
+        return area < other.area;
+    }
+
+    bool operator>(const SearchNode& other) const
+    {
+        return area > other.area;
+    }
 };
 
 // We'll keep all vertices, but we may throw them out in the end if num_polygons
@@ -702,6 +724,133 @@ void naive_merge(bool keep_deadends = true)
     } while (merged);
 }
 
+void smart_merge(bool keep_deadends = true)
+{
+    priority_queue<SearchNode> pq;
+    // As we aren't going to do pq updates, here's a shoddy workaround.
+    vector<double> best_merge(mesh_polygons.size(), -1);
+
+    // Pushes a polygon onto the pq as a node.
+    // Also updates best_merge.
+    auto push_polygon = [&](int i)
+    {
+        if (i == -1)
+        {
+            return;
+        }
+        Polygon& p = mesh_polygons[i];
+        if (p.num_vertices == 0)
+        {
+            // Has been merged.
+            return;
+        }
+
+        if (keep_deadends && p.num_traversable == 1)
+        {
+            // It's a dead end and we don't want to merge it.
+            return;
+        }
+
+        SearchNode this_node = {i, -1};
+
+        ListNodePtr cur_node_v = p.vertices;
+        ListNodePtr cur_node_p = p.polygons;
+        bool first = true;
+        while (first || cur_node_v != p.vertices)
+        {
+            first = false;
+            const int merge_index = polygon_unions.find(cur_node_p->go(2)->val);
+            if (merge_index != -1 &&
+                (!keep_deadends ||
+                 mesh_polygons[merge_index].num_traversable > 1) &&
+                can_merge(i, cur_node_v, cur_node_p))
+            {
+                this_node.area = max(this_node.area,
+                    p.area + mesh_polygons[merge_index].area);
+            }
+
+            cur_node_v = cur_node_v->next;
+            cur_node_p = cur_node_p->next;
+        }
+
+        // Chuck it on the pq... if we found a valid merge.
+        if (this_node.area != -1)
+        {
+            pq.push(this_node);
+            best_merge[i] = this_node.area;
+        }
+        else
+        {
+            // We need to invalidate this if there isn't a valid merge.
+            best_merge[i] = -1;
+        }
+    };
+
+    for (int i = 0; i < (int) mesh_polygons.size(); i++)
+    {
+        push_polygon(i);
+    }
+
+
+    while (!pq.empty())
+    {
+        SearchNode node = pq.top(); pq.pop();
+        if (abs(node.area - best_merge[node.index]) > 1e-8)
+        {
+            // Not the right node.
+            continue;
+        }
+        // We got an actual node!
+        const Polygon& p = mesh_polygons[node.index];
+        // Do the merge.
+        // NOW do the merge.
+        // We need to find it again, but that should be fine.
+        {
+            ListNodePtr cur_node_v = p.vertices;
+            ListNodePtr cur_node_p = p.polygons;
+            bool first = true;
+            bool found = false;
+            while (first || cur_node_v != p.vertices)
+            {
+                first = false;
+                const int merge_index = polygon_unions.find(
+                    cur_node_p->go(2)->val);
+                if (merge_index != -1 &&
+                    (!keep_deadends ||
+                     mesh_polygons[merge_index].num_traversable > 1) &&
+                    abs((p.area + mesh_polygons[merge_index].area)
+                        - node.area) < 1e-8 &&
+                    can_merge(node.index, cur_node_v, cur_node_p))
+                {
+                    // Wait - before that, we need to invalidate the thing
+                    // we merge with.
+                    best_merge[merge_index] = -1;
+                    merge(node.index, cur_node_v, cur_node_p);
+                    found = true;
+                    break;
+                }
+
+                cur_node_v = cur_node_v->next;
+                cur_node_p = cur_node_p->next;
+            }
+            assert(found);
+        }
+
+        // Update THIS merge.
+        push_polygon(node.index);
+        // Update the polygons around this merge.
+
+        ListNodePtr cur_node_p = p.polygons;
+        bool first = true;
+        while (first || cur_node_p != p.polygons)
+        {
+            first = false;
+            push_polygon(cur_node_p->val);
+            cur_node_p = cur_node_p->next;
+        }
+    }
+}
+
 void print_mesh(ostream& outfile)
 {
     outfile << "mesh\n";
@@ -842,7 +991,8 @@ int main(int argc, char* argv[])
     cerr << "merging dead ends" << endl;
     merge_deadend();
     cerr << "merging" << endl;
-    naive_merge(true);
+    smart_merge(true);
+    // naive_merge(true);
     cerr << "checking" << endl;
     check_correct();
     cerr << "outputting" << endl;
