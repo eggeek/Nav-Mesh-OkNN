@@ -218,6 +218,17 @@ int get_clear_above(int y, int x)
     return clear_above[y][x] = get_clear_above(y-1, x) + 1;
 }
 
+int get_clear_above_lazy(int y, int x)
+{
+    int out = 0;
+    while (y > 0 && map_traversable[y][x])
+    {
+        out++;
+        y--;
+    }
+    return out;
+}
+
 int get_clear_left(int y, int x)
 {
     if (x < 0 || y < 0)
@@ -235,6 +246,17 @@ int get_clear_left(int y, int x)
         return clear_left[y][x];
     }
     return clear_left[y][x] = get_clear_left(y, x-1) + 1;
+}
+
+int get_clear_left_lazy(int y, int x)
+{
+    int out = 0;
+    while (x > 0 && map_traversable[y][x])
+    {
+        out++;
+        x--;
+    }
+    return out;
 }
 
 void calculate_clearance(int bottom_y, int bottom_x)
@@ -307,6 +329,46 @@ Rect get_best_rect(int y, int x)
     return out;
 }
 
+Rect get_best_rect_lazy(int y, int x)
+{
+    Rect out = {0, 0, 0};
+    if (!map_traversable[y][x])
+    {
+        return out;
+    }
+    // Try every width, figure out height.
+    // For width from 1 to clear_left[y][x],
+    // take the min of this one and the one we just took.
+    {
+        int height = get_clear_above_lazy(y, x); // The first height.
+        const int max_width = get_clear_left_lazy(y, x);
+        for (int width = 1; width <= max_width; width++)
+        {
+            height = min(height, get_clear_above_lazy(y, x-width+1));
+            const long long h = get_heuristic(width, height);
+            if (h > out.h)
+            {
+                out = {width, height, h};
+            }
+        }
+    }
+    // Try every height, figure out width.
+    {
+        int width = get_clear_left_lazy(y, x); // The first width.
+        const int max_height = get_clear_above_lazy(y, x);
+        for (int height = 1; height <= max_height; height++)
+        {
+            width = min(width, get_clear_left_lazy(y-height+1, x));
+            const long long h = get_heuristic(width, height);
+            if (h > out.h)
+            {
+                out = {width, height, h};
+            }
+        }
+    }
+    return out;
+}
+
 void calculate_rectangles(int bottom_y, int bottom_x)
 {
     // Assume calculate_clearance was called before.
@@ -348,59 +410,29 @@ void make_rectangles()
     while (!pq.empty())
     {
         SearchNode node = pq.top(); pq.pop();
-        const Rect r = grid_rectangles[node.y][node.x];
+        const Rect r = get_best_rect_lazy(node.y, node.x);
         if (node.h != r.h)
         {
             // Not the right node.
+            // Push it on so we can get to it later if r.h isn't 0.
+            if (r.h != 0)
+            {
+                pq.push({node.y, node.x, r.h});
+            }
             continue;
         }
         // Use r.
         // Set all those rectangle_ids, and set non-traversable.
         // Also invalidate the rectangles.
-        int counter = 0;
         for (int y = node.y; y > node.y - r.height; y--)
         {
             for (int x = node.x; x > node.x - r.width; x--)
             {
-                counter++;
                 rectangle_id[y][x] = cur_id;
                 map_traversable[y][x] = false;
-                grid_rectangles[y][x] = {0, 0, 0};
             }
         }
-        assert(counter == r.width * r.height);
         cur_id++;
-        // Do a calculate_clearance.
-        calculate_clearance(node.y, node.x);
-        // Do a calculate_rectangles, but we should be smart.
-        for (int y = 0; y < node.y+1; y++)
-        {
-            for (int x = node.x; x < map_width; x++)
-            {
-                const Rect best = get_best_rect(y, x);
-                if (best.h != 0 && grid_rectangles[y][x].h != best.h)
-                {
-                    // Push new h on.
-                    // If it's zero, don't bother.
-                    pq.push({y, x, best.h});
-                }
-                grid_rectangles[y][x] = best;
-            }
-        }
-        for (int y = node.y+1; y < map_height; y++)
-        {
-            for (int x = 0; x < map_width; x++)
-            {
-                const Rect best = get_best_rect(y, x);
-                if (best.h != 0 && grid_rectangles[y][x].h != best.h)
-                {
-                    // Push new h on.
-                    // If it's zero, don't bother.
-                    pq.push({y, x, best.h});
-                }
-                grid_rectangles[y][x] = best;
-            }
-        }
     }
 }
 
