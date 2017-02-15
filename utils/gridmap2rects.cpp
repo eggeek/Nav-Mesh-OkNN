@@ -30,11 +30,39 @@ vector<vbool> map_traversable;
 vector<vint> clear_above;
 vector<vint> clear_left;
 
+struct Rect
+{
+    int width, height;
+    long long h;
+
+    // Comparison.
+    // Always take the one with highest h.
+    bool operator<(const Rect& other) const
+    {
+        return h < other.h;
+    }
+
+    bool operator>(const Rect& other) const
+    {
+        return h > other.h;
+    }
+};
+
+typedef vector<Rect> vrect;
+
+vector<vrect> grid_rectangles;
 vector<vint> rectangle_id;
 int map_width;
 int map_height;
 
 
+long long get_heuristic(int width, int height)
+{
+    long long out = min(width, height);
+    out *= width;
+    out *= height;
+    return out;
+}
 
 void fail(string msg)
 {
@@ -97,6 +125,7 @@ void read_map(istream& infile)
     clear_above = vector<vint>(map_height, vint(map_width, 0));
     clear_left = vector<vint>(map_height, vint(map_width, 0));
     rectangle_id = vector<vint>(map_height, vint(map_width, -1));
+    grid_rectangles = vector<vrect>(map_height, vrect(map_width));
     // so to get (x, y), do map_traversable[y][x]
     // 0 is nontraversable, 1 is traversable
 
@@ -216,6 +245,67 @@ void calculate_clearance(int bottom_y, int bottom_x)
     }
 }
 
+Rect get_best_rect(int y, int x)
+{
+    assert(y >= 0);
+    assert(x >= 0);
+    assert(y < map_height);
+    assert(x < map_width);
+    Rect out = {0, 0, 0};
+    if (!map_traversable[y][x])
+    {
+        return out;
+    }
+    // Try every width, figure out height.
+    // For width from 1 to clear_left[y][x],
+    // take the min of this one and the one we just took.
+    {
+        int height = clear_above[y][x]; // The first height.
+        for (int width = 1; width <= clear_left[y][x]; width++)
+        {
+            height = min(height, clear_above[y][x-width+1]);
+            const long long h = get_heuristic(width, height);
+            if (h > out.h)
+            {
+                out = {width, height, h};
+            }
+        }
+    }
+    // Try every height, figure out width.
+    {
+        int width = clear_left[y][x]; // The first width.
+        for (int height = 1; height <= clear_above[y][x]; height++)
+        {
+            width = min(width, clear_left[y-height+1][x]);
+            const long long h = get_heuristic(width, height);
+            if (h > out.h)
+            {
+                out = {width, height, h};
+            }
+        }
+    }
+    return out;
+}
+
+void calculate_rectangles(int bottom_y, int bottom_x)
+{
+    // Assume calculate_clearance was called before.
+    for (int y = 0; y < bottom_y+1; y++)
+    {
+        for (int x = bottom_x; x < map_width; x++)
+        {
+            grid_rectangles[y][x] = get_best_rect(y, x);
+        }
+    }
+    for (int y = bottom_y+1; y < map_height; y++)
+    {
+        for (int x = 0; x < map_width; x++)
+        {
+            grid_rectangles[y][x] = get_best_rect(y, x);
+        }
+    }
+}
+
 void print_clearance()
 {
     cout << "above" << endl;
@@ -254,6 +344,48 @@ void print_clearance()
     }
 }
 
+void print_rects()
+{
+    for (auto& x : grid_rectangles)
+    {
+        for (auto y : x)
+        {
+            if (y.h)
+            {
+                cout << setfill(' ') << setw(2) << y.width;
+                cout << ",";
+                cout << setfill(' ') << setw(2) << y.height;
+                cout << " ";
+            }
+            else
+            {
+                cout << "      ";
+            }
+        }
+        cout << "\n";
+    }
+}
+
+void print_heuristic()
+{
+    for (auto& x : grid_rectangles)
+    {
+        for (auto y : x)
+        {
+            if (y.h)
+            {
+                cout << setfill(' ') << setw(4) << y.h;
+                cout << " ";
+            }
+            else
+            {
+                cout << "     ";
+            }
+        }
+        cout << "\n";
+    }
+}
+
 void print_traversable()
 {
     for (auto& x : map_traversable)
@@ -270,7 +402,10 @@ int main()
 {
     read_map(cin);
     calculate_clearance(-1, -1);
-    print_clearance();
-    print_traversable();
+    calculate_rectangles(-1, -1);
+    // print_clearance();
+    // print_rects();
+    // print_traversable();
+    print_heuristic();
     return 0;
 }
