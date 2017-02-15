@@ -13,7 +13,7 @@ FADE2DFLAGS = -Ifade2d -Llib/ubuntu16.10_x86_64 -lfade2d -Wl,-rpath=lib/ubuntu16
 TARGETS = visualiser poly2mesh
 BIN_TARGETS = $(addprefix bin/,$(TARGETS))
 
-all: $(TARGETS) gridmap2poly meshpacker meshunpacker meshmerger
+all: $(TARGETS) gridmap2poly meshpacker meshunpacker meshmerger gridmap2rects
 fast: CXXFLAGS += $(FAST_CXXFLAGS)
 dev: CXXFLAGS += $(DEV_CXXFLAGS)
 fast dev: all
@@ -24,7 +24,7 @@ clean:
 	rm -f $(PU_OBJ)
 
 .PHONY: $(TARGETS) gridmap2poly
-$(TARGETS) gridmap2poly meshpacker meshunpacker meshmerger: % : bin/%
+$(TARGETS) gridmap2poly meshpacker meshunpacker meshmerger gridmap2rects: % : bin/%
 
 $(BIN_TARGETS): bin/%: %.cpp $(PU_OBJ)
 	@mkdir -p ./bin
@@ -45,6 +45,10 @@ bin/meshunpacker: meshunpacker.cpp
 bin/meshmerger: meshmerger.cpp
 	@mkdir -p ./bin
 	$(CXX) $(CXXFLAGS) -O3 meshmerger.cpp -o ./bin/meshmerger
+
+bin/gridmap2rects: gridmap2rects.cpp
+	@mkdir -p ./bin
+	$(CXX) $(CXXFLAGS) -O3 gridmap2rects.cpp -o ./bin/gridmap2rects
 
 -include $(PU_OBJ:.o=.d)
 
