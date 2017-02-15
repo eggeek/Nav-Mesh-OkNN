@@ -179,6 +179,7 @@ void calculate_clearance(int bottom_y, int bottom_x)
     {
         for (int x = bottom_x; x < map_width; x++)
         {
+            clearance[y][x] = 0;
             get_clearance(y, x);
         }
     }
@@ -186,6 +187,7 @@ void calculate_clearance(int bottom_y, int bottom_x)
     {
         for (int x = 0; x < map_width; x++)
         {
+            clearance[y][x] = 0;
             get_clearance(y, x);
         }
     }
