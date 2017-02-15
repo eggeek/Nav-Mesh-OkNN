@@ -25,8 +25,11 @@ typedef vector<int> vint;
 
 // Everything here is [y][x]!
 vector<vbool> map_traversable;
-vector<vint> clearance;
-vector<vint> area;
+
+// Length of longest line starting here going up.
+vector<vint> clear_above;
+vector<vint> clear_left;
+
 vector<vint> rectangle_id;
 int map_width;
 int map_height;
@@ -91,9 +94,9 @@ void read_map(istream& infile)
 
     // basic checks passed. initialse the map
     map_traversable = vector<vbool>(map_height, vbool(map_width));
-    clearance = vector<vint>(map_height, vint(map_width, 0));
+    clear_above = vector<vint>(map_height, vint(map_width, 0));
+    clear_left = vector<vint>(map_height, vint(map_width, 0));
     rectangle_id = vector<vint>(map_height, vint(map_width, -1));
-    area = vector<vint>(map_height, vint(map_width, -1));
     // so to get (x, y), do map_traversable[y][x]
     // 0 is nontraversable, 1 is traversable
 
@@ -147,7 +150,7 @@ void read_map(istream& infile)
     }
 }
 
-int get_clearance(int y, int x)
+int get_clear_above(int y, int x)
 {
     if (x < 0 || y < 0)
     {
@@ -157,16 +160,32 @@ int get_clearance(int y, int x)
     assert(x < map_width);
     if (!map_traversable[y][x])
     {
-        return clearance[y][x] = 0;
+        return clear_above[y][x] = 0;
     }
-    if (clearance[y][x])
+    if (clear_above[y][x])
     {
-        return clearance[y][x];
+        return clear_above[y][x];
     }
-    return clearance[y][x] = min(
-        get_clearance(y-1, x),
-        min(get_clearance(y,x-1),
-            get_clearance(y-1, x-1))) + 1;
+    return clear_above[y][x] = get_clear_above(y-1, x) + 1;
+}
+
+int get_clear_left(int y, int x)
+{
+    if (x < 0 || y < 0)
+    {
+        return 0;
+    }
+    assert(y < map_height);
+    assert(x < map_width);
+    if (!map_traversable[y][x])
+    {
+        return clear_left[y][x] = 0;
+    }
+    if (clear_left[y][x])
+    {
+        return clear_left[y][x];
+    }
+    return clear_left[y][x] = get_clear_left(y, x-1) + 1;
 }
 
 void calculate_clearance(int bottom_y, int bottom_x)
@@ -179,23 +198,46 @@ void calculate_clearance(int bottom_y, int bottom_x)
     {
         for (int x = bottom_x; x < map_width; x++)
         {
-            clearance[y][x] = 0;
-            get_clearance(y, x);
+            clear_above[y][x] = 0;
+            clear_left[y][x] = 0;
+            get_clear_above(y, x);
+            get_clear_left(y, x);
         }
     }
     for (int y = bottom_y+1; y < map_height; y++)
     {
         for (int x = 0; x < map_width; x++)
         {
-            clearance[y][x] = 0;
-            get_clearance(y, x);
+            clear_above[y][x] = 0;
+            clear_left[y][x] = 0;
+            get_clear_above(y, x);
+            get_clear_left(y, x);
         }
     }
 }
 
 void print_clearance()
 {
-    for (auto& x : clearance)
+    cout << "above" << endl;
+    for (auto& x : clear_above)
+    {
+        for (auto y : x)
+        {
+            if (y)
+            {
+                cout << setfill(' ') << setw(3) << y;
+            }
+            else
+            {
+                cout << "   ";
+            }
+        }
+        cout << "\n";
+    }
+
+    cout << endl;
+    cout << "left" << endl;
+    for (auto& x : clear_left)
     {
         for (auto y : x)
         {
