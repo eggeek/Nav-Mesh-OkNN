@@ -16,6 +16,7 @@ well.
 #include <vector>
 #include <cassert>
 #include <iomanip>
+#include <queue>
 
 using namespace std;
 
@@ -48,10 +49,29 @@ struct Rect
     }
 };
 
+struct SearchNode
+{
+    int y, x; // !!!
+    long long h;
+
+    // Comparison.
+    // Always take the one with highest h.
+    bool operator<(const SearchNode& other) const
+    {
+        return h < other.h;
+    }
+
+    bool operator>(const SearchNode& other) const
+    {
+        return h > other.h;
+    }
+};
+
 typedef vector<Rect> vrect;
 
 vector<vrect> grid_rectangles;
 vector<vint> rectangle_id;
+int cur_id = 0;
 int map_width;
 int map_height;
 
@@ -306,6 +326,84 @@ void calculate_rectangles(int bottom_y, int bottom_x)
     }
 }
 
+void make_rectangles()
+{
+    // Gets the best rectangle and takes that.
+    // Repeat until there are no more rectangles.
+    priority_queue<SearchNode> pq;
+    calculate_clearance(-1, -1);
+    calculate_rectangles(-1, -1);
+    for (int y = 0; y < map_height; y++)
+    {
+        for (int x = 0; x < map_width; x++)
+        {
+            const Rect& r = grid_rectangles[y][x];
+            if (r.h > 0)
+            {
+                pq.push({y, x, r.h});
+            }
+        }
+    }
+
+    while (!pq.empty())
+    {
+        SearchNode node = pq.top(); pq.pop();
+        const Rect r = grid_rectangles[node.y][node.x];
+        if (node.h != r.h)
+        {
+            // Not the right node.
+            continue;
+        }
+        // Use r.
+        // Set all those rectangle_ids, and set non-traversable.
+        // Also invalidate the rectangles.
+        int counter = 0;
+        for (int y = node.y; y > node.y - r.height; y--)
+        {
+            for (int x = node.x; x > node.x - r.width; x--)
+            {
+                counter++;
+                rectangle_id[y][x] = cur_id;
+                map_traversable[y][x] = false;
+                grid_rectangles[y][x] = {0, 0, 0};
+            }
+        }
+        assert(counter == r.width * r.height);
+        cur_id++;
+        // Do a calculate_clearance.
+        calculate_clearance(node.y, node.x);
+        // Do a calculate_rectangles, but we should be smart.
+        for (int y = 0; y < node.y+1; y++)
+        {
+            for (int x = node.x; x < map_width; x++)
+            {
+                const Rect best = get_best_rect(y, x);
+                if (best.h != 0 && grid_rectangles[y][x].h != best.h)
+                {
+                    // Push new h on.
+                    // If it's zero, don't bother.
+                    pq.push({y, x, best.h});
+                }
+                grid_rectangles[y][x] = best;
+            }
+        }
+        for (int y = node.y+1; y < map_height; y++)
+        {
+            for (int x = 0; x < map_width; x++)
+            {
+                const Rect best = get_best_rect(y, x);
+                if (best.h != 0 && grid_rectangles[y][x].h != best.h)
+                {
+                    // Push new h on.
+                    // If it's zero, don't bother.
+                    pq.push({y, x, best.h});
+                }
+                grid_rectangles[y][x] = best;
+            }
+        }
+    }
+}
+
 void print_clearance()
 {
     cout << "above" << endl;
@@ -386,6 +484,25 @@ void print_heuristic()
     }
 }
 
+void print_ids()
+{
+    for (auto& x : rectangle_id)
+    {
+        for (auto y : x)
+        {
+            if (y != -1)
+            {
+                cout << setfill(' ') << setw(3) << y;
+            }
+            else
+            {
+                cout << "   ";
+            }
+        }
+        cout << "\n";
+    }
+}
+
 void print_traversable()
 {
     for (auto& x : map_traversable)
@@ -401,11 +518,14 @@ void print_traversable()
 int main()
 {
     read_map(cin);
-    calculate_clearance(-1, -1);
-    calculate_rectangles(-1, -1);
+    // calculate_clearance(-1, -1);
+    // calculate_rectangles(-1, -1);
     // print_clearance();
     // print_rects();
     // print_traversable();
-    print_heuristic();
+    // print_heuristic();
+    make_rectangles();
+    print_ids();
+
     return 0;
 }
