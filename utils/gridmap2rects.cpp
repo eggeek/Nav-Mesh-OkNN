@@ -514,7 +514,8 @@ void print_mesh_vertices()
         for (int i = 0; i < 4; i++)
         {
             Vertex grid_loc = v + deltas[i];
-            if (v.x < 0 || v.x >= map_width || v.y < 0 || v.y >= map_height)
+            if (grid_loc.x < 0 || grid_loc.x >= map_width ||
+                grid_loc.y < 0 || grid_loc.y >= map_height)
             {
                 temp[i] = -1;
             }
