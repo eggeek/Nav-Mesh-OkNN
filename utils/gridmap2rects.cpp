@@ -547,7 +547,7 @@ void print_mesh_vertices()
         {
             cout << " " << poly;
         }
-        cout << endl;
+        cout << "\n";
     }
 }
 
@@ -652,7 +652,7 @@ void print_mesh_polygons()
         {
             cout << " " << p;
         }
-        cout << endl;
+        cout << "\n";
     }
 }
 
