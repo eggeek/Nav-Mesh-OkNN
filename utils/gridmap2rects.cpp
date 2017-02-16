@@ -71,6 +71,15 @@ typedef vector<Rect> vrect;
 
 vector<vrect> grid_rectangles;
 vector<vint> rectangle_id;
+
+struct FinalRect
+{
+    int y, x; // y, x of TOP-LEFT CORNER
+    int width, height;
+};
+
+vector<FinalRect> final_rectangles;
+
 int cur_id = 0;
 int map_width;
 int map_height;
@@ -432,6 +441,8 @@ void make_rectangles()
                 map_traversable[y][x] = false;
             }
         }
+        final_rectangles.push_back({node.y + 1 - r.height, node.x + 1 - r.width,
+                                    r.width, r.height});
         cur_id++;
     }
 }
@@ -476,23 +487,10 @@ void print_clearance()
 
 void print_rects()
 {
-    for (auto& x : grid_rectangles)
+    for (auto& x : final_rectangles)
     {
-        for (auto y : x)
-        {
-            if (y.h)
-            {
-                cout << setfill(' ') << setw(2) << y.width;
-                cout << ",";
-                cout << setfill(' ') << setw(2) << y.height;
-                cout << " ";
-            }
-            else
-            {
-                cout << "      ";
-            }
-        }
-        cout << "\n";
+        cout << "(" << x.x << ", " << x.y << "), "
+             << "w=" << x.width << ", h=" << x.height << endl;
     }
 }
 
@@ -557,7 +555,8 @@ int main()
     // print_traversable();
     // print_heuristic();
     make_rectangles();
-    print_ids();
+    print_rects();
+    // print_ids();
 
     return 0;
 }
