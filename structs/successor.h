@@ -8,11 +8,9 @@ struct Successor
 {
     enum Type
     {
-        RIGHT_COLLINEAR,
         RIGHT_NON_OBSERVABLE,
         OBSERVABLE,
         LEFT_NON_OBSERVABLE,
-        LEFT_COLLINEAR,
     };
 
     Type type;
@@ -27,11 +25,9 @@ struct Successor
                                     const Successor& succ)
     {
         const std::string lookup[] = {
-            "RIGHT_COLLINEAR",
             "RIGHT_NON_OBSERVABLE",
             "OBSERVABLE",
             "LEFT_NON_OBSERVABLE",
-            "LEFT_COLLINEAR",
         };
         return stream << "Successor(" << lookup[static_cast<int>(succ.type)]
                       << ", " << succ.left << " " << succ.right << ", "

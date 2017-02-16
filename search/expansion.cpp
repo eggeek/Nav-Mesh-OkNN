@@ -149,60 +149,72 @@ int get_successors(SearchNode& node, const Point& start, const Mesh& mesh,
 
     int out = 0;
 
-    // Is this node collinear?
-    // If so, generate all other intervals in the polygon.
-    // Assume that the interval is maximal across the edge.
-    if (node.col_type != SearchNode::NOT)
+    assert(get_orientation(root, node.left, node.right) !=
+           Orientation::CCW);
+
     {
-        // What's the type of our new successors?
-        const Successor::Type succ_type = [&node]()
+        // Check collinearity.
+        const Point root_l = node.left - root;
+        const Point root_r = node.right - root;
+        #define is_zero(n) (std::abs(n) < EPSILON)
+        const bool root_eq_l = is_zero(root_l.x) && is_zero(root_l.y);
+        const bool root_eq_r = is_zero(root_r.x) && is_zero(root_r.y);
+        #undef is_zero
+
+        if (root_eq_l || root_eq_r || is_collinear(root, node.right, node.left))
         {
-            switch (node.col_type)
+            // It's collinear... but we don't know where to turn.
+            // Find which endpoint is closer.
+            // We can terminate early if we know the root is equal to one
+            // of the endpoints.
+            // Additionally, we can simply compare the absolute values of
+            // the coordinates to find which is closer.
+            Successor::Type succ_type;
+            if (root_eq_l || (!root_eq_r &&
+                (std::abs(root_l.x - root_r.x) < EPSILON ?
+                 std::abs(root_l.y) < std::abs(root_r.y) :
+                 std::abs(root_l.x) < std::abs(root_r.x)
+                )))
             {
-                case SearchNode::RIGHT:
-                    // A left collinear looks like "root right left"
-                    // so we should turn at right.
-                    return Successor::RIGHT_NON_OBSERVABLE;
-
-                case SearchNode::LEFT:
-                    // A left collinear looks like "right left root"
-                    // so we should turn at left.
-                    return Successor::LEFT_NON_OBSERVABLE;
-
-                case SearchNode::LAZY:
-                    // It's lazy: we shouldn't turn.
-                    return Successor::OBSERVABLE;
-
-                default:
-                    assert(false);
-                    return Successor::OBSERVABLE;
+                // We should turn at L... if we can!
+                if (!mesh_vertices[node.left_vertex].is_corner)
+                {
+                    return 0;
+                }
+                succ_type = Successor::LEFT_NON_OBSERVABLE;
             }
-        }();
-
-        // We can be lazy and start iterating from any point.
-        // We still need to exclude the current interval as a successor, though.
-        int last_vertex = V.back();
-
-        for (int i = 0; i < N; i++)
-        {
-            const int this_vertex = V[i];
-            if (this_vertex == node.right_vertex)
+            else
             {
-                // The interval we're going to generate is the same as our
-                // current one, so skip it.
+                // We should turn at R... if we can!
+                if (!mesh_vertices[node.right_vertex].is_corner)
+                {
+                    return 0;
+                }
+                succ_type = Successor::RIGHT_NON_OBSERVABLE;
+            }
+
+            // We can be lazy and start iterating from any point.
+            // We still need to exclude the current interval as a successor.
+            int last_vertex = V.back();
+
+            for (int i = 0; i < N; i++)
+            {
+                const int this_vertex = V[i];
+                if (this_vertex == node.right_vertex)
+                {
+                    // The interval we're going to generate is the same as our
+                    // current one, so skip it.
+                    last_vertex = this_vertex;
+                    continue;
+                }
+                const Point& left = mesh_vertices[this_vertex].p,
+                             right = mesh_vertices[last_vertex].p;
+                successors[out++] = {succ_type, left, right, i};
                 last_vertex = this_vertex;
-                continue;
             }
-            const Point& left = mesh_vertices[this_vertex].p,
-                         right = mesh_vertices[last_vertex].p;
-            successors[out++] = {succ_type, left, right, i};
-            last_vertex = this_vertex;
+            return out;
         }
-        return out;
     }
-
-    assert(get_orientation(root, node.left, node.right) ==
-           Orientation::CW);
 
 
     if (N == 3)
@@ -283,7 +295,7 @@ int get_successors(SearchNode& node, const Point& start, const Mesh& mesh,
                     };
                     // left_collinear(2, 3)
                     successors[2] = {
-                        Successor::LEFT_COLLINEAR,
+                        Successor::LEFT_NON_OBSERVABLE,
                         t3, t2,
                         p2 // a 2-3 successor
                     };
@@ -313,7 +325,7 @@ int get_successors(SearchNode& node, const Point& start, const Mesh& mesh,
                 {
                     // left_collinear(2, 3)
                     successors[1] = {
-                        Successor::LEFT_COLLINEAR,
+                        Successor::LEFT_NON_OBSERVABLE,
                         t3, t2,
                         p2 // a 2-3 successor
                     };
@@ -344,7 +356,7 @@ int get_successors(SearchNode& node, const Point& start, const Mesh& mesh,
                         {
                             // right_collinear(1, 2)
                             successors[0] = {
-                                Successor::RIGHT_COLLINEAR,
+                                Successor::RIGHT_NON_OBSERVABLE,
                                 t2, t1,
                                 p1 // a 1-2 successor
                             };
@@ -385,7 +397,7 @@ int get_successors(SearchNode& node, const Point& start, const Mesh& mesh,
                         {
                             // right_collinear(1, 2)
                             successors[0] = {
-                                Successor::RIGHT_COLLINEAR,
+                                Successor::RIGHT_NON_OBSERVABLE,
                                 t2, t1,
                                 p1 // a 1-2 successor
                             };
@@ -475,10 +487,11 @@ int get_successors(SearchNode& node, const Point& start, const Mesh& mesh,
 
     const Point& right_p = right_vertex_obj.p;
     const Point& left_p  = left_vertex_obj.p;
-    const bool can_turn_right = right_p == node.right &&
-                                right_vertex_obj.is_corner,
-               can_turn_left  = left_p == node.left &&
-                                left_vertex_obj.is_corner;
+    const bool right_lies_vertex = right_p == node.right;
+    const bool left_lies_vertex  = left_p == node.left;
+
+    // Macro for getting a point from a polygon point index.
+    #define index2point(index) mesh_vertices[V[index]].p
 
     // find the transition between non-observable-right and observable.
     // we will call this A, defined by:
@@ -488,123 +501,110 @@ int get_successors(SearchNode& node, const Point& start, const Mesh& mesh,
     // the "transition" will lie in the range [A-1, A)
 
     const Point root_right = node.right - root;
-    const int A = binary_search(V, N, mesh_vertices, right_ind + 1, left_ind,
-        [&root_right, &node](const Vertex& v)
+    const int A = [&]()
+    {
+        if (right_lies_vertex)
         {
-            return root_right * (v.p - node.right) > EPSILON; // STRICTLY CCW.
-        }, false
-    );
+            // Check whether root-right-right+1 is collinear or CCW.
+            if (root_right *
+                (index2point(normalise(right_ind + 1)) - node.right) >
+                -EPSILON)
+            {
+                // Intersects at right, so...
+                // we should use right_ind+1!
+                return right_ind + 1;
+            }
+        }
+        return binary_search(V, N, mesh_vertices, right_ind + 1, left_ind,
+            [&root_right, &node](const Vertex& v)
+            {
+                // STRICTLY CCW.
+                return root_right * (v.p - node.right) > EPSILON;
+            }, false
+        );
+    }();
     assert(A != -1);
     const int normalised_A = normalise(A),
               normalised_Am1 = normalise(A-1);
 
-    // Macro for getting a point from a polygon point index.
-    #define index2point(index) mesh_vertices[V[index]].p
-
-
     const Point& A_p = index2point(normalised_A);
     const Point& Am1_p = index2point(normalised_Am1);
-    const Point right_intersect = line_intersect(Am1_p, A_p, root, node.right);
+    const Point right_intersect = right_lies_vertex && A == right_ind + 1 ? node.right : line_intersect(A_p, Am1_p, root, node.right);
 
     // find the transition between observable and non-observable-left.
     // we will call this B, defined by:
     // "first P such that root-left-p is strictly CW".
     // lower-bound is A - 1 (in the same segment as A).
-    // upper bound is left.
+    // upper bound is left-1, as we don't want root-left-left.
     // the "transition" will lie in the range (B, B+1]
     const Point root_left = node.left - root;
-    const int B = binary_search(V, N, mesh_vertices, A - 1, left_ind,
-        [&root_left, &node](const Vertex& v)
+    const int B = [&]()
+    {
+        if (left_lies_vertex)
         {
-            return root_left * (v.p - node.left) < -EPSILON; // STRICTLY CW.
-        }, true
-    );
+            // Check whether root-left-left-1 is collinear or CW.
+            if (root_left *
+                (index2point(normalise(left_ind - 1)) - node.left) <
+                EPSILON)
+            {
+                // Intersects at left, so...
+                // we should use left_ind-1!
+                return left_ind - 1;
+            }
+        }
+        return binary_search(V, N, mesh_vertices, A - 1, left_ind - 1,
+            [&root_left, &node](const Vertex& v)
+            {
+                // STRICTLY CW.
+                return root_left * (v.p - node.left) < -EPSILON;
+            }, true
+        );
+    }();
     assert(B != -1);
     const int normalised_B = normalise(B),
               normalised_Bp1 = normalise(B+1);
     const Point& B_p = index2point(normalised_B);
     const Point& Bp1_p = index2point(normalised_Bp1);
-    const Point left_intersect = line_intersect(Bp1_p, B_p, root, node.left);
-
-    // TODO: Check right+2 / left-2 for C/D when the search size exceeds 2.
+    const Point left_intersect = left_lies_vertex && B == left_ind - 1 ? node.left : line_intersect(B_p, Bp1_p, root, node.left);
 
     // Macro to update this_inde/last_ind.
     #define update_ind() last_ind = cur_ind++; if (cur_ind == N) cur_ind = 0
-    if (can_turn_right)
+    if (right_lies_vertex && right_vertex_obj.is_corner)
     {
-        // Find the last point which makes collinear successors on the right.
-        // we will call this C, defined by:
-        // "last P such that right-(right+1)-p is collinear"
-        // lower-bound is right + 1 (definitely collinear)
-        // upper-bound is A-1
+        // Generate non-observable.
 
-        // Right plus one.
-        const Point& rightp1_p = mesh_vertices[V[normalise(right_ind + 1)]].p;
-        const Point right_rightp1 = rightp1_p - right_p;
-        const int C = binary_search(V, N, mesh_vertices, right_ind + 1, A - 1,
-            [&right_rightp1, &rightp1_p](const Vertex& v)
-            {
-                return std::abs(right_rightp1 * (v.p - rightp1_p)) < EPSILON;
-            }, true
-        );
-        // C may be -1.
-        // Note that if there exists any number of non-observable successors,
-        // there must exist at least one collinear successor (right-rightp1).
-        // If C is -1, there does not exist any collinear successors.
-        if (C != -1) {
-            // Generate right collinear + non-observable.
+        // Generate non-observable to Am1.
+        // Generate non-observable from Am1 to intersect
+        // if right_intersect != Am1_p.
 
-            // Generate collinear to C.
-            // Generate non-observable to Am1.
-            // If right_intersect != Am1_p,
-            // generate non-observable from Am1 to intersect.
-            const int normalised_C = normalise(C);
+        // We always generate successors from last_ind to cur_ind.
+        // right_ind should always be normalised.
+        assert(normalise(right_ind) == right_ind);
+        int last_ind = right_ind;
+        int cur_ind = normalise(right_ind + 1);
 
-            // We always generate successors from last_ind to cur_ind.
-            // right_ind should always be normalised.
-            assert(normalise(right_ind) == right_ind);
-            int last_ind = right_ind;
-            int cur_ind = normalise(right_ind + 1);
+        // Generate non-observable to Am1.
+        while (last_ind != normalised_Am1)
+        {
+            // Generate last-cur, turning at right.
+            successors[out++] = {
+                Successor::RIGHT_NON_OBSERVABLE,
+                index2point(cur_ind), index2point(last_ind),
+                cur_ind
+            };
 
-            // Generate collinear.
-            // Terminate once we pass C.
-            while (last_ind != normalised_C)
-            {
-                // Generate last-cur, turning at LAST.
-                successors[out++] = {
-                    Successor::RIGHT_COLLINEAR,
-                    index2point(cur_ind), index2point(last_ind),
-                    cur_ind
-                };
+            update_ind();
+        }
+        assert(cur_ind == normalised_A);
 
-                // Update the indices.
-                update_ind();
-            }
-
-            // Generate non-observable to Am1.
-            while (last_ind != normalised_Am1)
-            {
-                // Generate last-cur, turning at right.
-                successors[out++] = {
-                    Successor::RIGHT_NON_OBSERVABLE,
-                    index2point(cur_ind), index2point(last_ind),
-                    cur_ind
-                };
-
-                update_ind();
-            }
-            assert(cur_ind == normalised_A);
-
-            // Generate non-observable in Am1-A segment if needed.
-            if (right_intersect != Am1_p)
-            {
-                // Generate Am1-right_intersect, turning at right.
-                successors[out++] = {
-                    Successor::RIGHT_NON_OBSERVABLE,
-                    right_intersect, Am1_p,
-                    normalised_A
-                };
-            }
+        if (right_intersect != Am1_p)
+        {
+            // Generate Am1-right_intersect, turning at right.
+            successors[out++] = {
+                Successor::RIGHT_NON_OBSERVABLE,
+                right_intersect, Am1_p,
+                normalised_A
+            };
         }
     }
 
@@ -614,11 +614,15 @@ int get_successors(SearchNode& node, const Point& start, const Mesh& mesh,
     // (And terminate too!)
     // Else, go to the end and set that as last_node
 
+    // Special case when there are NO observable successors.
+    if (A == B + 2)
+    {
+        // Do nothing.
+    }
     // Special case when there only exists one observable successor.
     // Note that we used the non-normalised indices for this.
-    if (A == B + 1)
+    else if (A == B + 1)
     {
-        assert(normalised_A == normalised_Bp1);
         successors[out++] = {
             Successor::OBSERVABLE,
             left_intersect, right_intersect,
@@ -673,73 +677,36 @@ int get_successors(SearchNode& node, const Point& start, const Mesh& mesh,
         };
     }
 
-    if (can_turn_left)
+    if (left_lies_vertex && left_vertex_obj.is_corner)
     {
-        // Find the last point which makes collinear successors on the left.
-        // we will call this D, defined by:
-        // "first P such that left-(left-1)-p is collinear"
-        // lower-bound is B+1
-        // upper-bound is left - 1 (definitely collinear)
-
-        // Right plus one.
-        const Point& leftm1_p = mesh_vertices[V[normalise(left_ind - 1)]].p;
-        const Point left_leftm1 = leftm1_p - left_p;
-        const int D = binary_search(V, N, mesh_vertices, B + 1, left_ind - 1,
-            [&left_leftm1, &leftm1_p](const Vertex& v)
-            {
-                return std::abs(left_leftm1 * (v.p - leftm1_p)) < EPSILON;
-            }, false
-        );
-
-        // D may be -1.
-        // Note that if there exists any number of non-observable successors,
-        // there must exist at least one collinear successor (leftm1-left).
-        // If D is -1, there does not exist any collinear successors.
-        if (D != -1)
+        // Generate non-observable from left_intersect to Bp1_p
+        // if left_intersect != Bp1_p.
+        // Generate non-observable up to end.
+        // Generate left_intersect-Bp1, turning at left.
+        if (left_intersect != Bp1_p)
         {
-            const int normalised_D = normalise(D);
-            // If left_intersect != Bp1_p,
-            // generate non-observable from left_intersect to Bp1_p.
-            // Generate non-observable up to D.
-            // Generate collinear up to end.
-            if (left_intersect != Bp1_p)
-            {
-                // Generate left_intersect-Bp1, turning at left.
-                successors[out++] = {
-                    Successor::LEFT_NON_OBSERVABLE,
-                    Bp1_p, left_intersect,
-                    normalised_Bp1
-                };
-            }
-
-            int last_ind = normalised_Bp1;
-            int cur_ind = normalise(B + 2);
-
-            while (last_ind != normalised_D)
-            {
-                // Generate last_ind-cur_ind, turning at left.
-                successors[out++] = {
-                    Successor::LEFT_NON_OBSERVABLE,
-                    index2point(cur_ind), index2point(last_ind),
-                    cur_ind
-                };
-
-                update_ind();
-            }
-
-            const int normalised_left_ind = normalise(left_ind);
-            while (last_ind != normalised_left_ind)
-            {
-                // Generate last-cur, turning at CUR.
-                successors[out++] = {
-                    Successor::LEFT_COLLINEAR,
-                    index2point(cur_ind), index2point(last_ind),
-                    cur_ind
-                };
-                update_ind();
-            }
+            successors[out++] = {
+                Successor::LEFT_NON_OBSERVABLE,
+                Bp1_p, left_intersect,
+                normalised_Bp1
+            };
         }
 
+        int last_ind = normalised_Bp1;
+        int cur_ind = normalise(B + 2);
+
+        const int normalised_left_ind = normalise(left_ind);
+        while (last_ind != normalised_left_ind)
+        {
+            // Generate last_ind-cur_ind, turning at left.
+            successors[out++] = {
+                Successor::LEFT_NON_OBSERVABLE,
+                index2point(cur_ind), index2point(last_ind),
+                cur_ind
+            };
+
+            update_ind();
+        }
     }
 
     #undef update_ind

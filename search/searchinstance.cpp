@@ -108,9 +108,6 @@ int SearchInstance::succ_to_node(
                                  V[succ.poly_left_ind - 1] :
                                  V.back();
 
-        SearchNode::CollinearType col_type = SearchNode::NOT;
-
-
         // Note that g is evaluated twice here. (But this is a lambda!)
         // Always try to precompute before using this macro.
         // We implicitly set h to be zero and let search() update it.
@@ -143,7 +140,7 @@ int SearchInstance::succ_to_node(
                 }
             }
             nodes[out++] = {nullptr, root, succ.left, succ.right, left_vertex,
-                right_vertex, next_polygon, g, g, col_type};
+                right_vertex, next_polygon, g, g};
         };
 
         const Point& parent_root = (parent->root == -1 ?
@@ -151,91 +148,8 @@ int SearchInstance::succ_to_node(
                                     mesh->mesh_vertices[parent->root].p);
         #define get_g(new_root) parent->g + parent_root.distance(new_root)
 
-        if (parent->col_type != SearchNode::NOT)
-        {
-            // Check for collinearity, because the successors may
-            // also be collinear.
-            // New root is parent->right.
-            const Point& root = [&parent, &parent_root]() -> const Point&
-            {
-                switch (parent->col_type)
-                {
-                    case SearchNode::RIGHT:
-                        return parent->right;
-                    case SearchNode::LAZY:
-                        return parent_root;
-                    case SearchNode::LEFT:
-                        return parent->left;
-                    default:
-                        assert(false);
-                        return parent_root;
-                }
-            }();
-            const Point root_l = succ.left - root;
-            const Point root_r = succ.right - root;
-            #define is_zero(n) (std::abs(n) < EPSILON)
-            const bool root_eq_l = is_zero(root_l.x) && is_zero(root_l.y);
-            const bool root_eq_r = is_zero(root_r.x) && is_zero(root_r.y);
-            #undef is_zero
-
-            if (root_eq_l || root_eq_r ||
-                (!(mesh->max_poly_sides == 3) &&
-                 is_collinear(root, succ.right, succ.left)))
-            {
-                // It's collinear... but we don't know where to turn.
-                // Find which endpoint is closer.
-                // We can terminate early if we know the root is equal to one
-                // of the endpoints.
-                // Additionally, we can simply compare the absolute values of
-                // the coordinates to find which is closer.
-                if (root_eq_l || (!root_eq_r &&
-                    (std::abs(root_l.x - root_r.x) < EPSILON ?
-                     std::abs(root_l.y) < std::abs(root_r.y) :
-                     std::abs(root_l.x) < std::abs(root_r.x)
-                    )))
-                {
-                    // We should turn at L... if we can!
-                    if (parent->left_vertex != -1 &&
-                        !mesh->mesh_vertices[parent->left_vertex].is_corner)
-                    {
-                        continue;
-                    }
-                    col_type = SearchNode::LEFT;
-                    // We need to change the root as well!
-                    if (left_g == -1)
-                    {
-                        left_g = get_g(parent->left);
-                    }
-                    p(parent->left_vertex, left_g);
-                }
-                else
-                {
-                    // We should turn at R... if we can!
-                    if (parent->right_vertex != -1 &&
-                        !mesh->mesh_vertices[parent->right_vertex].is_corner)
-                    {
-                        continue;
-                    }
-                    col_type = SearchNode::RIGHT;
-                    if (right_g == -1)
-                    {
-                        right_g = get_g(parent->right);
-                    }
-                    p(parent->right_vertex, right_g);
-                }
-                #undef dist
-
-                // Always continue here: we don't want the normal node.
-                continue;
-            }
-        }
-
         switch (succ.type)
         {
-            // Collinears are the same as non-observables,
-            // except for changing the CollinearType.
-            case Successor::RIGHT_COLLINEAR:
-                col_type = SearchNode::RIGHT;
             case Successor::RIGHT_NON_OBSERVABLE:
                 if (right_g == -1)
                 {
@@ -248,8 +162,6 @@ int SearchInstance::succ_to_node(
                 p(parent->root, parent->g);
                 break;
 
-            case Successor::LEFT_COLLINEAR:
-                col_type = SearchNode::LEFT;
             case Successor::LEFT_NON_OBSERVABLE:
                 if (left_g == -1)
                 {
@@ -284,7 +196,77 @@ void SearchInstance::gen_initial_nodes()
     const PointLocation pl = get_point_location(start);
     const double h = start.distance(goal);
     #define get_lazy(next, left, right) new (node_pool->allocate()) SearchNode \
-        {nullptr, -1, start, start, left, right, next, h, 0, SearchNode::LAZY}
+        {nullptr, -1, start, start, left, right, next, h, 0}
+
+    #define v(vertex) mesh->mesh_vertices[vertex]
+
+    const auto push_lazy = [&](SearchNodePtr lazy)
+    {
+        const int poly = lazy->next_polygon;
+        if (poly == -1)
+        {
+            return;
+        }
+        if (poly == end_polygon)
+        {
+            // Trivial case - we can see the goal from start!
+            final_node = lazy;
+            #ifndef NDEBUG
+            if (verbose)
+            {
+                std::cerr << "got a trivial case!" << std::endl;
+            }
+            #endif
+            // we should check final_node after each push_lazy
+            return;
+        }
+        // iterate over poly, throwing away vertices if needed
+        const std::vector<int>& vertices =
+            mesh->mesh_polygons[poly].vertices;
+        Successor* successors = new Successor [vertices.size()];
+        int last_vertex = vertices.back();
+        int num_succ = 0;
+        for (int i = 0; i < (int) vertices.size(); i++)
+        {
+            const int vertex = vertices[i];
+            if (vertex == lazy->right_vertex ||
+                last_vertex == lazy->left_vertex)
+            {
+                last_vertex = vertex;
+                continue;
+            }
+            successors[num_succ++] =
+                {Successor::OBSERVABLE, v(vertex).p,
+                 v(last_vertex).p, i};
+            last_vertex = vertex;
+        }
+        SearchNode* nodes = new SearchNode [num_succ];
+        const int num_nodes = succ_to_node(lazy, successors,
+                                           num_succ, nodes);
+        delete[] successors;
+        for (int i = 0; i < num_nodes; i++)
+        {
+            SearchNodePtr n = new (node_pool->allocate())
+                SearchNode(nodes[i]);
+            const Point& n_root = (n->root == -1 ? start :
+                                   mesh->mesh_vertices[n->root].p);
+            n->f += get_h_value(n_root, goal, n->left, n->right);
+            n->parent = lazy;
+            #ifndef NDEBUG
+            if (verbose)
+            {
+                std::cerr << "generating init node: ";
+                print_node(n, std::cerr);
+                std::cerr << std::endl;
+            }
+            #endif
+            open_list.push(n);
+        }
+        delete[] nodes;
+        nodes_generated += num_nodes;
+        nodes_pushed += num_nodes;
+    };
+
     switch (pl.type)
     {
         // Don't bother.
@@ -304,18 +286,9 @@ void SearchInstance::gen_initial_nodes()
         case PointLocation::ON_MESH_BORDER:
         {
             SearchNodePtr lazy = get_lazy(pl.poly1, -1, -1);
-            #ifndef NDEBUG
-            if (verbose)
-            {
-                std::cerr << "generating init node: ";
-                print_node(lazy, std::cerr);
-                std::cerr << std::endl;
-            }
-            #endif
-            open_list.push(lazy);
-        }
+            push_lazy(lazy);
             nodes_generated++;
-            nodes_pushed++;
+        }
             break;
 
         case PointLocation::ON_EDGE:
@@ -323,95 +296,30 @@ void SearchInstance::gen_initial_nodes()
         {
             SearchNodePtr lazy1 = get_lazy(pl.poly2, pl.vertex1, pl.vertex2);
             SearchNodePtr lazy2 = get_lazy(pl.poly1, pl.vertex2, pl.vertex1);
-            #ifndef NDEBUG
-            if (verbose)
+            push_lazy(lazy1);
+            nodes_generated++;
+            if (final_node)
             {
-                std::cerr << "generating init node: ";
-                print_node(lazy1, std::cerr);
-                std::cerr << std::endl;
-                std::cerr << "generating init node: ";
-                print_node(lazy2, std::cerr);
-                std::cerr << std::endl;
+                return;
             }
-            #endif
-            open_list.push(lazy1);
-            open_list.push(lazy2);
+            push_lazy(lazy2);
+            nodes_generated++;
         }
-            nodes_generated += 2;
-            nodes_pushed += 2;
             break;
 
 
         case PointLocation::ON_NON_CORNER_VERTEX:
         {
-            // The hardest case.
-            // Need to MANUALLY generate all the polygons around the point.
-            // Will be lazy and generate Successors, not SearchNodes.
-            assert(mesh != nullptr);
-            // gets the corresponding vertex object from a vertex index
-            #define v(vertex) mesh->mesh_vertices[vertex]
             for (int& poly : v(pl.vertex1).polygons)
             {
-                SearchNodePtr dummy_init = get_lazy(poly, -1, -1);
-                if (poly == -1)
+                SearchNodePtr lazy = get_lazy(poly, pl.vertex1, pl.vertex1);
+                push_lazy(lazy);
+                nodes_generated++;
+                if (final_node)
                 {
-                    continue;
-                }
-                if (poly == end_polygon)
-                {
-                    // Trivial case - we can see the goal from start!
-                    final_node = dummy_init;
-                    #ifndef NDEBUG
-                    if (verbose)
-                    {
-                        std::cerr << "got a trivial case!" << std::endl;
-                    }
-                    #endif
                     return;
                 }
-                // iterate over poly, throwing away vertices if one of them is
-                // pl.vertex1
-                const std::vector<int>& vertices =
-                    mesh->mesh_polygons[poly].vertices;
-                Successor* successors = new Successor [vertices.size()];
-                int last_vertex = vertices.back();
-                int num_succ = 0;
-                for (int i = 0; i < (int) vertices.size(); i++)
-                {
-                    const int vertex = vertices[i];
-                    if (vertex == pl.vertex1 || last_vertex == pl.vertex1)
-                    {
-                        last_vertex = vertex;
-                        continue;
-                    }
-                    successors[num_succ++] =
-                        {Successor::OBSERVABLE, v(vertex).p,
-                         v(last_vertex).p, i};
-                    last_vertex = vertex;
-                }
-                SearchNode* nodes = new SearchNode [num_succ];
-                const int num_nodes = succ_to_node(dummy_init, successors,
-                                                   num_succ, nodes);
-                delete[] successors;
-                for (int i = 0; i < num_nodes; i++)
-                {
-                    SearchNodePtr to_push = new (node_pool->allocate())
-                        SearchNode(nodes[i]);
-                    #ifndef NDEBUG
-                    if (verbose)
-                    {
-                        std::cerr << "generating init node: ";
-                        print_node(to_push, std::cerr);
-                        std::cerr << std::endl;
-                    }
-                    #endif
-                    open_list.push(to_push);
-                }
-                delete[] nodes;
-                nodes_generated += num_nodes;
-                nodes_pushed += num_nodes;
             }
-            #undef v
         }
             break;
 
@@ -421,6 +329,7 @@ void SearchInstance::gen_initial_nodes()
             break;
     }
 
+    #undef v
     #undef get_lazy
 }
 
@@ -488,7 +397,7 @@ bool SearchInstance::search()
             const SearchNodePtr true_final =
                 new (node_pool->allocate()) SearchNode
                 {node, final_root, goal, goal, -1, -1, end_polygon,
-                 node->f, node->g, SearchNode::NOT};
+                 node->f, node->g};
 
             nodes_generated++;
 
