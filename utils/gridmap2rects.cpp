@@ -71,6 +71,7 @@ typedef vector<Rect> vrect;
 
 vector<vrect> grid_rectangles;
 vector<vint> rectangle_id;
+int cur_rect_id = 0;
 
 struct FinalRect
 {
@@ -78,9 +79,28 @@ struct FinalRect
     int width, height;
 };
 
+struct Vertex
+{
+    int y, x;
+
+    Vertex operator+(const Vertex& other) const
+    {
+        return {y + other.y, x + other.x};
+    }
+
+    Vertex operator-(const Vertex& other) const
+    {
+        return {y - other.y, x - other.x};
+    }
+};
+
 vector<FinalRect> final_rectangles;
 
-int cur_id = 0;
+// [0][0] is top-left corner of map, [height][width] is bottom-right
+vector<vint> vertex_id;
+vector<Vertex> final_vertices;
+int cur_vertex_id = 0;
+
 int map_width;
 int map_height;
 
@@ -154,6 +174,7 @@ void read_map(istream& infile)
     clear_above = vector<vint>(map_height, vint(map_width, 0));
     clear_left = vector<vint>(map_height, vint(map_width, 0));
     rectangle_id = vector<vint>(map_height, vint(map_width, -1));
+    vertex_id = vector<vint>(map_height+1, vint(map_width+1, -1));
     grid_rectangles = vector<vrect>(map_height, vrect(map_width));
     // so to get (x, y), do map_traversable[y][x]
     // 0 is nontraversable, 1 is traversable
@@ -431,19 +452,100 @@ void make_rectangles()
             continue;
         }
         // Use r.
-        // Set all those rectangle_ids, and set non-traversable.
+        // Set all those rectangle ids, and set non-traversable.
         // Also invalidate the rectangles.
         for (int y = node.y; y > node.y - r.height; y--)
         {
             for (int x = node.x; x > node.x - r.width; x--)
             {
-                rectangle_id[y][x] = cur_id;
+                rectangle_id[y][x] = cur_rect_id;
                 map_traversable[y][x] = false;
             }
         }
-        final_rectangles.push_back({node.y + 1 - r.height, node.x + 1 - r.width,
-                                    r.width, r.height});
-        cur_id++;
+        {
+            const int max_y = node.y + 1;
+            const int max_x = node.x + 1;
+            const int min_y = max_y - r.height;
+            const int min_x = max_x - r.width;
+            // Set vertices.
+            const Vertex corners[] = {
+                {min_y, min_x},
+                {max_y, min_x},
+                {max_y, max_x},
+                {min_y, max_x}
+            };
+            for (int i = 0; i < 4; i++)
+            {
+                const Vertex& p = corners[i];
+                int& id_ref = vertex_id[p.y][p.x];
+                if (id_ref != -1)
+                {
+                    continue;
+                }
+                id_ref = cur_vertex_id;
+                final_vertices.push_back(p);
+                cur_vertex_id++;
+            }
+            // Push final rectangle.
+            final_rectangles.push_back({min_y, min_x, r.width, r.height});
+        }
+        cur_rect_id++;
+    }
+}
+
+void print_mesh_vertices()
+{
+    vector<int> temp;
+    temp.resize(4);
+    // For each vertex, print it out.
+    for (Vertex& v : final_vertices)
+    {
+        cout << v.x << " " << v.y;
+        // Now we get its neighbours.
+        // Remember that Vertices are {y, x}!
+        static const Vertex deltas[] = {
+            {-1, -1},
+            { 0, -1},
+            { 0,  0},
+            {-1,  0}
+        };
+
+        // Append all, then cull after.
+        for (int i = 0; i < 4; i++)
+        {
+            Vertex grid_loc = v + deltas[i];
+            if (v.x < 0 || v.x >= map_width || v.y < 0 || v.y >= map_height)
+            {
+                temp[i] = -1;
+            }
+            else
+            {
+                temp[i] = rectangle_id[grid_loc.y][grid_loc.x];
+            }
+        }
+
+        // Cull.
+        vector<int> out;
+        {
+            int last = temp[3];
+            for (int i = 0; i < 4; i++)
+            {
+                const int cur = temp[i];
+                if (cur != last)
+                {
+                    out.push_back(cur);
+                }
+                last = cur;
+            }
+        }
+
+        // Print.
+        cout << " " << out.size();
+        for (int poly : out)
+        {
+            cout << " " << poly;
+        }
+        cout << endl;
     }
 }
 
@@ -556,6 +658,7 @@ int main()
     // print_heuristic();
     make_rectangles();
     print_rects();
+    print_mesh_vertices();
     // print_ids();
 
     return 0;
