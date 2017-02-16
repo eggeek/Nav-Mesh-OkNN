@@ -251,7 +251,7 @@ int get_clear_above(int y, int x)
 int get_clear_above_lazy(int y, int x)
 {
     int out = 0;
-    while (y > 0 && map_traversable[y][x])
+    while (y >= 0 && map_traversable[y][x])
     {
         out++;
         y--;
@@ -281,7 +281,7 @@ int get_clear_left(int y, int x)
 int get_clear_left_lazy(int y, int x)
 {
     int out = 0;
-    while (x > 0 && map_traversable[y][x])
+    while (x >= 0 && map_traversable[y][x])
     {
         out++;
         x--;
