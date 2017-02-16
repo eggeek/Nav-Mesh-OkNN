@@ -694,6 +694,46 @@ void print_clearance()
     }
 }
 
+void print_clearance_lazy()
+{
+    cout << "above" << endl;
+    for (int y = 0; y < map_height; y++)
+    {
+        for (int x = 0; x < map_width; x++)
+        {
+            const int clearance = get_clear_above_lazy(y, x);
+            if (clearance)
+            {
+                cout << setfill(' ') << setw(3) << clearance;
+            }
+            else
+            {
+                cout << "   ";
+            }
+        }
+        cout << "\n";
+    }
+
+    cout << endl;
+    cout << "left" << endl;
+    for (int y = 0; y < map_height; y++)
+    {
+        for (int x = 0; x < map_width; x++)
+        {
+            const int clearance = get_clear_left_lazy(y, x);
+            if (clearance)
+            {
+                cout << setfill(' ') << setw(3) << clearance;
+            }
+            else
+            {
+                cout << "   ";
+            }
+        }
+        cout << "\n";
+    }
+}
+
 void print_rects()
 {
     for (auto& x : final_rectangles)
