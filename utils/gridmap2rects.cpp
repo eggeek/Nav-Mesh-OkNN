@@ -17,6 +17,7 @@ well.
 #include <cassert>
 #include <iomanip>
 #include <queue>
+#include <algorithm>
 
 using namespace std;
 
@@ -550,6 +551,111 @@ void print_mesh_vertices()
     }
 }
 
+void print_mesh_polygons()
+{
+    for (FinalRect& r : final_rectangles)
+    {
+        /*
+        Iterate over vertices which lie on the rectangle in this order:
+
+        16 15 14 13
+        01       12
+        02       11
+        03       10
+        04       09
+        05 06 07 08
+        */
+
+        assert(r.width  >= 1);
+        assert(r.height >= 1);
+
+        vector<int> vertices;
+        vector<int> polygons;
+
+        auto push_vertex = [&](int y, int x, int dy, int dx)
+        {
+            // Assume that the coordianates we get are always valid.
+            const int vertex = vertex_id[y][x];
+            if (vertex == -1)
+            {
+                return;
+            }
+            vertices.push_back(vertex);
+            // Use dy and dx to get the grid location of the neighbours.
+            const int grid_loc_y = y + dy;
+            const int grid_loc_x = x + dx;
+            if (grid_loc_x < 0 || grid_loc_x >= map_width ||
+                grid_loc_y < 0 || grid_loc_y >= map_height)
+            {
+                polygons.push_back(-1);
+            }
+            else
+            {
+                polygons.push_back(rectangle_id[grid_loc_y][grid_loc_x]);
+            }
+        };
+
+        // Go through "01-05".
+        {
+            const int x = r.x;
+            for (int y = r.y + 1; y <= r.y + r.height; y++)
+            {
+                // dy = -1, dx = -1
+                push_vertex(y, x, -1, -1);
+            }
+        }
+
+        // Go through "06-08".
+        {
+            const int y = r.y + r.height;
+            for (int x = r.x + 1; x <= r.x + r.width; x++)
+            {
+                // dy = 0, dx = -1
+                push_vertex(y, x, 0, -1);
+            }
+        }
+
+        // Go through "09-13".
+        {
+            const int x = r.x + r.width;
+            for (int y = r.y + r.height - 1; y >= r.y; y--)
+            {
+                // dy = 0, dx = 0
+                push_vertex(y, x, 0, 0);
+            }
+        }
+
+        // Go through "14-16".
+        {
+            const int y = r.y;
+            for (int x = r.x + r.width - 1; x >= r.x; x--)
+            {
+                // dy = -1, dx = 0
+                push_vertex(y, x, -1, 0);
+            }
+        }
+
+        // Reverse because orientations are mixed up
+        reverse(vertices.begin(), vertices.end());
+        reverse(polygons.begin(), polygons.end());
+        // and fix up the broken polygons
+        rotate(polygons.begin(), polygons.end()-1, polygons.end());
+
+        cout << vertices.size();
+
+        for (int v : vertices)
+        {
+            cout << " " << v;
+        }
+
+        for (int p : polygons)
+        {
+            cout << " " << p;
+        }
+        cout << endl;
+    }
+}
+
 void print_clearance()
 {
     cout << "above" << endl;
@@ -658,8 +764,13 @@ int main()
     // print_traversable();
     // print_heuristic();
     make_rectangles();
-    print_rects();
+    // print_rects();
+    // print_ids();
+    cout << "mesh" << endl;
+    cout << 2 << endl;
+    cout << cur_vertex_id << " " << cur_rect_id << endl;
     print_mesh_vertices();
+    print_mesh_polygons();
     // print_ids();
 
     return 0;
