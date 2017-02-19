@@ -958,10 +958,7 @@ void print_mesh(ostream& outfile)
         {
             num_deadends++;
         }
-        else
-        {
-            sum_traversable += p.num_traversable;
-        }
+        sum_traversable += p.num_traversable;
         outfile << p.num_vertices << " \t"[pretty];
 
         outfile << get_v(p.vertices->val);
@@ -987,7 +984,7 @@ void print_mesh(ostream& outfile)
         outfile << "\n";
     }
 
-    cerr << final_p << ";" << num_deadends << ";" << final_p << endl;
+    cerr << final_p << ";" << num_deadends << ";" << sum_traversable << endl;
 
     #undef get_p
     #undef get_v
