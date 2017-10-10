@@ -50,7 +50,14 @@ and also strips the Fade2D license from `poly2mesh`.
 
 # Compiling
 
-This has only been tested on Arch Linux, but it should work for any new Linux
-distribution.
+This has been tested on:
+
+- Arch Linux, kernel release 4.13.3-1-ARCH and g++ 7.2.0
+- Arch Linux, kernel release 4.8.13 and g++ 6.3.1
+
 Ensure you have [GMP](https://gmplib.org/) installed, and run `make all`.
 All the utilities will be compiled.
+
+If you do not use Linux and still wish to compile all the tools which do not
+use Fade2D and GMP, running `make nofade` will compile all the tools except
+for `visualiser` and `poly2mesh`.

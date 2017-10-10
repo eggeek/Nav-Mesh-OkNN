@@ -13,7 +13,8 @@ FADE2DFLAGS = -Ifade2d -Llib/ubuntu16.10_x86_64 -lfade2d -Wl,-rpath=lib/ubuntu16
 TARGETS = visualiser poly2mesh
 BIN_TARGETS = $(addprefix bin/,$(TARGETS))
 
-all: $(TARGETS) gridmap2poly meshpacker meshunpacker meshmerger gridmap2rects
+all: $(TARGETS) nofade
+nofade: gridmap2poly meshpacker meshunpacker meshmerger gridmap2rects
 fast: CXXFLAGS += $(FAST_CXXFLAGS)
 dev: CXXFLAGS += $(DEV_CXXFLAGS)
 fast dev: all
