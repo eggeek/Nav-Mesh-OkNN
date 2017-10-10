@@ -5,8 +5,8 @@ Useful utilities for parsing gridmaps, polymaps and meshes.
 The spec for polymaps and meshes are contained within `spec`, and some example
 maps have been included in `maps`.
 
-# Tools
 
+# Tools
 
 `gridmap2poly`: Converts grid maps into the polymap format.
 Suitable for loading into Fade2D.
@@ -48,6 +48,7 @@ Takes a gridmap from stdin, and outputs a mesh to stdout.
 Included is a basic `gridmap2mesh` script which converts a gridmap to a mesh,
 and also strips the Fade2D license from `poly2mesh`.
 
+
 # Compiling
 
 This has been tested on:
@@ -61,3 +62,50 @@ All the utilities will be compiled.
 If you do not use Linux and still wish to compile all the tools which do not
 use Fade2D and GMP, running `make nofade` will compile all the tools except
 for `visualiser` and `poly2mesh`.
+
+
+# Usage examples
+
+Converting a grid map, `./maps/arena.map` into a triangulation and saving that
+as `arena.mesh` in the current directory (requires Fade2D compilation):
+```bash
+$ ./scripts/gridmap2mesh.sh < maps/arena.map > arena.mesh
+```
+
+Unpacking a packed mesh (from
+[this repo](https://gitlab.erc.monash.edu.au/mlcui1/polyanya-triangulations-packed)),
+`arena.mesh.packed`, to `arena.mesh`:
+```bash
+$ ./bin/meshunpacker arena.mesh.packed
+$ head arena.mesh
+mesh
+2
+112
+120
+2
+2
+2
+-1
+4
+1
+```
+
+Converting a triangulation, `arena.mesh` to a merged triangulation:
+```bash
+$ ./bin/meshmerger < arena.mesh > arena-merged.mesh
+55;31;118
+$ head arena-merged.mesh
+mesh
+2
+112 55
+2 2 2 -1 1
+1 3 2 6 -1
+2 3 5 5 6 -1 1 0
+3 2 4 2 0 1 -1
+3 1 2 2 -1
+15 1 2 -1 2
+15 3 4 -1 5 0 2
+```
+Note that `55;31;118` is output to stderr, representing
+`number of polygons;number of dead ends;sum of polygon degrees` of the
+outputted mesh.
