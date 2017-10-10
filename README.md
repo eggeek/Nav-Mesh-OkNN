@@ -206,3 +206,7 @@ Note that several source files from Daniel Harabor's
 These files are:
 `helpers/cfg.cpp`, `helpers/cfg.h`, `helpers/cpool.h`, `helpers/timer.cpp` and
 `helpers/timer.h`.
+
+Additionally, Fade2D is used to generate triangulations for use with this
+with this implementation. Please note that commercial use of Fade2D requires
+a valid commercial license.
