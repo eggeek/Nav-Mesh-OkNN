@@ -193,3 +193,16 @@ We ran all benchmark sets using the optimised binaries compiled using
   [this diagram will help](https://i.imgur.com/1mIzQIY.jpg) with the variable
   names. r is the root, L/R are the endpoints of the interval, 1/2/3 are
   the vertices of the triangle, and LI/RI are the endpoints of the successors.
+
+
+# License
+
+This implementation of Polyanya is licensed under GPLv2. Please refer to
+`LICENSE` for more information.
+
+Note that several source files from Daniel Harabor's
+[Warthog project](https://bitbucket.org/dharabor/pathfinding)
+(also licensed under GPLv2) were used in this project with their permission.
+These files are:
+`helpers/cfg.cpp`, `helpers/cfg.h`, `helpers/cpool.h`, `helpers/timer.cpp` and
+`helpers/timer.h`.
