@@ -150,11 +150,10 @@ We ran all benchmark sets using the optimised binaries compiled using
   will result in a start/target location which matches the grid square given
   by the (grid) scenario.
 
-  Note that this ambiguity resolvement is arbitrary. We chose this specifically
-  to match the grid square in our converted grid maps. Other resolvement
-  techniques are possible - such as taking the point to be inside **all**
-  polygons around the vertex, or alternatively taking the point to not be
-  on the mesh at all.. 
+  Note that this interpretation is arbitrary. We chose this specifically
+  to match the grid square in our converted grid maps. Other interpretations
+  are possible - such as taking the point to be inside **all** polygons around
+  the vertex, or alternatively taking the point to not be on the mesh at all.
 
 - Generating a final search node is done when any search node which pushes
   into the polygon containing the target is popped off the open list.
