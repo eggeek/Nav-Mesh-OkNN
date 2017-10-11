@@ -10,7 +10,8 @@ This repository stores the C++ implementation used in the paper.
 
 Run `make all` to compile with no optimisations and debugging information.
 Run `make fast` to compile with optimisations. This has been tested with g++
-6.3.1 and 7.2.0, and should not require any other dependencies.
+6.3.1 and 7.2.0 on Arch Linux and g++ 5.4.0 on Ubuntu (via Windows Subsystem
+for Linux). This should not require any other dependencies.
 
 These should compile two executables named `scenariorunner` and `test` in
 the `bin` folder. `test` is solely used for testing, while `scenariorunner`
