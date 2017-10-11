@@ -55,6 +55,7 @@ This has been tested on:
 
 - Arch Linux, kernel release 4.13.3-1-ARCH and g++ 7.2.0
 - Arch Linux, kernel release 4.8.13 and g++ 6.3.1
+- Ubuntu 16.04 (via Windows Subsystem for Linux) and g++ 5.4.0
 
 Ensure you have [GMP](https://gmplib.org/) installed, and run `make all`.
 All the utilities will be compiled.
