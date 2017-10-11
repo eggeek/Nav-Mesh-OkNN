@@ -73,7 +73,7 @@ $ ./scripts/gridmap2mesh.sh < maps/arena.map > arena.mesh
 ```
 
 Unpacking a packed mesh (from
-[this repo](https://gitlab.erc.monash.edu.au/mlcui1/polyanya-triangulations-packed)),
+[this repo](https://bitbucket.org/mlcui1/polyanya-triangulations-packed/)),
 `arena.mesh.packed`, to `arena.mesh`:
 ```bash
 $ ./bin/meshunpacker arena.mesh.packed

@@ -81,7 +81,7 @@ We started by cleaning up
 [Sturtevant's Moving AI grid benchmarks](http://movingai.com/benchmarks/)
 from the hog2 repository.
 The cleaned up benchmark maps and scenarios can be found
-[here](https://gitlab.erc.monash.edu.au/mlcui1/movingai-benchmarks).
+[here](https://bitbucket.org/mlcui1/movingai-benchmarks).
 
 We then converted all the grid maps into triangulations, using the
 [Fade2D](http://www.geom.at/fade2d/html/)
@@ -91,7 +91,7 @@ found in the `utils` directory with additional documentation. However,
 compiling with Fade2D may be difficult. To alleviate this, we "packed" all
 of our converted triangulations using the `meshpacker` utility in the `utils`
 directory, then uploaded all of the packed triangulations
-[here](https://gitlab.erc.monash.edu.au/mlcui1/polyanya-triangulations-packed).
+[here](https://bitbucket.org/mlcui1/polyanya-triangulations-packed/).
 You can "unpack" the triangulations using the `meshunpacker` utility in the
 `utils` directory.
 
