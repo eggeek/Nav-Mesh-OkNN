@@ -29,7 +29,7 @@ $(TARGETS) gridmap2poly meshpacker meshunpacker meshmerger gridmap2rects: % : bi
 
 $(BIN_TARGETS): bin/%: %.cpp $(PU_OBJ)
 	@mkdir -p ./bin
-	$(CXX) $(CXXFLAGS) $(FADE2DFLAGS) $(PU_INCLUDES) $(PU_OBJ) $(@:bin/%=%).cpp -o $(@)
+	$(CXX) $(CXXFLAGS) $(PU_INCLUDES) $(PU_OBJ) $(@:bin/%=%).cpp -o $(@) $(FADE2DFLAGS)
 
 bin/gridmap2poly: gridmap2poly.cpp
 	@mkdir -p ./bin
