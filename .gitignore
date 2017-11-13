@@ -2,3 +2,5 @@
 *.d
 *.exe
 bin
+.vscode/tags
+utils/.vscode/tags
