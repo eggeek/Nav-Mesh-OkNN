@@ -139,14 +139,18 @@ We ran all benchmark sets using the optimised binaries compiled using
   consistent with the
   [Java implementation of Anya](http://bitbucket.org/dharabor/pathfinding),
   Polyanya's predecessor). However, this could result in an ambiguous
-  start/target location as explained below.
+  start/target location as explained two points below.
 
-- Ambiguous start/target locations are points which lie on a corner such as:
-  ```
-  .X
-  X.
-  ```
-  This point is in two disconnected polygons. We arbitrarily settle this
+- Corners such as the center vertex of
+
+  `.X`  
+  `X.`
+
+  are allowed on the mesh. We define that there is no straight line between
+  the two Xs, and so a target can't "squeeze" through this corner.
+
+- If the start or target lie on such a corner, it is ambiguous to what polygon
+  the point should be contained in. We arbitrarily settle this
   ambiguity by shifting the start point a small amount in the positive x and
   y directions - so if this situation occurs in a converted grid map, this
   will result in a start/target location which matches the grid square given
