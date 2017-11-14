@@ -78,6 +78,11 @@ The scenario files are provided as `scenarios/arena.scen` and
 
 
 # Replicating our experiments
+Note that the commit we used for running the experiments is marked with the
+`ijcai` tag. As of 14 Nov 2017 there have not been any changes to the actual
+Polyanya implementation since then - but it is still recommended that you
+check out the tag to replicate our experiments.
+
 
 We started by cleaning up
 [Sturtevant's Moving AI grid benchmarks](http://movingai.com/benchmarks/)
