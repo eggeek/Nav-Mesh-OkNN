@@ -25,7 +25,7 @@ clean:
 	rm -f $(PU_OBJ)
 
 .PHONY: $(TARGETS) gridmap2poly
-$(TARGETS) gridmap2poly meshpacker meshunpacker meshmerger gridmap2rects: % : bin/%
+$(TARGETS) gridmap2poly meshpacker meshunpacker meshmerger gridmap2rects gridmap2grid: % : bin/%
 
 $(BIN_TARGETS): bin/%: %.cpp $(PU_OBJ)
 	@mkdir -p ./bin
@@ -50,6 +50,10 @@ bin/meshmerger: meshmerger.cpp
 bin/gridmap2rects: gridmap2rects.cpp
 	@mkdir -p ./bin
 	$(CXX) $(CXXFLAGS) -O3 gridmap2rects.cpp -o ./bin/gridmap2rects
+
+bin/gridmap2grid: gridmap2grid.cpp
+	@mkdir -p ./bin
+	$(CXX) $(CXXFLAGS) -O3 gridmap2grid.cpp -o ./bin/gridmap2grid
 
 -include $(PU_OBJ:.o=.d)
 
