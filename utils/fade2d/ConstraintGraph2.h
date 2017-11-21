@@ -1,15 +1,16 @@
-// (c) 2010 Geom e.U. Bernhard Kornberger, Graz/Austria. All rights reserved.
+// Copyright (C) Geom Software e.U, Bernhard Kornberger, Graz/Austria
 //
-// This file is part of the Fade2D library. You can use it for your personal
-// non-commercial research. Licensees holding a commercial license may use this
-// file in accordance with the Commercial License Agreement provided
-// with the Software.
+// This file is part of the Fade2D library. The student license is free
+// of charge and covers personal non-commercial research. Licensees
+// holding a commercial license may use this file in accordance with
+// the Commercial License Agreement.
 //
-// This software is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING
-// THE WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
+// This software is provided AS IS with NO WARRANTY OF ANY KIND,
+// INCLUDING THE WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS
+// FOR A PARTICULAR PURPOSE.
 //
-// Please contact the author if any conditions of this licensing are not clear
-// to you.
+// Please contact the author if any conditions of this licensing are
+// not clear to you.
 //
 // Author: Bernhard Kornberger, bkorn (at) geom.at
 // http://www.geom.at
@@ -31,12 +32,14 @@
 	#error GEOM_PSEUDO3D is not defined
 #endif
 
-class Dt2; // Forward
-class ConstraintSegment2; // Forward
-class GeomTest; // Forward
+// FWD
+class Dt2;
+class ConstraintSegment2;
+class GeomTest;
+class Visualizer2;
+class Color;
 
-
-/** \brief ConstraintGraph2 is a set of enforced edges
+/** \brief ConstraintGraph2 is a set of Constraint Edges to be enforced. These are ConstraintSegment2 objects.
 *
 * \see \ref createConstraint in the Fade2D class
 *
@@ -46,10 +49,7 @@ class GeomTest; // Forward
 class ConstraintGraph2
 {
 public:
-/** \brief Internal use
- *
- * Constructor for one or more ConstraintSegment2 objects
-*/
+/// @private
 	CLASS_DECLSPEC
 	ConstraintGraph2(
 		Dt2* pDt2_,
@@ -57,11 +57,7 @@ public:
 		ConstraintInsertionStrategy
 		);
 
-/** \brief Internal use
- *
- * Constructor for one or more ConstraintSegment2 objects whose
- * direction is given by mPPReverse. Used for bounded zones
-*/
+/// @private
 	CLASS_DECLSPEC
 	ConstraintGraph2(
 		Dt2* pDt2_,
@@ -70,17 +66,16 @@ public:
 		ConstraintInsertionStrategy cis_
 	);
 
-/** \brief Internal use
- *
- * Called by the two constructors
- */
-void init(std::vector<ConstraintSegment2*>& vCSegments_);
+/// @private
+	void init(std::vector<ConstraintSegment2*>& vCSegments_);
 
 
 /** \brief Does the constraint graph form a closed polygon?
 *
-* @note This method does not check if it is a simple polygon (one
-* without self-intersections).
+* \return true when the present ConstraintGraph forms a closed polygon.
+*
+* @note This method won't check if it is a simple polygon (one without
+* self-intersections).
 */
 	CLASS_DECLSPEC
 	bool isPolygon() const;
@@ -96,11 +91,11 @@ void init(std::vector<ConstraintSegment2*>& vCSegments_);
 
 /** \brief Get the vertices of the constraint segments
 *
-* Use this method to retrieve the segments of *this in form of a vector
-* of vertices. If *this is a closed polygon, then the points are ordered
-* and oriented in counterclockwise direction, e.g. (a,b,b,c,c,d,d,a). If
-* the *this is not a polygon, then the segments are returned in the
-* original direction.
+* Use this method to retrieve the segments of the present object
+* in form of a vector of vertices. If *this is a closed polygon, then
+* the points are ordered and oriented in counterclockwise direction,
+* e.g. (a,b,b,c,c,d,d,a). If the *this is not a polygon, then the
+* segments are returned in the original direction.
 *
 * @note If it was necessary to split the constraint segments, then the
 * splitted segments are returned. If, in the above example, the constraint
@@ -110,6 +105,7 @@ void init(std::vector<ConstraintSegment2*>& vCSegments_);
 */
 	CLASS_DECLSPEC
 	void getPolygonVertices(std::vector<Point2*>& vTriangulationPoints_) ;
+
 
 /** \brief Get the constraint insertion strategy
 *
@@ -139,31 +135,65 @@ void init(std::vector<ConstraintSegment2*>& vCSegments_);
 	CLASS_DECLSPEC
 	void show(const std::string& name);
 
+/** \brief Visualization
+*
+*/
+	CLASS_DECLSPEC
+	void show(Visualizer2* pVis,const Color& color);
 
 
 /** \brief Get the original ConstraintSegment2 objects
 *
-* Get the original, not subdivided ConstraintSegment2 objects. The
-* ones which have been splitted are not alive anymore. But they
-* have children (for which the same may hold).
+* Get the original, ConstraintSegment2 objects. They are not subdivided
+* but may be dead and have child segments (which may also be dead and
+* have child segments...)
 *
 */
 	CLASS_DECLSPEC
 	void getOriginalConstraintSegments(std::vector<ConstraintSegment2*>& vConstraintSegments_) const;
 
-/** \brief Update a constraint segment of *this
-* Internal method
+/** \brief Get child ConstraintSegment2 objects
+*
+* Returns the current constraint segments, i.e., the original ones or,
+* if splitted, their child segments.
+*
 */
-	void updateSplittedConstraintSegment(ConstraintSegment2* pCSeg,bool bDirChange0,bool bDirChange1,ConstraintSegment2* pChild0,ConstraintSegment2* pChild1);
+	CLASS_DECLSPEC
+	void getChildConstraintSegments(std::vector<ConstraintSegment2*>& vConstraintSegments_) const;
+
+/// @private
+void updateSplittedConstraintSegment(
+		ConstraintSegment2* pCSeg,
+		bool bDirChange0,
+		bool bDirChange1,
+		ConstraintSegment2* pChild0,
+		ConstraintSegment2* pChild1,
+		bool bUpdateCMGR);
 /**
 * \return the Delaunay class it belongs to
 */
 	Dt2* getDt2();
+/** \brief Get direct children
+*
+* \param [in] pParent is a ConstraintSegment that may have been splitted
+* \param [out] pChild0, pChild1 are the direct child segments of
+* \p pParent. They can be alive or dead (splitted).
+*
+* The children are returned in the correct order of the present
+* ConstraintGraph2.
+*/
+	CLASS_DECLSPEC
+	void getDirectChildren(ConstraintSegment2* pParent,ConstraintSegment2*& pChild0,ConstraintSegment2*& pChild1);
+/// @private
 	void getAliveConstraintChain(std::vector<ConstraintSegment2*>& vAliveCSeg) ; // For debugging
+	//void getAliveConstraintChain_old(std::vector<ConstraintSegment2*>& vAliveCSeg);
 protected:
+/// @private
 	bool isReverse(ConstraintSegment2* pCSeg) const;
+/// @private
 	bool checkAndSortPolygon(std::vector<ConstraintSegment2*>& vCSegments_);
-
+/// @private
+	void makeSelfOwner(std::vector<ConstraintSegment2*>& vCSeg);
 
 	// Data
 	Dt2* pDt2;

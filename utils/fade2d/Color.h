@@ -1,19 +1,20 @@
-// (c) 2010 Geom e.U. Bernhard Kornberger, Graz/Austria. All rights reserved.
+// Copyright (C) Geom Software e.U, Bernhard Kornberger, Graz/Austria
 //
-// This file is part of the Fade2D library. You can use it for your personal
-// non-commercial research. Licensees holding a commercial license may use this
-// file in accordance with the Commercial License Agreement provided
-// with the Software.
+// This file is part of the Fade2D library. The student license is free
+// of charge and covers personal non-commercial research. Licensees
+// holding a commercial license may use this file in accordance with
+// the Commercial License Agreement.
 //
-// This software is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING
-// THE WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
+// This software is provided AS IS with NO WARRANTY OF ANY KIND,
+// INCLUDING THE WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS
+// FOR A PARTICULAR PURPOSE.
 //
-// Please contact the author if any conditions of this licensing are not clear
-// to you.
+// Please contact the author if any conditions of this licensing are
+// not clear to you.
 //
 // Author: Bernhard Kornberger, bkorn (at) geom.at
 // http://www.geom.at
-
+/// \file Color.h
 
 
 #pragma once
@@ -27,9 +28,7 @@
 	#error GEOM_PSEUDO3D is not defined
 #endif
 
-/** \brief Colorname
-*
-* A few colors are predefined for convenience
+/** \brief Predefined colors for convenience
 */
 enum Colorname
 {
@@ -39,12 +38,21 @@ enum Colorname
 	CBLACK,
 	CYELLOW,
 	CPINK,
-	CGRAY
+	CGRAY,
+	CWHITE,
+	CORANGE,
+	CLIGHTBLUE,
+    CLIGHTBROWN,
+    CDARKBROWN,
+    CPURPLE,
+    COLIVE,
+    CLAWNGREEN,
+    CPALEGREEN,
+    CCYAN
 };
 
-/**  \brief %Color
-*
-* \see Visualizer2 where Color objects are used for visualizations
+/** \brief Color
+* \see Visualizer2
 *
 */
 class CLASS_DECLSPEC Color
@@ -52,12 +60,15 @@ class CLASS_DECLSPEC Color
 public:
 /**
 *
-* Constructor for a color to be used together with the Visualizer2 class
 * @param r_ red
 * @param g_ green
 * @param b_ blue
 * @param width_ linewidth
-* @param bFill_ fill-color (default value: \e false)
+* @param bFill_ fill (default: \e false)
+*
+* @note bFill_=true has two meanings: Objects that can be filled
+* (Triangle2, Circle2) are filled with the rgb-color but line segments
+* get x-marks at their endpoints.
 *
 */
 
@@ -65,18 +76,27 @@ public:
 
 /**
  *
- * Constructor for a color to be used together with the Visualizer2 class
+ * For convenience predefined colors can be used.
  *
  * @param c is a predefined color name
+ * @param width_ linewidth (default: \e 0.001)
+ * @param bFill_ fill (default: \e false)
+*
+* @note bFill_=true has two meanings: Objects that can be filled
+* (Triangle2, Circle2) are filled with the rgb-color but line segments
+* get x-marks at their endpoints.
  */
-	Color(Colorname c);
+	Color(Colorname c,float width_=0.001,bool bFill_=false);
 	Color();
 
-
-	bool operator!=(Color& other) const;
-	bool operator==(Color& other) const;
-	float r,g,b,width;
-	bool bFill;
+	bool operator<(const Color& other) const;
+	bool operator!=(const Color& other) const;
+	bool operator==(const Color& other) const;
+	float r; ///< Red
+	float g; ///< Green
+	float b; ///< Blue
+	float width; ///< Linewidth
+	bool bFill; ///< Fill the shape or not
 	friend std::ostream &operator<<(std::ostream &stream, const Color& c);
 };
 

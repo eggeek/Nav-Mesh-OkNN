@@ -1,18 +1,20 @@
-// (c) 2010 Geom e.U. Bernhard Kornberger, Graz/Austria. All rights reserved.
+// Copyright (C) Geom Software e.U, Bernhard Kornberger, Graz/Austria
 //
-// This file is part of the Fade2D library. You can use it for your personal
-// non-commercial research. Licensees holding a commercial license may use this
-// file in accordance with the Commercial License Agreement provided
-// with the Software.
+// This file is part of the Fade2D library. The student license is free
+// of charge and covers personal non-commercial research. Licensees
+// holding a commercial license may use this file in accordance with
+// the Commercial License Agreement.
 //
-// This software is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING
-// THE WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
+// This software is provided AS IS with NO WARRANTY OF ANY KIND,
+// INCLUDING THE WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS
+// FOR A PARTICULAR PURPOSE.
 //
-// Please contact the author if any conditions of this licensing are not clear
-// to you.
+// Please contact the author if any conditions of this licensing are
+// not clear to you.
 //
 // Author: Bernhard Kornberger, bkorn (at) geom.at
 // http://www.geom.at
+
 
 
 #pragma once
@@ -38,13 +40,13 @@ class Segment2
 protected:
 	Point2 src,trg;
 public:
-/** Create a Segment2
+/** \brief Create a Segment2
 *
-* @param src First endpoint (source)
-* @param trg Second endpoint (target)
+* @param src_ First endpoint (source)
+* @param trg_ Second endpoint (target)
 */
 	CLASS_DECLSPEC
-	Segment2(Point2 src,Point2 trg);
+	Segment2(const Point2& src_,const Point2& trg_);
 /** Create a Segment2
 * Default constructor
 */

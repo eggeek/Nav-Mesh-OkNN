@@ -1,5 +1,24 @@
+// Copyright (C) Geom Software e.U, Bernhard Kornberger, Graz/Austria
+//
+// This file is part of the Fade2D library. The student license is free
+// of charge and covers personal non-commercial research. Licensees
+// holding a commercial license may use this file in accordance with
+// the Commercial License Agreement.
+//
+// This software is provided AS IS with NO WARRANTY OF ANY KIND,
+// INCLUDING THE WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS
+// FOR A PARTICULAR PURPOSE.
+//
+// Please contact the author if any conditions of this licensing are
+// not clear to you.
+//
+// Author: Bernhard Kornberger, bkorn (at) geom.at
+// http://www.geom.at
+
+
 #pragma once
 #include "common.h"
+#include "Zone2.h"
 
 #if GEOM_PSEUDO3D==GEOM_TRUE
 	namespace GEOM_FADE25D {
@@ -9,6 +28,8 @@
 	#error GEOM_PSEUDO3D is not defined
 #endif
 
+
+
 class Fade_2D; // Forward
 template <typename T> inline void unusedParameter(const T&){} // Avoids compiler warnings
 
@@ -17,25 +38,19 @@ template <typename T> inline void unusedParameter(const T&){} // Avoids compiler
 /** \brief Parameters for the mesh generator
 *
 * This class serves as container for mesh generator parameters. Client
-* code can provide a class which derives from MeshGenParams an which
+* code can provide a class which derives from MeshGenParams and which
 * provides custom implementations of the getMaxTriangleArea(Triangle* pT)
 * method or the getMaxEdgeLength(Triangle* pT) method in order to
 * gain control over the local density of the generated mesh. When the
 * meshing algorithm decides if a certain triangle T must be refined,
 * then it calls these functions.
+*
+* \sa http://www.geom.at/advanced-mesh-generation/
 */
 class CLASS_DECLSPEC MeshGenParams
 {
 public:
-
-
-/** \brief getMaxTriangleArea(Triangle2* pT)
- *
- * @param pZone_ is the zone to be remeshed. Its zoneLocation value
- * must be ZL_INSIDE or ZL_BOUNDED. Other types of zones can be
- * converted ZL_BOUNDED using @ref convertToBoundedZone "Zone2::convertToBoundedZone()
- */
-	MeshGenParams(Zone2* pZone_):
+	explicit MeshGenParams(Zone2* pZone_):
 #if GEOM_PSEUDO3D==GEOM_TRUE
 		// *** The following two parameters exist only in Fade2.5D ***
 		pHeightGuideTriangulation(NULL),
@@ -49,35 +64,42 @@ public:
 		bAllowConstraintSplitting(true),
 		growFactor(DBL_MAX),
 		growFactorMinArea(1e-3),
-		capAspectLimit(10.0)
+		capAspectLimit(10.0),
+		gridLength(0.0),
+		command(0) // command is for development purposes and will vanish soon.
 	{
 		if(	pZone->getZoneLocation()!=ZL_INSIDE &&
 			pZone->getZoneLocation()!=ZL_BOUNDED )
 		{
-			std::cerr<<"\n\n\nMeshGenParams::MeshGenParams(..), ERROR: \n\tNew behavior since Fade 1.39: The zoneLocation must be ZL_INSIDE or ZL_BOUNDED. Please convert the zone using pZone->convertToBoundedZone(..)\n\n"<<std::endl;
+			std::cerr<<"\n\n\nMeshGenParams::MeshGenParams(..), ERROR: \n\tbehavior since Fade 1.39: The zoneLocation must be ZL_INSIDE or ZL_BOUNDED. Please convert the zone using pZone->convertToBoundedZone(..)\n\n"<<std::endl;
 			assert(false);
 			return;
 		}
 	}
 
 	virtual ~MeshGenParams()
-	{}
+	{
+#if GEOM_PSEUDO3D==GEOM_TRUE
+		gridVector=Vector2(1.0,0.0,0.0);
+#else
+		gridVector=Vector2(1.0,0.0);
+#endif
+	}
 
 
 
 /** \brief getMaxTriangleArea(Triangle2* pT)
  *
- * @param pT is the current triangle for which the meshing
- * algorithm checks if it must be refined.
+ * @param pT is a triangle for which the meshing algorithm checks if
+ * it must be refined.
  *
- * The default implementation returns maxTriangleArea (the default
- * value or one that has been set by the user). This method can be
- * overwritten by the client software in order to control the local
- * mesh density.
- * @note There is no getMaxTriangleArea(double x,double y) method
- * anymore. The parameter has been changed to Triangle2* to give
- * the client code more information.
- */
+ * The default implementation of the present class returns the value
+ * maxTriangleArea (which is the default value DBL_MAX if not changed
+ * by the user). This method can be overridden by the client software
+ * in order to control the local mesh density.
+ * \image html mesh-generator-customParameters.png "User Controlled Mesh Density, Area"
+ * \image latex mesh-generator-customParameters.eps "User Controlled Mesh Density, Area" width=7cm
+  */
 	virtual double getMaxTriangleArea(Triangle2* pT)
 	{
 		unusedParameter(pT); // avoids useless compiler warnings
@@ -87,17 +109,16 @@ public:
 
 /** \brief getMaxEdgeLength(Triangle2* pT)
  *
- * @param pT is the current triangle for which the meshing
- * algorithm checks if it must be refined.
+ * @param pT is a triangle for which the meshing algorithm checks if
+ * it must be refined.
  *
- * The default implementation returns maxEdgeLengthArea (the default
- * value or one that has been set by the user). This method can be
- * overwritten by the client software in order to control the local
- * mesh density.
- * @note There is no getMaxEdgeLength(double x,double y) method
- * anymore. The parameter has been changed to Triangle2* to give
- * the client code more information.
- */
+ * The default implementation of the present class returns the value
+ * maxEdgeLength (which is DBL_MAX if not changed by the user). This
+ * method can be overridden by the client software in order to control
+ * the local mesh density.
+ * \image html mesh-generator-customParameters.png "User Controlled Mesh Density, Edge Length"
+ * \image latex mesh-generator-customParameters.eps "User Controlled Mesh Density, Edge Length" width=7cm
+*/
 	virtual double getMaxEdgeLength(Triangle2* pT)
 	{
 		unusedParameter(pT); // avoids useless compiler warnings
@@ -109,8 +130,12 @@ public:
 #if GEOM_PSEUDO3D==GEOM_TRUE
 /** \brief pHeightGuideTriangulation
  *
- * An extra triangulation can optionally be set. When present, it serves
- * as height guide for newly created vertices.
+ * When new vertices are created then their height (z-coordinate) is
+ * usually computed from the existing triangles. In a situation where
+ * an extra triangulation with more accurate heights exists this
+ * extra triangulation cn be set als height guide triangulation. In
+ * this case the z-coordinates are computed from the triangles of
+ * the height guide triangulation.
  */
 	Fade_2D* pHeightGuideTriangulation;
 
@@ -191,6 +216,42 @@ public:
  */
 	double capAspectLimit;
 
+
+/** \brief gridVector
+ *
+ * When grid-meshing is used the grid is aligned to the \p gridVector.
+ * By default \p gridVector is axis aligned.
+ *
+ * \if SECTION_FADE25D
+ * \image html grid-mesh-angle.png "Grid Meshing along Vector2(1.0,0.3,0.0)"
+ * \image latex grid-mesh-angle.eps "Grid Meshing along Vector2(1.0,0.3,0.0)" width=7cm
+ * \else
+ * \image html grid-mesh-angle.png "Grid Meshing along Vector2(1.0,0.3)"
+ * \image latex grid-mesh-angle.eps "Grid Meshing along Vector2(1.0,0.3)" width=7cm
+ * \endif
+ */
+	Vector2 gridVector;
+
+/** \brief gridLength
+ *
+ * Set %gridLength > 0 to mesh large enough areas with grid points.
+ * Border areas and narrow stripes where a grid does not fit are
+ * automatically meshed using classic Delaunay methods. By default
+ * %gridLength=0 (off).
+ *
+ * @note The length of the diagonals in the grid is sqrt(2)*gridLength
+ * and the algorithm may automatically adapt the gridLength a bit such
+ * that the grid fits better into the shape.
+  * \image html grid-mesh.png "Grid Meshing axis aligned"
+ * \image latex grid-mesh.eps "Grid Meshing axis aligned" width=7cm
+ */
+	double gridLength;
+
+/** \brief Command
+ *
+ * A command for development, not for public use. Will vanish soon.
+ */
+	int command;
 };
 
 

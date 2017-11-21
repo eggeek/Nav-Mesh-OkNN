@@ -1,20 +1,19 @@
-// (c) 2010 Geom e.U. Bernhard Kornberger, Graz/Austria. All rights reserved.
+// Copyright (C) Geom Software e.U, Bernhard Kornberger, Graz/Austria
 //
-// This file is part of the Fade2D library. You can use it for your personal
-// non-commercial research. Licensees holding a commercial license may use this
-// file in accordance with the Commercial License Agreement provided
-// with the Software.
+// This file is part of the Fade2D library. The student license is free
+// of charge and covers personal non-commercial research. Licensees
+// holding a commercial license may use this file in accordance with
+// the Commercial License Agreement.
 //
-// This software is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING
-// THE WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
+// This software is provided AS IS with NO WARRANTY OF ANY KIND,
+// INCLUDING THE WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS
+// FOR A PARTICULAR PURPOSE.
 //
-// Please contact the author if any conditions of this licensing are not clear
-// to you.
+// Please contact the author if any conditions of this licensing are
+// not clear to you.
 //
 // Author: Bernhard Kornberger, bkorn (at) geom.at
 // http://www.geom.at
-
-
 
 #pragma once
 
@@ -30,9 +29,15 @@
 #include "MsgBase.h"
 #include "SegmentChecker.h"
 #include "testDataGenerators.h"
+#include "freeFunctions.h"
+
+
+
 
 #if GEOM_PSEUDO3D==GEOM_TRUE
 	#include "IsoContours.h"
+	#include "EfficientModel.h"
+	#include "CutAndFill.h"
 #endif
 
 
@@ -67,7 +72,7 @@ public:
 * saves memory but is not required.
 */
 
-	Fade_2D(unsigned numExpectedVertices=1000)
+	explicit Fade_2D(unsigned numExpectedVertices=1000)
 	{
 		initFade(numExpectedVertices);
 	}
@@ -79,14 +84,24 @@ public:
 
 /** \brief Checks if a triangulation is valid
 *
-* This debug method checks the validity of the data structure. If \e bCheckEmptyCircleProperty
-* is true, then (slow!) multiprecision arithmetic is used to re-check the empty circle property.
-* A debug string can be added as optional parameter msg. Don't call this method unless you
-* assume that something is wrong with the code.
+* Checks the validity of the data structure.
+*
+* \param bCheckEmptyCircleProperty specifies if (slow!) multiprecision
+* arithmetic shall be used to recheck the empty circle property
+* \param msg is a debug string that will be shown in terminal output
+* so that you know which checkValidity call currently runs.
+*
+* This method is thought for development purposes. Don't call it
+* method unless you assume that something is wrong with the code.
 */
+	bool checkValidity(bool bCheckEmptyCircleProperty,const std::string& msg) const;
 
-	bool checkValidity(bool bCheckEmptyCircleProperty,const std::string& msg="");
 
+/** \brief Statistics
+ *
+ * Prints mesh statistics to stdout.
+ */
+ 	void statistics(const std::string& s) const;
 
 /** \brief Draws the triangulation as postscript file.
 *
@@ -131,6 +146,21 @@ public:
 */
 
 	void remove(Point2* pVertex);
+
+
+/** \brief Compute the convex hull
+*
+*
+* @param bAllVertices determines if all convex hull points are returned
+* or if collinear ones shall be removed.
+* @param [out] vConvexHullPointsOut is used to return the convex hull
+* vertices in counterclockwise order. The start vertex is the leftmost
+* vertex. If more than one leftmost vertex exists, the bottommost of
+* them is the start vertex.
+*
+*/
+
+	void getConvexHull(bool bAllVertices,std::vector<Point2*>& vConvexHullPointsOut);
 
 
 
@@ -221,14 +251,32 @@ public:
 
 
 #if GEOM_PSEUDO3D==GEOM_TRUE
-/** \brief Compute the height (z-coordinate) of a certain point
+/** \brief Compute the height of a certain point
 *
-* If the coordinates (x,y) are inside the triangulation, this function computes
-* the height and returns true. If the (x,y) is outside, the function returns false.
+* Computes the height (z) at the coordinates \p x and \p y, assigns it
+* to heightOut and returns true if successful.
+*
+* \param [in] x,y are the input coordinates
+* \param [out] heightOut is the computed height
+* \param [in] pApproxT can be set to a nearby triangle. If unknown, use NULL.
+* \param [in] tolerance is by default 0, see below
+*
+* \note pApproxT is an optional parameter to speed up the search in
+* case that you know a nearby triangle. But point location if very
+* fast anyway and if you are not sure, using NULL is probably faster.
+*
+* \note Due to rounding errors your query point may lie slightly outside
+* the convex hull of the triangulation and in such a case the present
+* method would correctly return false. But you can use the optional
+* \p tolerance parameter (default: 0): If your query point is not
+* farther outside the convex hull than \p tolerance then the height
+* of the closest point of the convex hull is returned.
+*
+*
 *
 */
 
-	bool getHeight(double x,double y,double& height) const;
+	bool getHeight(double x,double y,double& heightOut,Triangle2* pApproxT=NULL,double tolerance=0) const;
 #endif
 
 /** \brief Delaunay refinement
@@ -272,10 +320,11 @@ public:
  *
  * @return the number of points in the triangulation
  *
- * @note if the returned number of points is smaller than the number of inserted points
- * then duplicate points have been inserted.
+ * @note Due to possibly duplicate input points the number of points is
+ * not stored somewhere but freshly computed in O(n) time. This is fast
+ * but you are adviced to avoid calling this method over-frequently in
+ * a loop. Duplicate point insertions count only once.
  */
-
 	size_t numberOfPoints() const;
 
 /** \brief Number of triangles
@@ -288,6 +337,8 @@ public:
 
 
 /** \brief Get pointers to all triangles
+*
+* This command fetches the existing triangles
 *
 * @param vAllTriangles is an empty vector of Triangle2 pointers.
 *
@@ -317,8 +368,9 @@ public:
 * @return the triangle that has the edge (p0,p1) or NULL if no such edge is present
 *
 * @note Recall the counter-clockwise enumeration of vertices in a
-* triangle. If (p0,p1) is used, one triangle adjacent to (p0,p1) is
-* returned, using (p1,p0) one gets the other adjacent triangle.
+* triangle. If (p0,p1) is used, the unique triangle with the CCW
+* oriented edge (p0,p1) is returned, using (p1,p0) one gets the
+* other adjacent triangle.
 */
 Triangle2* getAdjacentTriangle(Point2* p0,Point2* p1) const;
 
@@ -435,7 +487,7 @@ Triangle2* getAdjacentTriangle(Point2* p0,Point2* p1) const;
 * @param bVerbose is by default true and causes a warning if NULL is returned.
 * @return a pointer to the new Zone2 object (or NULL if zoneLoc!=ZL_GROW or no triangles exist)
 */
-	Zone2* createZone(const std::vector<ConstraintGraph2*> vConstraintGraphs,ZoneLocation zoneLoc,const Point2& startPoint,bool bVerbose=true);
+	Zone2* createZone(const std::vector<ConstraintGraph2*>& vConstraintGraphs,ZoneLocation zoneLoc,const Point2& startPoint,bool bVerbose=true);
 
 /** \brief Create a zone limited by a ConstraintGraph by growing from a start point
 *
@@ -513,6 +565,9 @@ Triangle2* getAdjacentTriangle(Point2* p0,Point2* p1) const;
 *
 * @return a pointer to the ConstraintSegment2 between p0 and p1 or NULL
 * if the segment is not a constraint edge.
+*
+* @note ConstraintSegment2s that have been splitted are dead. They are
+* not returned by this method.
 */
 	ConstraintSegment2* getConstraintSegment(Point2* p0,Point2* p1) const;
 
@@ -530,14 +585,14 @@ Triangle2* getAdjacentTriangle(Point2* p0,Point2* p1) const;
 *
 */
 
-	void writeObj(const std::string filename) const;
+	void writeObj(const std::string& filename) const;
 
 /** \brief Write a zone to an *.obj file
 *
 * Makes most sense in 2.5D but works also for 2D (all heights are set to zero then)
 *
 */
-	void writeObj(const std::string filename,Zone2* pZone) const;
+	void writeObj(const std::string& filename,Zone2* pZone) const;
 
 
 /** \brief Write the current triangulation to an *.obj file
@@ -576,6 +631,13 @@ void unsubscribe(MsgType msgType,MsgBase* pMsg);
 */
 
 	bool isConstraint(Point2* p0,Point2* p1) const;
+
+/** \brief Check if a vertex is a constraint vertex
+*
+* Returns whether the vertex \p pVtx belongs to a constraint edge.
+*
+*/
+	bool isConstraint(Point2* pVtx) const;
 
 /**
 *
@@ -687,88 +749,25 @@ void unsubscribe(MsgType msgType,MsgBase* pMsg);
 								bool bTurnEdgesIntoConstraints);
 
 
-	// A development function, not for public use
+	// Development functions, not for public use
+/// @private
 	void internal(int au,int fu,std::string s="");
+/// @private
+	Dt2* getImpl();
+/// @private
+	void setDev(const std::string& s,int ival,double dval);
+
 protected:
+/// @private
 	void initFade(unsigned numExpectedVertices);
+/// @private
 	Fade_2D(const Fade_2D&); // No copy constructor
+/// @private
 	Fade_2D& operator=(const Fade_2D&); // No assignment allowed
+/// @private
 	Dt2* pImpl;
 };
 
-/** \brief Fade2D version string
-* This method returns a version string
-*/
-CLASS_DECLSPEC
-std::string getFade2DVersion();
-/** \brief Get the major version number
-*/
-CLASS_DECLSPEC
-int getMajorVersionNumber();
-/** \brief Get the minor version number
-*/
-CLASS_DECLSPEC
-int getMinorVersionNumber();
-/** \brief Get the revision version number
-*/
-CLASS_DECLSPEC
-int getRevisionNumber();
-/** \brief Check if a RELEASE or a DEBUG version is used.
-*/
-CLASS_DECLSPEC
-bool isRelease();
-/** \brief Get the border edges of a set of triangles
- *
- * \param vT are the input triangles
- * \param vBorderSegments is used to return all segments of triangles
- * in vT which have only one adjacent triangle
-*/
-CLASS_DECLSPEC
-void getBorders(const std::vector<Triangle2*>& vT,std::vector<Segment2>& vBorderSegments);
-/** \brief Sort a vector of Segments
- *
- * The segments in vRing are re-aligned and sorted such that subsequent
- * segments join at the endpoints.
-*/
-CLASS_DECLSPEC
-bool sortRing(std::vector<Segment2>& vRing);
-
-
-// License type
-CLASS_DECLSPEC
-void setLic(
-	const std::string& l1,
-	const std::string& l2,
-	const std::string& dt,
-	const std::string& s1,
-	const std::string& s2_
-	);
-class Lic;
-Lic* getLic();
-
-
-/** \brief Read (x y) points
- *
- * Reads points from an ASCII file. Expected file format: Two
- * coordinates (x y) per line, whitespace separated.
- *
- * \cond SECTION_FADE25D
- * The z coordinate is set to 0.
- * \endcond
-*/
-CLASS_DECLSPEC
-bool readXY(const char* filename,std::vector<Point2>& vPointsOut);
-
-#if GEOM_PSEUDO3D==GEOM_TRUE
-/** \brief Read (x y z) points
- *
- * Reads points from an ASCII file. Expected file format: Three
- * coordinates (x y z) per line, whitespace separated.
-*/
-CLASS_DECLSPEC
-bool readXYZ(const char* filename,std::vector<Point2>& vPointsOut);
-
-#endif
 
 } // (namespace)
 

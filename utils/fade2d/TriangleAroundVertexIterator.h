@@ -16,6 +16,7 @@
 
 
 #pragma once
+#include "common.h"
 #include "Point2.h"
 #include "Triangle2.h"
 
@@ -63,9 +64,16 @@ public:
 *
 * The iterator will start at an arbitrary triangle
 */
-	TriangleAroundVertexIterator(Point2* pPnt_):pPnt(pPnt_),pTr(pPnt_->getIncidentTriangle()),pSavedTr(NULL)
+	explicit TriangleAroundVertexIterator(Point2* pPnt_):pPnt(pPnt_),pTr(pPnt_->getIncidentTriangle()),pSavedTr(NULL)
 	{
+		if(pTr==NULL)
+		{
+			std::cerr<<"TriangleAroundVertexIterator::TriangleAroundVertexIterator(), created from an invalid point"<<std::endl;
+			FadeException fadeEx;
+			throw fadeEx;
+		}
 		assert(pTr!=NULL);
+
 	}
 /** \brief Constructor
 *
@@ -94,14 +102,19 @@ public:
 */
 	TriangleAroundVertexIterator& operator++()
 	{
+//std::cout<<"tavi++"<<std::endl;
 		if(pTr==NULL)
 		{
+//std::cout<<"pTr==NULL, calling loop"<<std::endl;
 			loop();
 			return *this;
 		}
+
 		int ccwIdx=inc1(pTr->getIntraTriangleIndex(pPnt));
+//std::cout<<"ccwIdx="<<ccwIdx<<"now swapping saved="<<pSavedTr<<", pTr="<<pTr<<std::endl;;
 		std::swap(pSavedTr,pTr);
 		pTr=pSavedTr->getOppositeTriangle(ccwIdx);
+//std::cout<<"and pTr is now the opposite triangle of pSavedTr="<<*pSavedTr<<", namely "<<pTr<<std::endl;
 
 		return *this;
 	}
@@ -186,13 +199,12 @@ protected:
 		enum DIRECTION{DIRECTION_NONE,DIRECTION_BACK,DIRECTION_FWD};
 		DIRECTION direction(DIRECTION_NONE);
 
-
 		int axisIndex=pSavedTr->getIntraTriangleIndex(pPnt);
+
 		if(pSavedTr->getOppositeTriangle(inc2(axisIndex))!=NULL)
 		{
 			direction=DIRECTION_BACK;
 		}
-
 		if(pSavedTr->getOppositeTriangle(inc1(axisIndex))!=NULL)
 		{
 			assert(direction==DIRECTION_NONE);
@@ -201,7 +213,6 @@ protected:
 		pTr=pSavedTr;
 		if(direction==DIRECTION_FWD) while(*operator++()!=NULL); // fast forward
 		if(direction==DIRECTION_BACK) while(*operator--()!=NULL); // rewind
-
 		pTr=pSavedTr;
 	}
 };

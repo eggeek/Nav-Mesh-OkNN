@@ -32,10 +32,10 @@ struct License
 	{
 	GEOM_LIC::setLic(
 		"[NonCommercialResearch]",
-		"[LicType,student],[2D,1e6],[25D,5e4],[MeshGen,5e4],[SegCheck,5e4]",
+		"[LicType,student],[2D,1e6],[25D,5e4],[MeshGen,5e4],[SegCheck,5e4],[CutFill,1e4],[CutFill,1e4]",
 		"[LF:F/C]",
 		"5303992d",
-		"6e923f87");
+		"417955c7");
 	}
 };
 License lic;

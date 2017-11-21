@@ -1,15 +1,16 @@
-// (c) 2010 Geom e.U. Bernhard Kornberger, Graz/Austria. All rights reserved.
+// Copyright (C) Geom Software e.U, Bernhard Kornberger, Graz/Austria
 //
-// This file is part of the Fade2D library. You can use it for your personal
-// non-commercial research. Licensees holding a commercial license may use this
-// file in accordance with the Commercial License Agreement provided
-// with the Software.
+// This file is part of the Fade2D library. The student license is free
+// of charge and covers personal non-commercial research. Licensees
+// holding a commercial license may use this file in accordance with
+// the Commercial License Agreement.
 //
-// This software is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING
-// THE WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
+// This software is provided AS IS with NO WARRANTY OF ANY KIND,
+// INCLUDING THE WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS
+// FOR A PARTICULAR PURPOSE.
 //
-// Please contact the author if any conditions of this licensing are not clear
-// to you.
+// Please contact the author if any conditions of this licensing are
+// not clear to you.
 //
 // Author: Bernhard Kornberger, bkorn (at) geom.at
 // http://www.geom.at
@@ -63,10 +64,18 @@
 
 
 
-// NAMESPACE
+// NAMESPACE (for Doxygen)
 #if GEOM_PSEUDO3D==GEOM_TRUE
+/**
+ * @namespace GEOM_FADE25D
+ * GEOM_FADE25D is the namespace of the 2.5D version of Fade
+ */
 	namespace GEOM_FADE25D {
 #elif GEOM_PSEUDO3D==GEOM_FALSE
+/**
+ * @namespace GEOM_FADE2D
+ * GEOM_FADE2D is the namespace of the 2D version of Fade
+ */
 	namespace GEOM_FADE2D {
 #else
 	#error GEOM_PSEUDO3D is not defined
@@ -104,6 +113,14 @@ enum Orientation2
 	ORIENTATION2_CW
 };
 
+enum Orientation3
+{
+	ORIENTATION3_COPLANAR,
+	ORIENTATION3_POSITIVE,
+	ORIENTATION3_NEGATIVE
+};
+
+
 template<class T_PTR> struct func_ltDerefPtr
 {
 	bool operator()(T_PTR p0,T_PTR p1) const {return *p0<*p1;}
@@ -116,7 +133,7 @@ struct FadeException: public std::exception
 {
   virtual const char* what() const throw()
   {
-		return "\n  Fade BUG: This should never happen, sorry. Please report this \n  incident and it will be fixed quickly: bkorn@geom.at";
+		return "\n  FADE EXCEPTION due to a bug _or_ wrong usage of Fade. If you think it is a \n  bug then please report this incident and it will be fixed quickly: bkorn@geom.at";
   }
 };
 struct FadeLicenseException: public std::exception

@@ -15,11 +15,11 @@
 // Author: Bernhard Kornberger, bkorn (at) geom.at
 // http://www.geom.at
 
+
 #pragma once
-#include <string>
-
-
 #include "common.h"
+#include "Triangle2.h"
+
 #if GEOM_PSEUDO3D==GEOM_TRUE
 	namespace GEOM_FADE25D {
 #elif GEOM_PSEUDO3D==GEOM_FALSE
@@ -29,16 +29,22 @@
 #endif
 
 
-/**  \brief Timer
-*
-* Call the timer function with a certain string to start time
-* measurement. Call it a second time with the same string to
-* finish the time measurement.
-*
-* @return -1 when the timer is started or the elapsed time in
-* seconds when the timer is stopped.
+/** \brief User defined predicate
+ *
+ * \sa http://www.geom.at/remove-border-triangles/
 */
-CLASS_DECLSPEC
-double timer(const std::string& str);
+class CLASS_DECLSPEC UserPredicateT
+{
+public:
+	UserPredicateT()
+	{}
 
-} // (namespace)
+	virtual ~UserPredicateT()
+	{
+	}
+
+	virtual bool operator()(const Triangle2*)=0;
+};
+
+
+} // NAMESPACE

@@ -1,15 +1,16 @@
-// (c) 2010 Geom e.U. Bernhard Kornberger, Graz/Austria. All rights reserved.
+// Copyright (C) Geom Software e.U, Bernhard Kornberger, Graz/Austria
 //
-// This file is part of the Fade2D library. You can use it for your personal
-// non-commercial research. Licensees holding a commercial license may use this
-// file in accordance with the Commercial License Agreement provided
-// with the Software.
+// This file is part of the Fade2D library. The student license is free
+// of charge and covers personal non-commercial research. Licensees
+// holding a commercial license may use this file in accordance with
+// the Commercial License Agreement.
 //
-// This software is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING
-// THE WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
+// This software is provided AS IS with NO WARRANTY OF ANY KIND,
+// INCLUDING THE WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS
+// FOR A PARTICULAR PURPOSE.
 //
-// Please contact the author if any conditions of this licensing are not clear
-// to you.
+// Please contact the author if any conditions of this licensing are
+// not clear to you.
 //
 // Author: Bernhard Kornberger, bkorn (at) geom.at
 // http://www.geom.at
@@ -36,12 +37,15 @@
 #endif
 
 
-/** \brief Postscript writer
-*
+/** \brief Visualizer2 is a general Postscript writer. It draws the
+ * objects Point2, Segment2, Triangle2, Circle2 and Label.
+ *
+* \sa http://www.geom.at/example2-traversing/
 * \image html visualizer.jpg "Figure 1: Example output of the Visualizer"
 * \image latex visualizer.eps "Example output of the Visualizer" width=12cm
 *
-* Visualizer2 is a generally usable postscript writer. It supports Point2, Segment2, Circle2, Label and Color
+*
+
 */
 class Visualizer2
 {
@@ -53,7 +57,7 @@ public:
 * @param filename_ is the name of the postscript file to be written
 */
 	CLASS_DECLSPEC
-	Visualizer2(const std::string filename_);
+	explicit Visualizer2(const std::string& filename_);
 
 	CLASS_DECLSPEC
 	~Visualizer2();
@@ -63,6 +67,16 @@ public:
 */
 	CLASS_DECLSPEC
 	void addObject(const Segment2& seg,const Color& c);
+/** \brief Add a vector of Point2 objects to the visualization
+*/
+	CLASS_DECLSPEC
+	void addObject(const std::vector<Point2>& vPoints,const Color& c);
+
+/** \brief Add a vector of Point2* to the visualization
+*/
+	CLASS_DECLSPEC
+	void addObject(const std::vector<Point2*>& vPoints,const Color& c);
+
 
 /** \brief Add a vector of Segment2 objects to the visualization
 */
@@ -90,7 +104,7 @@ public:
 /** \brief Add a Triangle2* vector to the visualization
 */
 	CLASS_DECLSPEC
-	void addObject(const std::vector<Triangle2*> vT,const Color& c);
+	void addObject(const std::vector<Triangle2*>& vT,const Color& c);
 
 /** \brief Add a Label object to the visualization
 */
@@ -127,18 +141,19 @@ protected:
 	double scaledDouble(const double &d);
 	void changeColor(float r,float g,float b,float linewidth,bool bFill);
 	void changeColor(const Color& c);
-	void writeHeader(std::string title);
+	void writeHeader(const std::string& title);
 	void writeFooter();
 	void writeLabel(Label l);
 	void writeLine(const Point2& pSource,const Point2& pTarget);
-	void writeTriangle(const Triangle2* pT,bool bFill_);
+	void writeTriangle(const Triangle2* pT,bool bFill_,double width);
 	void writePoint(Point2& p1_,float size);
-	void writeCircle(const Point2& p1_,double radius);
+	void writeCircle(const Point2& p1_,double radius,bool bFill);
 	void periodicStroke();
 	void setRange();
 	Color lastColor;
 	std::string filename;
 	std::vector<std::string> vHeaderLines;
+	bool bFileClosed;
 };
 
 
