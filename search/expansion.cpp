@@ -85,6 +85,10 @@ double get_h_value(const Point& root, Point goal,
     }
 }
 
+double get_knn_h_value(const Point& root, const Point& l, const Point& r) {
+  return root.distance_to_seg(l, r);
+}
+
 // Internal binary search helper.
 // All indices must be within the range [0, 2 * N - 1] to make binary search
 // easier. You can normalise an index with this macro:
