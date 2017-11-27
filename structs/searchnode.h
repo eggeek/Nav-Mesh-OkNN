@@ -31,6 +31,13 @@ struct SearchNode
 
     double f, g;
 
+    bool reached = false;
+    int goal_id = -1;
+
+    SearchNode() {}
+    SearchNode(SearchNode* p, int rid, Point l, Point r, int lv, int rv, int next_poly, double f, double g):
+      parent(p), root(rid), left(l), right(r), left_vertex(lv), right_vertex(rv), next_polygon(next_poly), f(f), g(g) { }
+
     // Comparison.
     // Always take the "smallest" search node in a priority queue.
     bool operator<(const SearchNode& other) const
@@ -59,6 +66,9 @@ struct SearchNode
                       << sn.right << "]], f=" << sn.f << ", g=" << sn.g
                       << ", poly=" << sn.next_polygon << ")";
     }
+
+    void set_reached() { reached = true; }
+    void set_goal_id(int gid) { goal_id = gid; }
 };
 
 typedef SearchNode* SearchNodePtr;
