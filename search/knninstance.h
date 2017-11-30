@@ -1,5 +1,6 @@
 #pragma once
 #include "searchnode.h"
+#include "searchinstance.h"
 #include "successor.h"
 #include "mesh.h"
 #include "point.h"
@@ -11,20 +12,11 @@
 
 namespace polyanya {
 
-template<typename T, typename Compare = std::greater<T> >
-struct PointerComp {
-    bool operator()(const T* x, const T* y) const {
-        return Compare()(*x, *y);
-    }
-};
-
-typedef Mesh* MeshPtr;
-
 class KnnInstance {
     typedef std::priority_queue<SearchNodePtr, std::vector<SearchNodePtr>,
                                 PointerComp<SearchNode> > pq;
     private:
-        int K;
+        int K = 1;
         warthog::mem::cpool* node_pool;
         MeshPtr mesh;
         Point start;
@@ -56,8 +48,6 @@ class KnnInstance {
             search_successors = new Successor [mesh->max_poly_sides + 2];
             search_nodes_to_push = new SearchNode [mesh->max_poly_sides + 2];
             node_pool = new warthog::mem::cpool(sizeof(SearchNode));
-            end_polygons.resize(mesh->mesh_polygons.size());
-            for (int i=0; i<(int)mesh->mesh_polygons.size(); i++) end_polygons[i].clear();
             init_root_pruning();
         }
 
@@ -75,6 +65,7 @@ class KnnInstance {
             search_id++;
             open_list = pq();
             final_nodes = std::vector<SearchNodePtr>();
+            reached.clear();
             nodes_generated = 0;
             nodes_pushed = 0;
             nodes_popped = 0;

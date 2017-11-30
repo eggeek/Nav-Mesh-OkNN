@@ -72,25 +72,34 @@ struct Point
         return std::sqrt(this->distance_sq(other));
     }
 
+    double dot(const Point& other) const {
+      return this->x * other.x + this->y * other.y;
+    }
+
+    double normal() {
+      return std::sqrt(this->x * this->x + this->y * this->y);
+    }
+
+    double normal2() {
+      return this->x * this->x + this->y * this->y;
+    }
+
     double distance_to_seg(const Point& l, const Point& r) const {
-      Point rl = r - l;
-      if (std::abs(rl.x) < EPSILON && std::abs(rl.y) < EPSILON) {
-        // distance to a point
+      Point b = r - l, p = *this - l;
+      if (std::abs(b.x) < EPSILON && std::abs(b.y) < EPSILON)
         return this->distance(l);
-      }
-      Point pl = (*this) - l;
-      double t = (pl.x * rl.x + pl.y * rl.y) / (rl.x*rl.x + rl.y*rl.y);
+      double t = b.dot(p) / b.normal2();
       Point d;
       if (t < 0) {
         d = (*this) - l;
       }
-      else if (t > 1.0) {
+      else if (t > 1) {
         d = (*this) - r;
       }
       else {
-        d = (*this) - (l + t * rl);
+        d = (*this) - (l + t * b);
       }
-      return std::sqrt(d.x*d.x + d.y+d.y);
+      return d.normal();
     }
 };
 

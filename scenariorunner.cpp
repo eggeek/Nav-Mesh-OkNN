@@ -94,7 +94,7 @@ int main(int argc, char* argv[])
         return 1;
     }
 
-    string temp = argv[optind];;
+    string temp = argv[optind];
     ifstream meshfile(temp);
     if (!meshfile.is_open())
     {

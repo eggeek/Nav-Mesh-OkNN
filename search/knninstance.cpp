@@ -1,4 +1,3 @@
-//#pragma once
 #include "knninstance.h"
 #include "expansion.h"
 #include "geometry.h"
@@ -90,7 +89,7 @@ int KnnInstance::succ_to_node(
     const int next_polygon = P[succ.poly_left_ind];
     if (next_polygon == -1) continue;
     // no end_polygon in knn
-    if (mesh->mesh_polygons[next_polygon].is_one_way) continue;
+    if (mesh->mesh_polygons[next_polygon].is_one_way && end_polygons[next_polygon].empty()) continue;
     const int left_vertex = V[succ.poly_left_ind];
     const int right_vertex = succ.poly_left_ind? V[succ.poly_left_ind - 1]: V.back();
 
@@ -139,6 +138,8 @@ int KnnInstance::succ_to_node(
 }
 
 void KnnInstance::set_end_polygon() {
+  end_polygons.resize(mesh->mesh_polygons.size());
+  for (int i=0; i<(int)mesh->mesh_polygons.size(); i++) end_polygons[i].clear();
   for (int i=0; i<(int)goals.size(); i++) {
     int poly_id = get_point_location(goals[i]).poly1;
     assert(poly_id < (int)end_polygons.size());
@@ -167,6 +168,14 @@ void KnnInstance::gen_initial_nodes() {
         final_node->f += start.distance(goal);
         final_node->set_reached();
         final_node->set_goal_id(gid);
+
+        #ifndef NDEBUG
+        if (verbose) {
+          std::cerr << "generating init node: ";
+          print_node(final_node, std::cerr);
+          std::cerr << std::endl;
+        }
+        #endif
         open_list.push(final_node);
         nodes_generated++;
         nodes_pushed++;
@@ -226,6 +235,13 @@ void KnnInstance::gen_initial_nodes() {
         nodes_generated++;
       }
       break;
+    case PointLocation::ON_MESH_BORDER:
+      {
+        SearchNodePtr lazy = get_lazy(pl.poly1, -1, -1);
+        push_lazy(lazy);
+        nodes_generated++;
+      }
+      break;
     case PointLocation::ON_EDGE:
       {
         SearchNodePtr lazy1 = get_lazy(pl.poly2, pl.vertex1, pl.vertex2);
@@ -245,6 +261,7 @@ void KnnInstance::gen_initial_nodes() {
         }
       }
       break;
+
     default:
       assert(false);
       break;
@@ -295,12 +312,16 @@ int KnnInstance::search() {
         }
       }
     }
-    // TODO: push node
     int num_nodes = 1;
     search_nodes_to_push[0] = *node;
     // Intermediate pruning
     do {
       SearchNode cur = search_nodes_to_push[0];
+      int nxt_poly = cur.next_polygon;
+      if (!end_polygons[nxt_poly].empty()) {
+        const Point& nxt_root = cur.root == -1? start: mesh->mesh_vertices[cur.root].p;
+        gen_final_nodes(&cur, nxt_root);
+      }
       int num_succ = get_successors(cur, start, *mesh, search_successors);
       successor_calls++;
       num_nodes = succ_to_node(&cur, search_successors, num_succ, search_nodes_to_push);
@@ -322,6 +343,7 @@ int KnnInstance::search() {
         #endif
       }
     } while (num_nodes == 1); // if num_nodes == 0, we still break
+
     for (int i = 0; i < num_nodes; i++) {
       // update h value before we push
       const SearchNodePtr nxt = new (node_pool->allocate()) SearchNode(search_nodes_to_push[i]);
@@ -331,7 +353,7 @@ int KnnInstance::search() {
       #ifndef NDEBUG
       if (verbose) {
         std::cerr << "\tpushing: ";
-        print_node(n, std::cerr);
+        print_node(nxt, std::cerr);
         std::cerr << std::endl;
       }
       #endif
@@ -355,7 +377,7 @@ void KnnInstance::print_node(SearchNodePtr node, std::ostream& outfile) {
 }
 
 void KnnInstance::get_path_points(std::vector<Point>& out, int k) {
-  if (k > (int)goals.size()) return;
+  if (k >= (int)goals.size()) return;
   assert(final_nodes.size() == goals.size());
   out.clear();
   out.push_back(goals[k]);
@@ -401,7 +423,7 @@ void KnnInstance::deal_final_node(const SearchNodePtr node) {
   }();
 
   assert(node->goal_id != -1);
-  assert(reached.find(node->goal_id) == reached.end() || reached[node->goal_id] < node->f);
+  //assert(reached.find(node->goal_id) == reached.end() || reached[node->goal_id] < node->f);
 
   if (reached.find(node->goal_id) == reached.end()) {
     int end_polygon = node->next_polygon;
@@ -421,6 +443,13 @@ void KnnInstance::gen_final_nodes(const SearchNodePtr node, const Point& rootPoi
       final_node->set_reached();
       final_node->set_goal_id(gid);
       final_node->f = final_node->g + get_h_value(rootPoint, goal, node->left, node->right);
+      #ifndef NDEBUG
+      if (verbose) {
+        std::cerr << "\tpushing: ";
+        print_node(final_node, std::cerr);
+        std::cerr << std::endl;
+      }
+      #endif
       open_list.push(final_node);
       nodes_generated++;
       nodes_pushed++;
