@@ -2,16 +2,24 @@
 #include "expansion.h"
 #include "mesh.h"
 #include "geometry.h"
+#include "scenario.h"
+#include "searchinstance.h"
+#include "knninstance.h"
 #include <stdio.h>
 #include <sstream>
 #include <iomanip>
 #include <time.h>
 #include <random>
+#include <iostream>
+#include <fstream>
 
 using namespace std;
 using namespace polyanya;
 
 Mesh m;
+Point tp;
+SearchInstance* si;
+KnnInstance* ki;
 
 const int MIN_X = 0, MAX_X = 1024, MIN_Y = 0, MAX_Y = 768;
 const int MAX_ITER = 10000;
@@ -20,9 +28,21 @@ uniform_real_distribution<double> unif(-10, 10);
 default_random_engine engine;
 #define rand_point() {unif(engine), unif(engine)}
 
-void test_io()
+void test_io(int argc, char* argv[])
 {
-    m.print(cout);
+  m = Mesh(cin);
+  if (argc == 3)
+  {
+      stringstream ss;
+      ss << argv[1] << " " << argv[2];
+      ss >> tp.x >> tp.y;
+  }
+  else
+  {
+      tp = {0, 0};
+  }
+  cout << "using point " << tp << endl;
+  m.print(cout);
 }
 
 void test_containment(Point test_point)
@@ -130,28 +150,123 @@ void test_h_value_asserts()
     }
 }
 
-int main(int argc, char* argv[])
-{
-    m = Mesh(cin);
-    Point tp;
-    if (argc == 3)
-    {
-        stringstream ss;
-        ss << argv[1] << " " << argv[2];
-        ss >> tp.x >> tp.y;
-    }
-    else
-    {
-        tp = {0, 0};
-    }
-    cout << "using point " << tp << endl;
-    // test_io();
-    // test_containment(tp);
-    test_point_lookup_correct();
-    benchmark_point_lookup_average();
-    benchmark_point_lookup_single(tp);
-    test_projection_asserts();
-    test_reflection_asserts();
-    test_h_value_asserts();
-    return 0;
+void get_path_knn(int idx, int top=0) {
+  vector<Point> path;
+  ki->get_path_points(path, top);
+  const int n = (int) path.size();
+  cout << "path " << idx <<"; ";
+  for (int i=0; i<n; i++) {
+    cout << path[i];
+    if (i != n-1) cout << " ";
+  }
+  cout << endl;
+}
+
+void get_path_si(int idx) {
+  vector<Point> path;
+  si->get_path_points(path);
+  const int n = (int) path.size();
+  cout << "path " << idx <<"; ";
+  for (int i=0; i<n; i++) {
+    cout << path[i];
+    if (i != n-1) cout << " ";
+  }
+  cout << endl;
+}
+
+void test_run_scenario(int idx, Scenario scen) {
+  si->verbose = false;
+  si->set_start_goal(scen.start, scen.goal);
+  si->search();
+  get_path_si(idx);
+  cout << "finish polyanya search, cost: " << si->get_search_micro() << "ms" << endl;
+
+  ki->verbose = false;
+  ki->set_start_goal(scen.start, {scen.goal});
+  ki->search();
+  get_path_knn(idx);
+  cout << "finish knn search, cost: " << ki->get_search_micro() << "ms" << endl;
+  if (true) {
+    assert(abs(si->get_cost() - ki->get_cost(0)) < EPSILON);
+    printf("---------------------------------------------------------------------\n");
+    printf("%10s,%10s,%10s,%10s,%10s,%10s,%10s,%10s\n","index", "time", "succ call",
+        "node gen", "node push", "node pop", "node prune", "cost");
+    printf("%10d,%10.6lf,%10d,%10d,%10d,%10d,%10d,%10.6lf\n",
+        idx, si->get_search_micro(), si->successor_calls, si->nodes_generated,
+        si->nodes_pushed, si->nodes_popped, si->nodes_pruned_post_pop, si->get_cost());
+    printf("%10d,%10.6lf,%10d,%10d,%10d,%10d,%10d,%10.6lf\n",
+        idx, ki->get_search_micro(), ki->successor_calls, ki->nodes_generated,
+        ki->nodes_pushed, ki->nodes_popped, ki->nodes_pruned_post_pop, ki->get_cost(0));
+    printf("---------------------------------------------------------------------\n");
+  }
+}
+
+void test_polyanya(int idx,Scenario scen) {
+  si->verbose = true;
+  si->set_start_goal(scen.start, scen.goal);
+  si->search();
+  get_path_si(idx);
+}
+
+void test_knn(int idx, Scenario scen) {
+  ki->verbose = true;
+  ki->set_start_goal(scen.start, {scen.goal});
+  ki->search();
+  get_path_knn(idx);
+  if (false) {
+    printf("---------------------------------------------------------------------\n");
+    printf("%10d,%10.6lf,%10d,%10d,%10d,%10d,%10d,%10.6lf\n",
+        idx, ki->get_search_micro(), ki->successor_calls, ki->nodes_generated,
+        ki->nodes_pushed, ki->nodes_popped, ki->nodes_pruned_post_pop, ki->get_cost(0));
+    printf("---------------------------------------------------------------------\n");
+  }
+}
+
+void test_search() {
+  string mesh_path = "/Users/eggeek/project/nav-mesh-ornn/meshes/aurora.mesh";
+  string scenario_path = "/Users/eggeek/project/nav-mesh-ornn/scenarios/aurora.scen";
+  ifstream scenfile(scenario_path);
+  ifstream meshfile(mesh_path);
+
+  MeshPtr mp = new Mesh(meshfile);
+  meshfile.close();
+  si = new SearchInstance(mp);
+  ki = new KnnInstance(mp);
+  vector<Scenario> scenarios;
+  load_scenarios(scenfile, scenarios);
+  //int i = 3;
+  //test_polyanya(i, scenarios[i]);
+  //test_knn(i, scenarios[i]);
+  //test_run_scenario(i, scenarios[i]);
+  for (int i = 0; i < (int) scenarios.size(); i++) {
+    //if (i == 0) break;
+    test_run_scenario(i, scenarios[i]);
+  }
+}
+
+bool is_eq(double lhs, double rhs) {
+  return (abs(lhs - rhs) < EPSILON);
+}
+
+void test_get_knn_h_value() {
+  printf("calc:%.6lf, expected:%.6lf\n", get_knn_h_value({1, 1}, {0, 0}, {0, 2}), 1.0);
+  printf("calc:%.6lf, expected:%.6lf\n", get_knn_h_value({0, 0}, {0, 0}, {0, 2}), 0.0);
+  printf("calc:%.6lf, expected:%.6lf\n", get_knn_h_value({-1.0, 0}, {0, 0}, {0, 2}), 1.0);
+  printf("calc:%.6lf, expected:%.6lf\n", get_knn_h_value({-1.0, 1.0}, {0, 0}, {0, 2}), 1.0);
+  printf("calc:%.6lf, expected:%.6lf\n", get_knn_h_value({-1.0, 1.0}, {0, 0}, {0, 0}), sqrt(2.0));
+  printf("calc:%.6lf, expected:%.6lf\n", get_knn_h_value({-1.0, 1.0}, {0, 0}, {2, 0}), sqrt(2.0));
+}
+
+int main() {
+  //test_get_knn_h_value();
+  test_search();
+  // test_io(argc, argv);
+  // test_containment(tp);
+  // test_point_lookup_correct();
+  // benchmark_point_lookup_average();
+  // benchmark_point_lookup_single(tp);
+  // test_projection_asserts();
+  // test_reflection_asserts();
+  // test_h_value_asserts();
+  return 0;
 }
