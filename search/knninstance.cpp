@@ -295,6 +295,7 @@ int KnnInstance::search() {
     if (node->reached) {
       deal_final_node(node);
       if ((int)final_nodes.size() == K) break;
+      continue;
     }
     const int root = node->root;
     if (root != -1) {
@@ -317,14 +318,10 @@ int KnnInstance::search() {
     // Intermediate pruning
     do {
       SearchNode cur = search_nodes_to_push[0];
-      int nxt_poly = cur.next_polygon;
-      if (!end_polygons[nxt_poly].empty()) {
-        const Point& nxt_root = cur.root == -1? start: mesh->mesh_vertices[cur.root].p;
-        gen_final_nodes(&cur, nxt_root);
-      }
       int num_succ = get_successors(cur, start, *mesh, search_successors);
       successor_calls++;
       num_nodes = succ_to_node(&cur, search_successors, num_succ, search_nodes_to_push);
+      //break;
       if (num_nodes == 1) { // we should continue
         // Did we turn?
         if (cur.g != search_nodes_to_push[0].g) {
@@ -333,6 +330,12 @@ int KnnInstance::search() {
           search_nodes_to_push[0].parent = node;
           node = new (node_pool->allocate()) SearchNode(search_nodes_to_push[0]);
           nodes_generated++;
+        }
+        if (!end_polygons[search_nodes_to_push[0].next_polygon].empty()) {
+          const SearchNodePtr nxt = new (node_pool->allocate()) SearchNode(search_nodes_to_push[0]);
+          nxt->parent = node;
+          const Point& nxt_root = nxt->root == -1? start: mesh->mesh_vertices[nxt->root].p;
+          gen_final_nodes(nxt, nxt_root);
         }
         #ifndef NDEBUG
         if (verbose) {
@@ -409,8 +412,7 @@ void KnnInstance::deal_final_node(const SearchNodePtr node) {
       const Point& root = root_to_point(node->root);
       const Point root_goal = goal - root;
       // If root-left-goal is not CW, use left.
-      if (root_goal * (node->left - root) < -EPSILON)
-      {
+      if (root_goal * (node->left - root) < -EPSILON) {
           return node->left_vertex;
       }
       // If root-right-goal is not CCW, use right.

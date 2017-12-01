@@ -20,6 +20,7 @@ Mesh m;
 Point tp;
 SearchInstance* si;
 KnnInstance* ki;
+vector<Scenario> scenarios;
 
 const int MIN_X = 0, MAX_X = 1024, MIN_Y = 0, MAX_Y = 768;
 const int MAX_ITER = 10000;
@@ -223,18 +224,8 @@ void test_knn(int idx, Scenario scen) {
 }
 
 void test_search() {
-  string mesh_path = "/Users/eggeek/project/nav-mesh-ornn/meshes/aurora.mesh";
-  string scenario_path = "/Users/eggeek/project/nav-mesh-ornn/scenarios/aurora.scen";
-  ifstream scenfile(scenario_path);
-  ifstream meshfile(mesh_path);
 
-  MeshPtr mp = new Mesh(meshfile);
-  meshfile.close();
-  si = new SearchInstance(mp);
-  ki = new KnnInstance(mp);
-  vector<Scenario> scenarios;
-  load_scenarios(scenfile, scenarios);
-  //int i = 3;
+  //int i = 2965;
   //test_polyanya(i, scenarios[i]);
   //test_knn(i, scenarios[i]);
   //test_run_scenario(i, scenarios[i]);
@@ -257,9 +248,35 @@ void test_get_knn_h_value() {
   printf("calc:%.6lf, expected:%.6lf\n", get_knn_h_value({-1.0, 1.0}, {0, 0}, {2, 0}), sqrt(2.0));
 }
 
-int main() {
+void load_data() {
+  string mesh_path = "/Users/eggeek/project/nav-mesh-ornn/meshes/aurora-merged.mesh";
+  string scenario_path = "/Users/eggeek/project/nav-mesh-ornn/scenarios/aurora.scen";
+  ifstream scenfile(scenario_path);
+  ifstream meshfile(mesh_path);
+
+  MeshPtr mp = new Mesh(meshfile);
+  meshfile.close();
+  si = new SearchInstance(mp);
+  ki = new KnnInstance(mp);
+  load_scenarios(scenfile, scenarios);
+}
+
+int main(int argv, char* args[]) {
+  load_data();
+  //test_knn(2965, scenarios[2965]);
+  if (argv == 3) {
+    string t = string(args[1]);
+    int idx = std::atoi(args[2]);
+    if (t == "knn") {
+      test_knn(idx, scenarios[idx]);
+    } else {
+      test_polyanya(idx, scenarios[idx]);
+    }
+  }
+  else {
+    test_search();
+  }
   //test_get_knn_h_value();
-  test_search();
   // test_io(argc, argv);
   // test_containment(tp);
   // test_point_lookup_correct();
