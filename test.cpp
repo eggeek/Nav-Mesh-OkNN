@@ -29,22 +29,6 @@ uniform_real_distribution<double> unif(-10, 10);
 default_random_engine engine;
 #define rand_point() {unif(engine), unif(engine)}
 
-void test_io(int argc, char* argv[])
-{
-  m = Mesh(cin);
-  if (argc == 3)
-  {
-      stringstream ss;
-      ss << argv[1] << " " << argv[2];
-      ss >> tp.x >> tp.y;
-  }
-  else
-  {
-      tp = {0, 0};
-  }
-  cout << "using point " << tp << endl;
-  m.print(cout);
-}
 
 void test_containment(Point test_point)
 {
@@ -235,10 +219,6 @@ void test_search() {
   }
 }
 
-bool is_eq(double lhs, double rhs) {
-  return (abs(lhs - rhs) < EPSILON);
-}
-
 void test_get_knn_h_value() {
   printf("calc:%.6lf, expected:%.6lf\n", get_knn_h_value({1, 1}, {0, 0}, {0, 2}), 1.0);
   printf("calc:%.6lf, expected:%.6lf\n", get_knn_h_value({0, 0}, {0, 0}, {0, 2}), 0.0);
@@ -261,6 +241,49 @@ void load_data() {
   load_scenarios(scenfile, scenarios);
 }
 
+void test_knn_multi_goals() {
+  Point start = scenarios[0].start;
+  vector<Point> gs;
+  for (int i=0; i<(int)scenarios.size(); i++) {
+    gs.push_back(scenarios[i].goal);
+    ki->verbose = false;
+    ki->set_start_goal(start, {gs.back()});
+    int cnt1 = ki->search();
+    si->verbose = false;
+    si->set_start_goal(start, gs.back());
+    int cnt2 = (int)si->search();
+    if (cnt1 == 0) {
+      if (cnt2) assert(false);
+    } else {
+      double diff = ki->get_cost(0) - si->get_cost();
+      if (abs(diff) > EPSILON) {
+        printf("got wrong case.\n");
+        assert(false);
+      }
+    }
+  }
+  int top = 3;
+  ki->verbose = false;
+  ki->set_K(top);
+  ki->set_start_goal(start, gs);
+  int actual = ki->search();
+  si->verbose = false;
+  for (int i=0; i<actual; i++) {
+    vector<Point> out;
+    ki->get_path_points(out, i);
+    Point goal = out.back();
+    si->set_start_goal(start, goal);
+    si->search();
+    double diff = ki->get_cost(i) - si->get_cost();
+    if (abs(diff) > EPSILON) {
+      printf("got wrong case.\n");
+      get_path_knn(i);
+      get_path_si(i);
+      assert(false);
+    }
+  }
+}
+
 int main(int argv, char* args[]) {
   load_data();
   //test_knn(2965, scenarios[2965]);
@@ -274,10 +297,10 @@ int main(int argv, char* args[]) {
     }
   }
   else {
-    test_search();
+    test_knn_multi_goals();
+    //test_search();
   }
   //test_get_knn_h_value();
-  // test_io(argc, argv);
   // test_containment(tp);
   // test_point_lookup_correct();
   // benchmark_point_lookup_average();
