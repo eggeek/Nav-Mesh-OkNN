@@ -381,9 +381,11 @@ void KnnInstance::print_node(SearchNodePtr node, std::ostream& outfile) {
 
 void KnnInstance::get_path_points(std::vector<Point>& out, int k) {
   if (k >= (int)goals.size()) return;
-  assert(final_nodes.size() == goals.size());
+  assert((int)final_nodes.size() <= K);
+  assert(final_nodes[k]->goal_id != -1);
+  assert(final_nodes[k]->reached == true);
   out.clear();
-  out.push_back(goals[k]);
+  out.push_back(goals[final_nodes[k]->goal_id]);
   SearchNodePtr cur = final_nodes[k];
 
   while (cur != nullptr) {
@@ -425,13 +427,15 @@ void KnnInstance::deal_final_node(const SearchNodePtr node) {
   }();
 
   assert(node->goal_id != -1);
-  //assert(reached.find(node->goal_id) == reached.end() || reached[node->goal_id] < node->f);
+  assert(reached.find(node->goal_id) == reached.end() || reached[node->goal_id] < node->f);
 
   if (reached.find(node->goal_id) == reached.end()) {
     int end_polygon = node->next_polygon;
     const SearchNodePtr true_final =
       new (node_pool->allocate()) SearchNode
       {node, final_root, goal, goal, -1, -1, end_polygon, node->f, node->g};
+    true_final->set_reached();
+    true_final->set_goal_id(node->goal_id);
     reached[node->goal_id] = node->f;
     final_nodes.push_back(true_final);
     nodes_generated++;
