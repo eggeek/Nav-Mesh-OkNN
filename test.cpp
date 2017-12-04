@@ -231,6 +231,8 @@ void test_get_knn_h_value() {
 void load_data() {
   string mesh_path = "/Users/eggeek/project/nav-mesh-ornn/meshes/aurora-merged.mesh";
   string scenario_path = "/Users/eggeek/project/nav-mesh-ornn/scenarios/aurora.scen";
+  //string mesh_path = "/Users/eggeek/project/nav-mesh-ornn/meshes/arena.mesh";
+  //string scenario_path = "/Users/eggeek/project/nav-mesh-ornn/scenarios/arena.scen";
   ifstream scenfile(scenario_path);
   ifstream meshfile(mesh_path);
 
@@ -258,11 +260,12 @@ void test_knn_multi_goals() {
       double diff = ki->get_cost(0) - si->get_cost();
       if (abs(diff) > EPSILON) {
         printf("got wrong case.\n");
+        printf("start(%.5lf, %.5lf) goal(%.5lf, %.5lf) diff:%.5lf\n", start.x, start.y, gs.back().x, gs.back().y, diff);
         assert(false);
       }
     }
   }
-  int top = 3;
+  int top = (int)scenarios.size();
   ki->verbose = false;
   ki->set_K(top);
   ki->set_start_goal(start, gs);

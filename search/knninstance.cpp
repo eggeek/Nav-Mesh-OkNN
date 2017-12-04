@@ -427,7 +427,7 @@ void KnnInstance::deal_final_node(const SearchNodePtr node) {
   }();
 
   assert(node->goal_id != -1);
-  assert(reached.find(node->goal_id) == reached.end() || reached[node->goal_id] < node->f);
+  assert(reached.find(node->goal_id) == reached.end() || reached[node->goal_id] < node->f + EPSILON);
 
   if (reached.find(node->goal_id) == reached.end()) {
     int end_polygon = node->next_polygon;
@@ -443,6 +443,7 @@ void KnnInstance::deal_final_node(const SearchNodePtr node) {
 }
 
 void KnnInstance::gen_final_nodes(const SearchNodePtr node, const Point& rootPoint) {
+    assert(node->next_polygon != -1);
     for (int gid: end_polygons[node->next_polygon]) {
       const Point& goal = goals[gid];
       SearchNodePtr final_node = new (node_pool->allocate()) SearchNode(*node);
