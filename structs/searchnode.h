@@ -33,6 +33,7 @@ struct SearchNode
 
     bool reached = false;
     int goal_id = -1;
+    int heuristic_gid = -1;
 
     SearchNode() {}
     SearchNode(SearchNode* p, int rid, Point l, Point r, int lv, int rv, int next_poly, double f, double g):

@@ -1,3 +1,4 @@
+#pragma once
 #include <boost/geometry.hpp>
 #include <boost/geometry/index/rtree.hpp>
 #include <boost/geometry/geometries/point.hpp>
@@ -49,20 +50,11 @@ namespace boost { namespace geometry { namespace traits {
 
 } } }
 
-bgi::rtree< pl::Point, bgi::rstar<16> > rtree;
+template <typename Rtree, typename Id>
+size_t remove_ids_bulk(Rtree& rtree, Id const& id) {
+    using V = typename Rtree::value_type;
+    std::vector<V> v;
+    std::copy_if(rtree.begin(), rtree.end(), back_inserter(v), [id](V const& v) { return v.second == id; });
 
-void test_rtree() {
-  std::string scenario_path = "/Users/eggeek/project/nav-mesh-ornn/scenarios/aurora.scen";
-  std::ifstream scenfile(scenario_path);
-  std::vector<pl::Scenario> scens;
-  pl::load_scenarios(scenfile, scens);
-  pl::Point start = scens[0].start;
-  for (auto i: scens) {
-    rtree.insert(i.goal);
-  }
-  std::vector<pl::Point> res;
-  rtree.query(bgi::nearest(start, 1), std::back_inserter(res));
-  for (auto it: res) {
-    printf("(%.3lf, %.3lf) dist: %.3lf\n", it.x, it.y, it.distance(start));
-  }
+    return rtree.remove(v.begin(), v.end());
 }
