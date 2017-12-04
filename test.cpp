@@ -5,6 +5,8 @@
 #include "scenario.h"
 #include "searchinstance.h"
 #include "knninstance.h"
+#include "knnheuristic.h"
+#include "rtree.h"
 #include <stdio.h>
 #include <sstream>
 #include <iomanip>
@@ -12,6 +14,8 @@
 #include <random>
 #include <iostream>
 #include <fstream>
+#include <boost/geometry/geometries/segment.hpp>
+#include <boost/geometry/geometries/box.hpp>
 
 using namespace std;
 using namespace polyanya;
@@ -20,6 +24,7 @@ Mesh m;
 Point tp;
 SearchInstance* si;
 KnnInstance* ki;
+KnnHeuristic* hi;
 vector<Scenario> scenarios;
 
 const int MIN_X = 0, MAX_X = 1024, MIN_Y = 0, MAX_Y = 768;
@@ -163,16 +168,17 @@ void test_run_scenario(int idx, Scenario scen) {
   si->verbose = false;
   si->set_start_goal(scen.start, scen.goal);
   si->search();
-  get_path_si(idx);
+  //get_path_si(idx);
   cout << "finish polyanya search, cost: " << si->get_search_micro() << "ms" << endl;
 
-  ki->verbose = false;
-  ki->set_start_goal(scen.start, {scen.goal});
-  ki->search();
-  get_path_knn(idx);
-  cout << "finish knn search, cost: " << ki->get_search_micro() << "ms" << endl;
+  hi->verbose = false;
+  hi->set_start_goal(scen.start, {scen.goal});
+  hi->set_K(1);
+  hi->search();
+  //get_path_knn(idx);
+  cout << "finish knn search, cost: " << hi->get_search_micro() << "ms" << endl;
   if (true) {
-    assert(abs(si->get_cost() - ki->get_cost(0)) < EPSILON);
+    assert(abs(si->get_cost() - hi->get_cost(0)) < EPSILON);
     printf("---------------------------------------------------------------------\n");
     printf("%10s,%10s,%10s,%10s,%10s,%10s,%10s,%10s\n","index", "time", "succ call",
         "node gen", "node push", "node pop", "node prune", "cost");
@@ -180,8 +186,8 @@ void test_run_scenario(int idx, Scenario scen) {
         idx, si->get_search_micro(), si->successor_calls, si->nodes_generated,
         si->nodes_pushed, si->nodes_popped, si->nodes_pruned_post_pop, si->get_cost());
     printf("%10d,%10.6lf,%10d,%10d,%10d,%10d,%10d,%10.6lf\n",
-        idx, ki->get_search_micro(), ki->successor_calls, ki->nodes_generated,
-        ki->nodes_pushed, ki->nodes_popped, ki->nodes_pruned_post_pop, ki->get_cost(0));
+        idx, hi->get_search_micro(), hi->successor_calls, hi->nodes_generated,
+        hi->nodes_pushed, hi->nodes_popped, hi->nodes_pruned_post_pop, hi->get_cost(0));
     printf("---------------------------------------------------------------------\n");
   }
 }
@@ -197,8 +203,8 @@ void test_knn(int idx, Scenario scen) {
   ki->verbose = true;
   ki->set_start_goal(scen.start, {scen.goal});
   ki->search();
-  get_path_knn(idx);
-  if (false) {
+  //get_path_knn(idx);
+  if (true) {
     printf("---------------------------------------------------------------------\n");
     printf("%10d,%10.6lf,%10d,%10d,%10d,%10d,%10d,%10.6lf\n",
         idx, ki->get_search_micro(), ki->successor_calls, ki->nodes_generated,
@@ -229,10 +235,10 @@ void test_get_knn_h_value() {
 }
 
 void load_data() {
-  string mesh_path = "/Users/eggeek/project/nav-mesh-ornn/meshes/aurora-merged.mesh";
-  string scenario_path = "/Users/eggeek/project/nav-mesh-ornn/scenarios/aurora.scen";
   //string mesh_path = "/Users/eggeek/project/nav-mesh-ornn/meshes/arena.mesh";
   //string scenario_path = "/Users/eggeek/project/nav-mesh-ornn/scenarios/arena.scen";
+  string mesh_path = "/Users/eggeek/project/nav-mesh-ornn/meshes/aurora-merged.mesh";
+  string scenario_path = "/Users/eggeek/project/nav-mesh-ornn/scenarios/aurora.scen";
   ifstream scenfile(scenario_path);
   ifstream meshfile(mesh_path);
 
@@ -240,6 +246,7 @@ void load_data() {
   meshfile.close();
   si = new SearchInstance(mp);
   ki = new KnnInstance(mp);
+  hi = new KnnHeuristic(mp);
   load_scenarios(scenfile, scenarios);
 }
 
@@ -265,12 +272,11 @@ void test_knn_multi_goals() {
       }
     }
   }
-  int top = (int)scenarios.size();
+  int top = (int)gs.size();
   ki->verbose = false;
   ki->set_K(top);
   ki->set_start_goal(start, gs);
   int actual = ki->search();
-  si->verbose = false;
   for (int i=0; i<actual; i++) {
     vector<Point> out;
     ki->get_path_points(out, i);
@@ -285,12 +291,96 @@ void test_knn_multi_goals() {
       assert(false);
     }
   }
+  return;
+  hi->verbose = false;
+  hi->set_K(top);
+  hi->set_start_goal(start, gs);
+  int actual2 = hi->search();
+  if (actual != actual2) {
+    printf("got different results.\n");
+    assert(false);
+  }
+  int cnt = 0;
+  for (int i=0; i<actual2; i++) {
+    vector<Point> out;
+    double diff = ki->get_cost(i) - hi->get_cost(i);
+    if (abs(diff) > EPSILON) {
+      printf("got wrong case, diff: %.3lf, ratio: %.3lf%%\n", diff, diff / ki->get_cost(i) * 100 );
+      cnt++;
+      //assert(false);
+    }
+  }
+  printf("total: %d, wrong: %d\n", actual, cnt);
+}
+
+void test_rtree() {
+  bgi::rtree<std::pair<Point, int>, bgi::rstar<16> > rtree;
+  pl::Point start = scenarios[0].start;
+  for (int i=0; i<(int)scenarios.size(); i++) {
+    rtree.insert(std::make_pair(scenarios[i].goal, i));
+  }
+  std::vector<std::pair<Point, int> > res;
+  rtree.query(bgi::nearest(start, 20), std::back_inserter(res));
+  reverse(res.begin(), res.end());
+  for (auto it: res) {
+    printf("(%.3lf, %.3lf) dist: %.3lf\n", it.first.x, it.first.y, it.first.distance(start));
+  }
+  Point p1 = rand_point();
+  Point p2 = rand_point();
+  bg::model::segment<Point> seg(p1, p2);
+  typedef bg::model::box<Point> box;
+  box b(Point{0, 0}, Point{scenarios[0].goal.x + EPSILON, scenarios[0].goal.y + EPSILON});
+  res.clear();
+  rtree.query(bgi::within(b) && bgi::nearest(seg, 10), std::back_inserter(res));
+  reverse(res.begin(), res.end());
+  printf("top1:\n");
+  printf("box: (%.5lf, %.5lf) (%.5lf, %.5lf)\n", b.min_corner().x, b.min_corner().y, b.max_corner().x, b.max_corner().y);
+  for (auto it: res) {
+    printf("seg:[(%.3lf, %.3lf), (%.3lf, %.3lf)] to point (%.3lf, %.3lf) dist: %.3lf\n",
+        seg.first.x, seg.first.y, seg.second.x, seg.second.y, it.first.x, it.first.y, it.first.distance_to_seg(seg.first, seg.second));
+  }
+  res.clear();
+  rtree.query(bgi::nearest(seg, 10), std::back_inserter(res));
+  reverse(res.begin(), res.end());
+  printf("top10:\n");
+  for (auto it: res) {
+    printf("seg:[(%.3lf, %.3lf), (%.3lf, %.3lf)] to point (%.3lf, %.3lf) dist: %.3lf\n",
+        seg.first.x, seg.first.y, seg.second.x, seg.second.y, it.first.x, it.first.y, it.first.distance_to_seg(seg.first, seg.second));
+  }
+
+  printf("size of rtree: %d\n", (int)rtree.size());
+  for (int i=0; i<(int)scenarios.size(); i++) {
+    size_t f = remove_ids_bulk(rtree, i);
+    if (f <= 0) assert(false);
+  }
+  printf("size of rtree: %d\n", (int)rtree.size());
+  assert(rtree.size() == 0);
+  int N = 50000;
+  std::vector<std::pair<Point, int> > nodes;
+  for (int i=0; i<N; i++) {
+    Point p = rand_point();
+    nodes.push_back(std::make_pair(p, i));
+  }
+  for (int i=0; i<N; i++) {
+    rtree.insert(nodes[i]);
+  }
+
+
+  printf("size of rtree: %d\n", (int)rtree.size());
+  for (int i=0; i<N; i++) {
+    int f = rtree.remove(std::make_pair(nodes[i].first, i));
+    if (f <= 0) assert(false);
+  }
+  printf("size of rtree: %d\n", (int)rtree.size());
 }
 
 int main(int argv, char* args[]) {
   load_data();
-  //test_knn(2965, scenarios[2965]);
+  test_rtree();
+  return 0;
   if (argv == 3) {
+  // example1: ./bin/test knn 3
+  // example2: ./bin/test poly 3
     string t = string(args[1]);
     int idx = std::atoi(args[2]);
     if (t == "knn") {
