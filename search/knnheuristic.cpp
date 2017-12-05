@@ -142,6 +142,7 @@ void KnnHeuristic::set_end_polygon() {
   for (int i=0; i<(int)mesh->mesh_polygons.size(); i++) end_polygons[i].clear();
   for (int i=0; i<(int)goals.size(); i++) {
     int poly_id = get_point_location(goals[i]).poly1;
+    if (poly_id == -1) continue;
     assert(poly_id < (int)end_polygons.size());
     end_polygons[poly_id].push_back(i);
   }
