@@ -31,7 +31,12 @@ const int MIN_X = 0, MAX_X = 1024, MIN_Y = 0, MAX_Y = 768;
 const int MAX_ITER = 10000;
 
 uniform_real_distribution<double> unif(-10, 10);
+uniform_real_distribution<double> unix;
+uniform_real_distribution<double> uniy;
 default_random_engine engine;
+std::random_device rd;
+std::mt19937 mt(rd());
+
 #define rand_point() {unif(engine), unif(engine)}
 
 
@@ -152,6 +157,18 @@ void get_path_knn(int idx, int top=0) {
   cout << endl;
 }
 
+void get_path_hknn(int idx, int top=0) {
+  vector<Point> path;
+  hi->get_path_points(path, top);
+  const int n = (int) path.size();
+  cout << "path " << idx <<"; ";
+  for (int i=0; i<n; i++) {
+    cout << path[i];
+    if (i != n-1) cout << " ";
+  }
+  cout << endl;
+}
+
 void get_path_si(int idx) {
   vector<Point> path;
   si->get_path_points(path);
@@ -243,6 +260,9 @@ void load_data() {
   ifstream meshfile(mesh_path);
 
   MeshPtr mp = new Mesh(meshfile);
+  m = *mp;
+  unix = uniform_real_distribution<double>(m.get_minx(), m.get_maxx());
+  uniy = uniform_real_distribution<double>(m.get_miny(), m.get_maxy());
   meshfile.close();
   si = new SearchInstance(mp);
   ki = new KnnInstance(mp);
@@ -250,11 +270,18 @@ void load_data() {
   load_scenarios(scenfile, scenarios);
 }
 
+Point gen_rand_point_in_mesh() {
+  return {unix(mt), uniy(mt)};
+}
+
 void test_knn_multi_goals() {
-  Point start = scenarios[0].start;
+  Point start = gen_rand_point_in_mesh();
   vector<Point> gs;
-  for (int i=0; i<(int)scenarios.size(); i++) {
-    gs.push_back(scenarios[i].goal);
+  printf("vertices: %d, polygons: %d\n", (int)m.mesh_vertices.size(), (int)m.mesh_polygons.size());
+  int N = 150000;
+  for (int i=0; i<N; i++) {
+    gs.push_back(gen_rand_point_in_mesh());
+    /*
     ki->verbose = false;
     ki->set_start_goal(start, {gs.back()});
     int cnt1 = ki->search();
@@ -271,12 +298,15 @@ void test_knn_multi_goals() {
         assert(false);
       }
     }
+    */
   }
-  int top = (int)gs.size();
+  //int top = (int)gs.size() / 2;
+  int top = 15;
   ki->verbose = false;
   ki->set_K(top);
   ki->set_start_goal(start, gs);
   int actual = ki->search();
+  double cost_ki = ki->get_search_micro();
   for (int i=0; i<actual; i++) {
     vector<Point> out;
     ki->get_path_points(out, i);
@@ -291,23 +321,34 @@ void test_knn_multi_goals() {
       assert(false);
     }
   }
-  return;
   hi->verbose = false;
   hi->set_K(top);
   hi->set_start_goal(start, gs);
   int actual2 = hi->search();
+  double cost_hi = hi->get_search_micro();
+
+  printf("ki:%.5lf, hi:%.5lf, %.5lf faster\n", cost_ki, cost_hi, cost_ki / cost_hi);
+  printf("ki: node_gen: %d, nodes_pushed:%d, nodes_popped:%d\n", ki->nodes_generated, ki->nodes_pushed, ki->nodes_popped);
+  printf("hi: node_gen: %d, nodes_pushed:%d, nodes_popped:%d\n", hi->nodes_generated, hi->nodes_pushed, hi->nodes_popped);
+
   if (actual != actual2) {
-    printf("got different results.\n");
+    printf("got different results, actual:%d, actual2:%d.\n", actual, actual2);
     assert(false);
   }
   int cnt = 0;
-  for (int i=0; i<actual2; i++) {
+  for (int i=0; i<actual; i++) {
     vector<Point> out;
-    double diff = ki->get_cost(i) - hi->get_cost(i);
+    int gid = ki->get_gid(i);
+    int gord = hi->get_goal_ord(gid);
+    assert(gord != -1);
+    if (gord == -1) continue;
+    double diff = ki->get_cost(i) - hi->get_cost(gord);
     if (abs(diff) > EPSILON) {
       printf("got wrong case, diff: %.3lf, ratio: %.3lf%%\n", diff, diff / ki->get_cost(i) * 100 );
       cnt++;
-      //assert(false);
+      get_path_knn(i, i);
+      get_path_hknn(i, i);
+      if (diff > 0) assert(false);
     }
   }
   printf("total: %d, wrong: %d\n", actual, cnt);
@@ -376,8 +417,8 @@ void test_rtree() {
 
 int main(int argv, char* args[]) {
   load_data();
-  test_rtree();
-  return 0;
+  //test_rtree();
+  //return 0;
   if (argv == 3) {
   // example1: ./bin/test knn 3
   // example2: ./bin/test poly 3

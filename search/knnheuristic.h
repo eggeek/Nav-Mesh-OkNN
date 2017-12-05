@@ -1,6 +1,8 @@
 #pragma once
 #include "searchnode.h"
+#include "geometry.h"
 #include "searchinstance.h"
+#include "expansion.h"
 #include "successor.h"
 #include "mesh.h"
 #include "point.h"
@@ -17,6 +19,7 @@ class KnnHeuristic {
     typedef std::priority_queue<SearchNodePtr, std::vector<SearchNodePtr>,
                                 PointerComp<SearchNode> > pq;
     typedef std::pair<Point, int> value;
+    typedef bg::model::polygon<Point> polygon;
     private:
         int K = 1;
         warthog::mem::cpool* node_pool;
@@ -78,6 +81,52 @@ class KnnHeuristic {
           else return nn.back().second;
         }
 
+        /*
+        Boost R-tree doesn't support within(polygon) query, so this function doesn't work currently
+        std::pair<int, double> get_min_hueristic(const Point& r, const Point& a, const Point& b, int k=1) {
+            Point perp = perp_point(r, a, b);
+            Point r2 = reflect_point(r, a, b);
+            Point v = r - perp;
+            double t = 1e8;
+            Point a0 = a + t * v, b0 = b + t * v, a1 = a - t * v, b1 = b - t * v;
+            Point w = a - b;
+            Point p0 = a0 + t * w, p1 = a1 + t * w, p2 = b0 - t * w, p3 = b1 - t * w;
+            polygon A {{a0, a, b, b0, a0}};
+            polygon B {{a, a1, b1, b, a}};
+            polygon C {{p0, p1, a1, a0, p0}};
+            polygon D {{b0, b1, p3, p2, b0}};
+            int res = -1;
+            double curv = 1e18; //INF
+
+            auto is_better = [&](double& oldv, int gid) {
+              double newv = get_h_value(r, goals[gid], a, b);
+              if (oldv > newv) {
+                oldv = newv;
+                return true;
+              }
+              return false;
+            };
+
+            nn.clear();
+            rtree.query(bgi::within(A) && bgi::nearest(r2, k), nn);
+            if (!nn.empty() && is_better(curv, nn.back().second)) res = nn.back().second;
+
+            nn.clear();
+            rtree.query(bgi::within(B) && bgi::nearest(r, k), nn);
+            if (!nn.empty() && is_better(curv, nn.back().second)) res = nn.back().second;
+
+            nn.clear();
+            rtree.query(bgi::within(C) && bgi::nearest(a, k), nn);
+            if (!nn.empty() && is_better(curv, nn.back().second)) res = nn.back().second;
+
+            nn.clear();
+            rtree.query(bgi::within(D) && bgi::nearest(b, k), nn);
+            if (!nn.empty() && is_better(curv, nn.back().second)) res = nn.back().second;
+
+            return {res, curv};
+        }
+        */
+
         void init_search() {
             assert(node_pool);
             node_pool->reclaim();
@@ -130,6 +179,7 @@ class KnnHeuristic {
         void set_start_goal(Point s, std::vector<Point> gs) {
             start = s;
             goals = std::vector<Point>(gs);
+            rtree.clear();
             final_nodes = std::vector<SearchNodePtr>();
             for (int i=0; i<(int)gs.size(); i++) {
               rtree.insert(std::make_pair(gs[i], i));
@@ -154,6 +204,16 @@ class KnnHeuristic {
         void print_search_nodes(std::ostream& outfile, int k);
         void deal_final_node(const SearchNodePtr node);
         void gen_final_nodes(const SearchNodePtr node, const Point& rootPoint);
+
+        double get_gid(int k) {
+          if (k > (int)final_nodes.size()) return -1;
+          else return final_nodes[k]->goal_id;
+        }
+
+        int get_goal_ord(int gid) {
+          for (int i=0; i<K; i++) if (final_nodes[i]->goal_id == gid) return i;
+          return -1;
+        }
 };
 
 }
