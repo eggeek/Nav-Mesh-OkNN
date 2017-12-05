@@ -217,6 +217,10 @@ class Mesh
 
         void print_polygon(std::ostream& outfile, int index);
         void print_vertex(std::ostream& outfile, int index);
+        double get_minx() { return min_x; }
+        double get_maxx() { return max_x; }
+        double get_miny() { return min_y; }
+        double get_maxy() { return max_y; }
 
 };
 
