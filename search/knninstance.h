@@ -132,6 +132,16 @@ class KnnInstance {
         void print_search_nodes(std::ostream& outfile, int k);
         void deal_final_node(const SearchNodePtr node);
         void gen_final_nodes(const SearchNodePtr node, const Point& rootPoint);
+
+        double get_gid(int k) {
+          if (k > (int)final_nodes.size()) return -1;
+          else return final_nodes[k]->goal_id;
+        }
+
+        int get_goal_ord(int gid) {
+          for (int i=0; i<K; i++) if (final_nodes[i]->goal_id == gid) return i;
+          return -1;
+        }
 };
 
 }
