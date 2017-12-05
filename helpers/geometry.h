@@ -86,6 +86,7 @@ inline Point get_point_on_line(const Point& a, const Point& b, const double t)
     return a + (b - a) * t;
 }
 Point reflect_point(const Point& p, const Point& l, const Point& r);
+inline Point perp_point(const Point& r, const Point& a, const Point& b);
 
 enum struct Orientation
 {

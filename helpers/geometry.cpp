@@ -66,4 +66,15 @@ Point reflect_point(const Point& p, const Point& l, const Point& r)
     return p + (2.0 * numer / denom) * delta_rotated;
 }
 
+inline Point perp_point(const Point& r, const Point& a, const Point& b) {
+  if (std::abs(a.x - b.x) <= EPSILON && std::abs(a.y - b.y) <= EPSILON) {
+    return Point{a.x, a.y};
+  } else {
+    Point p = b - a;
+    double u = p.dot(r - a) / p.normal2();
+    Point res = r + u * p;
+    return res;
+  }
+}
+
 }
