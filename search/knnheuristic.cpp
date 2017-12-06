@@ -108,6 +108,7 @@ int KnnHeuristic::succ_to_node(
         }
       }
       nodes[out++] = {nullptr, root, succ.left, succ.right, left_vertex, right_vertex, next_polygon, g, g};
+      nodes[out-1].heuristic_gid = parent->heuristic_gid;
     };
 
     const Point& parent_root = (parent->root == -1? start: mesh->mesh_vertices[parent->root].p);
@@ -217,6 +218,7 @@ void KnnHeuristic::gen_initial_nodes() {
         std::cerr << std::endl;
       }
       #endif
+      assert(nxt->heuristic_gid != -1);
       open_list.push(nxt);
 
       if (!end_polygons[nxt->next_polygon].empty()) {
@@ -314,6 +316,7 @@ int KnnHeuristic::search() {
         break;
       };
       node->f = node->g + get_h_value(root, goals[node->heuristic_gid], node->left, node->right);
+      assert(node->heuristic_gid != -1);
       open_list.push(node);
       nodes_pushed++;
       continue;
@@ -351,6 +354,7 @@ int KnnHeuristic::search() {
           // node pointer to this after allocating space for it.
           search_nodes_to_push[0].parent = node;
           node = new (node_pool->allocate()) SearchNode(search_nodes_to_push[0]);
+          node->heuristic_gid = get_knn(node->left, node->right);
           nodes_generated++;
         }
         if (!end_polygons[search_nodes_to_push[0].next_polygon].empty()) {
@@ -374,7 +378,8 @@ int KnnHeuristic::search() {
       const SearchNodePtr nxt = new (node_pool->allocate()) SearchNode(search_nodes_to_push[i]);
       const Point& nxt_root = (nxt->root == -1 ? start: mesh->mesh_vertices[nxt->root].p);
       //nxt->f += get_knn_h_value(nxt_root, nxt->left, nxt->right);
-      nxt->heuristic_gid = get_knn(nxt->left, nxt->right);
+      if (nxt->root != node->root) nxt->heuristic_gid = get_knn(nxt->left, nxt->right);
+      else nxt->heuristic_gid = node->heuristic_gid;
       //nxt->heuristic_gid = get_knn(nxt_root, 1);
       Point goal = goals[nxt->heuristic_gid];
       nxt->f += get_h_value(nxt_root, goal, nxt->left, nxt->right);
