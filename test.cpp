@@ -268,20 +268,22 @@ void load_data() {
   ki = new KnnInstance(mp);
   hi = new KnnHeuristic(mp);
   load_scenarios(scenfile, scenarios);
+  printf("vertices: %d, polygons: %d\n", (int)m.mesh_vertices.size(), (int)m.mesh_polygons.size());
 }
 
 Point gen_rand_point_in_mesh() {
   return {unix(mt), uniy(mt)};
 }
 
-void test_knn_multi_goals() {
-  Point start = gen_rand_point_in_mesh();
+void test_knn_multi_goals(int idx) {
+  //Point start = gen_rand_point_in_mesh();
+  Point start = scenarios[idx].start;
   vector<Point> gs;
-  printf("vertices: %d, polygons: %d\n", (int)m.mesh_vertices.size(), (int)m.mesh_polygons.size());
-  int N = 150000;
+  //int N = 1000;
+  int N = (int)scenarios.size() / 10;
   for (int i=0; i<N; i++) {
-    gs.push_back(gen_rand_point_in_mesh());
-    /*
+    //gs.push_back(gen_rand_point_in_mesh());
+    gs.push_back(scenarios[i].goal);
     ki->verbose = false;
     ki->set_start_goal(start, {gs.back()});
     int cnt1 = ki->search();
@@ -298,15 +300,13 @@ void test_knn_multi_goals() {
         assert(false);
       }
     }
-    */
   }
   //int top = (int)gs.size() / 2;
-  int top = 15;
+  int top = 5;
   ki->verbose = false;
   ki->set_K(top);
   ki->set_start_goal(start, gs);
   int actual = ki->search();
-  double cost_ki = ki->get_search_micro();
   for (int i=0; i<actual; i++) {
     vector<Point> out;
     ki->get_path_points(out, i);
@@ -321,6 +321,24 @@ void test_knn_multi_goals() {
       assert(false);
     }
   }
+}
+
+void test_heuristic_knn(int idx) {
+  Point start = scenarios[idx].start;
+  vector<Point> gs;
+  //int N = 1000;
+  int N = (int)scenarios.size() / 10;
+  for (int i=0; i<N; i++) {
+    //gs.push_back(gen_rand_point_in_mesh());
+    gs.push_back(scenarios[i].goal);
+  }
+  //int top = (int)gs.size() / 2;
+  int top = 5;
+  ki->verbose = false;
+  ki->set_K(top);
+  ki->set_start_goal(start, gs);
+  int actual = ki->search();
+  double cost_ki = ki->get_search_micro();
   hi->verbose = false;
   hi->set_K(top);
   hi->set_start_goal(start, gs);
@@ -340,7 +358,6 @@ void test_knn_multi_goals() {
     vector<Point> out;
     int gid = ki->get_gid(i);
     int gord = hi->get_goal_ord(gid);
-    assert(gord != -1);
     if (gord == -1) continue;
     double diff = ki->get_cost(i) - hi->get_cost(gord);
     if (abs(diff) > EPSILON) {
@@ -431,7 +448,7 @@ int main(int argv, char* args[]) {
     }
   }
   else {
-    test_knn_multi_goals();
+    for (int i=0; i<(int)scenarios.size(); i++) test_heuristic_knn(i);
     //test_search();
   }
   //test_get_knn_h_value();
