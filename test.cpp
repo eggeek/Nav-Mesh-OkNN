@@ -1,11 +1,13 @@
 // various testing functions
 #include "expansion.h"
 #include "mesh.h"
+#include "RStarTree.h"
 #include "geometry.h"
 #include "scenario.h"
 #include "searchinstance.h"
 #include "knninstance.h"
 #include "knnheuristic.h"
+#include "RStarTreeUtil.h"
 #include "rtree.h"
 #include <stdio.h>
 #include <sstream>
@@ -432,10 +434,27 @@ void test_rtree() {
   printf("size of rtree: %d\n", (int)rtree.size());
 }
 
+void test_rstar() {
+  using namespace rstar;
+  RStarTree t;
+  for (size_t i=0; i<scenarios.size(); i++) {
+    pl::Point p = scenarios[i].goal;
+    Mbr mbr(p.x, p.x, p.y, p.y);
+    Entry_P entryPtr = new LeafNodeEntry(mbr, &p);
+    t.insertData(entryPtr);
+  }
+  for (size_t i=0; i<scenarios.size(); i++) {
+    pl::Point p = scenarios[i].goal;
+    double pp[2] = {p.x, p.y};
+    bool flag = RStarTreeUtil::find(t, pp);
+    if (!flag) assert(false);
+  }
+}
+
 int main(int argv, char* args[]) {
   load_data();
-  //test_rtree();
-  //return 0;
+  test_rstar();
+  return 0;
   if (argv == 3) {
   // example1: ./bin/test knn 3
   // example2: ./bin/test poly 3
