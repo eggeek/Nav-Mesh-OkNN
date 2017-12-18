@@ -1,16 +1,15 @@
-// Copyright (C) Geom Software e.U, Bernhard Kornberger, Graz/Austria
+// (c) 2010 Geom e.U. Bernhard Kornberger, Graz/Austria. All rights reserved.
 //
-// This file is part of the Fade2D library. The student license is free
-// of charge and covers personal non-commercial research. Licensees
-// holding a commercial license may use this file in accordance with
-// the Commercial License Agreement.
+// This file is part of the Fade2D library. You can use it for your personal
+// non-commercial research. Licensees holding a commercial license may use this
+// file in accordance with the Commercial License Agreement provided
+// with the Software.
 //
-// This software is provided AS IS with NO WARRANTY OF ANY KIND,
-// INCLUDING THE WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS
-// FOR A PARTICULAR PURPOSE.
+// This software is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING
+// THE WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 //
-// Please contact the author if any conditions of this licensing are
-// not clear to you.
+// Please contact the author if any conditions of this licensing are not clear
+// to you.
 //
 // Author: Bernhard Kornberger, bkorn (at) geom.at
 // http://www.geom.at
@@ -51,16 +50,7 @@ public:
 /** \brief Constructor
 *
 */
-	Triangle2()
-	{
-		aVertexPointer[0]=NULL;
-		aVertexPointer[1]=NULL;
-		aVertexPointer[2]=NULL;
-		aOppTriangles[0]=NULL;
-		aOppTriangles[1]=NULL;
-		aOppTriangles[2]=NULL;
-
-	} // Never used!
+	Triangle2();
 
 
 
@@ -133,58 +123,9 @@ std::pair<Point2,bool> getDual() const;
 	Vector2 getNormalVector() const;
 #endif
 
-/** \brief Get interior 2D angle
- *
- * \if SECTION_FADE25D
- * Note: The getInteriorAngle() method is deprecated and replaced by getInteriorAngle2D()
- * and getInteriorAngle25D()
- * \else
- * Note: The getArea() method is deprecated and replaced by getInteriorAngle2D()
- * to keep the names consistent.
- * \endif
- *
- * @return the interior 2D angle at the ith vertex
+/** \brief Get the area of a triangle
 */
-double getInteriorAngle2D(int ith) const;
-
-#if GEOM_PSEUDO3D==GEOM_TRUE
-/** \brief Get interior 2.5D angle
- *
- * @return the interior 2.5D angle at the ith vertex
-*/
-double getInteriorAngle25D(int ith) const;
-#endif
-
-
-
-/** \brief Get 2D Area
- *
- * Returns the 2D area of the triangle.
- *
- * \if SECTION_FADE25D
- * Note: The getArea() method is deprecated and replaced by getArea2D()
- * and getArea25D()
- * \else
- * Note: The getArea() method is deprecated and replaced by getArea2D()
- * to keep the names consistent.
- * \endif
- */
-	double getArea2D() const;
-
-
-
-
-#if GEOM_PSEUDO3D==GEOM_TRUE
-/** \brief Get 2.5D Area
- *
- * Returns the 2.5D area of the triangle.
- *
- * Note: The getArea() method is deprecated and replaced by getArea2D()
- * and getArea25D()
- */
-	double getArea25D() const;
-#endif
-
+double getArea() const;
 
 /** \brief Get the \e i-th neighbor triangle
 *
@@ -227,21 +168,12 @@ double getInteriorAngle25D(int ith) const;
 * touch the neighbor) \e pTriangle.
 */
 	int getIntraTriangleIndex(const Triangle2* pTriangle) const;
-
-/** \brief Get the index of \p (p0,p1)
-*
-* @return the index of the edge \p (p0,p1) in the triangle
+/** \brief Method for internal use
+ *
+ *
+ *  Internal use
 */
-
-	int getIntraTriangleIndex(const Point2* p0,const Point2* p1) const;
-
-
-///** \brief Method for internal use
- //*
- //*
- //*  Internal use
-//*/
-	//bool getState() const;
+	bool getState() const;
 
 /** \brief Squared edge length
 *
@@ -252,11 +184,11 @@ double getInteriorAngle25D(int ith) const;
 */
 	double getSquaredEdgeLength(int ith) const;
 
-//** \brief Method for internal use
- //*
- //* Internal use
-//*/
-	//void setState(bool bState_);
+/** \brief Method for internal use
+ *
+ * Internal use
+*/
+	void setState(bool bState_);
 /** \brief Set the \e i-th neighbor triangle
 *
 * \image html getITI_t.jpg "Figure 6: Make @e pTriangle the 0-th neighbor of @e *this"
@@ -270,52 +202,27 @@ double getInteriorAngle25D(int ith) const;
 /** \brief Set all corners
 */
 	void setProperties( Point2* pI, Point2* pJ, Point2* pK);
-
-/** \brief Set all corners and neighbor triangles
-*/
-	void setPropertiesAndOppT(Point2* pI, Point2* pJ, Point2* pK,Triangle2* pNeig0,Triangle2* pNeig1,Triangle2* pNeig2);
-
 /** \brief Set the \e i-th corner
 */
 	void setVertexPointer(const int ith, Point2* pp);
 
-/** \brief Has vertex
- *
- * \return if \p pVtx is a corner of the triangle
- */
 	bool hasVertex(Point2* pVtx) const;
-
-/** \brief Has point on edge
- *
- * \return if \p q is exactly on the i-th edge
- */
-	bool hasOnEdge(int i,const Point2& q) const;
-
-/** \brief Get the index of the largest edge
-*/
-	int getMaxIndex() const;
-
-
 
 	// DEBUG
 	CLASS_DECLSPEC
 	friend std::ostream &operator<<(std::ostream &stream, const Triangle2& c);
 
 protected:
-	double computeArea(double l0,double l1,double l2) const;
-	bool isAccurateCC(int maxIdx,const Point2& cc) const;
-	bool getCC_strategy1(double avgOffX,double avgOffY,Point2& cc) const;
-	void getCC_strategy2(int maxIdx,double avgOffX,double avgOffY,Point2& cc) const;
-	void getCommonOffset(double& x,double& y) const;
 	Point2* aVertexPointer[3];
 	Triangle2* aOppTriangles[3];
-	//bool bState;
+	bool bState;
 };
 
 namespace{
 inline bool checkRange(int ith)
 {
-	return (ith==0 || ith==1 || ith==2); // true if ith={0,1,2}
+	if(ith==0 || ith==1 || ith==2) return true;
+	return false;
 }
 
 }
@@ -331,24 +238,14 @@ inline void Triangle2::setOppTriangle(const int ith, Triangle2* pNeig)
 	aOppTriangles[ith]=pNeig;
 }
 
-
-inline int Triangle2::getIntraTriangleIndex(const Point2* p0,const Point2* p1) const
+inline bool Triangle2::getState() const
 {
-	for(int i=0;i<3;++i)
-	{
-		int ici1((i+1)%3);
-		int ici2((i+2)%3);
+	return bState;
+}
 
-		if(	aVertexPointer[ici1]==p0 && aVertexPointer[ici2]==p1) return i;
-		if(	aVertexPointer[ici1]==p1 && aVertexPointer[ici2]==p0) return i;
-	}
-
-	std::cout<<"BUG: Triangle2::getIntraTriangleIndex failed for"<<std::endl;// COUTOK
-	std::cout<<*p0<<std::endl;// COUTOK
-	std::cout<<*p1<<std::endl;// COUTOK
-	std::cout<<*this<<std::endl;// COUTOK
-	assert(false);
-	return -1;
+inline void Triangle2::setState(bool bState_)
+{
+	bState=bState_;
 }
 
 inline int Triangle2::getIntraTriangleIndex(const Point2* pp) const
@@ -358,9 +255,9 @@ inline int Triangle2::getIntraTriangleIndex(const Point2* pp) const
 #ifndef NDEBUG
 	if(aVertexPointer[2]!=pp)
 	{
-		std::cout<<"BUG: Triangle2::getIntraTriangleIndex failed for"<<std::endl;// COUTOK
-		std::cout<<*pp<<std::endl;// COUTOK
-		std::cout<<*this<<std::endl;// COUTOK
+		std::cout<<"BUG: Triangle2::getIntraTriangleIndex failed for"<<std::endl;
+		std::cout<<*pp<<std::endl;
+		std::cout<<*this<<std::endl;
 		assert(false);
 	}
 #endif
@@ -376,11 +273,9 @@ inline int Triangle2::getIntraTriangleIndex(const Triangle2* pTriangle) const
 #ifndef NDEBUG
 	if(getOppositeTriangle(2)!=pTriangle)
 	{
-		std::cout<<"Triangle2::getIntraTriangleIndex, pTriangle is not a neighbor of the current triangle"<<std::endl;// COUTOK
-		std::cout<<"Current triangle: "<<*this<<std::endl;// COUTOK
-		std::cout<<"pTriangle: "<<*pTriangle<<std::endl;// COUTOK
-
-
+		std::cout<<"Triangle2::getIntraTriangleIndex, pTriangle is not a neighbor of the current triangle"<<std::endl;
+		std::cout<<"Current triangle: "<<*this<<std::endl;
+		std::cout<<"pTriangle: "<<*pTriangle<<std::endl;
 		assert(false);
 	}
 #endif
@@ -407,29 +302,13 @@ inline void Triangle2::setProperties( Point2* pI, Point2* pJ, Point2* pK)
 	pI->setIncidentTriangle(this);
 	pJ->setIncidentTriangle(this);
 	pK->setIncidentTriangle(this);
-	for(size_t i=0;i<3;++i)
-	{
-		aOppTriangles[i]=NULL;
-	}
+	aOppTriangles[0]=NULL;
+	aOppTriangles[1]=NULL;
+	aOppTriangles[2]=NULL;
+	bState=false;
+
 }
 
-
-inline void Triangle2::setPropertiesAndOppT(
-	Point2* pI, Point2* pJ, Point2* pK,
-	Triangle2* pNeig0,Triangle2* pNeig1,Triangle2* pNeig2
-	)
-{
-	assert((pI!=NULL && pJ!=NULL && pK!=NULL));
-	aVertexPointer[0]=pI;
-	aVertexPointer[1]=pJ;
-	aVertexPointer[2]=pK;
-	pI->setIncidentTriangle(this);
-	pJ->setIncidentTriangle(this);
-	pK->setIncidentTriangle(this);
-	aOppTriangles[0]=pNeig0;
-	aOppTriangles[1]=pNeig1;
-	aOppTriangles[2]=pNeig2;
-}
 
 
 

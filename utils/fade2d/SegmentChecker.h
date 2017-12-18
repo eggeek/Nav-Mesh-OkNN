@@ -1,19 +1,3 @@
-// Copyright (C) Geom Software e.U, Bernhard Kornberger, Graz/Austria
-//
-// This file is part of the Fade2D library. The student license is free
-// of charge and covers personal non-commercial research. Licensees
-// holding a commercial license may use this file in accordance with
-// the Commercial License Agreement.
-//
-// This software is provided AS IS with NO WARRANTY OF ANY KIND,
-// INCLUDING THE WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS
-// FOR A PARTICULAR PURPOSE.
-//
-// Please contact the author if any conditions of this licensing are
-// not clear to you.
-//
-// Author: Bernhard Kornberger, bkorn (at) geom.at
-// http://www.geom.at
 
 
 #pragma once
@@ -24,7 +8,6 @@
 
 
 /** The Segment intersection type enumerates the way two line segments intersect each other
- *
  */
 enum SegmentIntersectionType
 {
@@ -43,11 +26,11 @@ enum SegmentIntersectionType
 	#error GEOM_PSEUDO3D is not defined
 #endif
 
-class SegmentCheckerData; // FWD, pImpl to ease DLL export
+struct SegmentCheckerData; // FWD, pImpl to ease DLL export
 
 
 /** \brief SegmentChecker identifies intersecting line segments
- *
+*
 * SegmentChecker takes a bunch of line segments and fully automatically
 * identifies illegal segment intersections. The intersection points can
 * be computed in 2D and in 2.5D. Further this class offers visualization
@@ -55,9 +38,8 @@ class SegmentCheckerData; // FWD, pImpl to ease DLL export
 * scales very well to large inputs.
 *
 * \image html identify_intersecting_segments.png "Polylines: Intersecting segments are automatically found"
-* \image latex identify_intersecting_segments.eps "Polylines: Intersecting segments are automatically found" width=15cm
+* \image latex identify_intersecting_segments.eps "Polylines: Intersecting segments are automatically found" width=20cm
 *
-* \sa http://www.geom.at/segment-checker/
 *
 */
 class CLASS_DECLSPEC SegmentChecker
@@ -68,8 +50,7 @@ public:
 /**
  * @param vSegments_ contains the segments to be checked
  */
-	explicit SegmentChecker(const std::vector<Segment2*>& vSegments_);
-	SegmentChecker();
+	SegmentChecker(const std::vector<Segment2*>& vSegments_);
 	~SegmentChecker();
 
 /**
@@ -117,7 +98,7 @@ public:
  * @param name is the output filename
  *
 * \image html show_line_segments.png "Line segments written to a postscript file"
-* \image latex show_line_segments.eps "Line segments written to a postscript file"  width=15cm
+* \image latex show_line_segments.eps "Line segments written to a postscript file" width=20cm
 */
 	void showSegments(const std::string& name) const;
 
@@ -128,7 +109,7 @@ public:
  * @param name is the output filename
  *
  * \image html show_illegal_segments_count.png "Visualization of polyline intersections"
- * \image latex show_illegal_segments_count.eps "Visualization of polyline intersections"  width=15cm
+ * \image latex show_illegal_segments_count.eps "Visualization of polyline intersections" width=20cm
 */
 	void showIllegalSegments(bool bAlsoEndPointIntersections,const std::string& name) const;
 
@@ -261,7 +242,7 @@ public:
 
 
 private:
-	SegmentChecker(const SegmentChecker& );
+
 /**
 \cond HIDDEN_SYMBOLS
 */

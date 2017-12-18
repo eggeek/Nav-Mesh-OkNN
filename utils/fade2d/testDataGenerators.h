@@ -1,20 +1,3 @@
-// Copyright (C) Geom Software e.U, Bernhard Kornberger, Graz/Austria
-//
-// This file is part of the Fade2D library. The student license is free
-// of charge and covers personal non-commercial research. Licensees
-// holding a commercial license may use this file in accordance with
-// the Commercial License Agreement.
-//
-// This software is provided AS IS with NO WARRANTY OF ANY KIND,
-// INCLUDING THE WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS
-// FOR A PARTICULAR PURPOSE.
-//
-// Please contact the author if any conditions of this licensing are
-// not clear to you.
-//
-// Author: Bernhard Kornberger, bkorn (at) geom.at
-// http://www.geom.at
-
 #pragma once
 #include "Point2.h"
 #include "Segment2.h"
@@ -95,7 +78,7 @@ void generateRandomNumbers(	size_t num,
  *
  *
 * \image html randomPoints.png "Point generator"
-* \image latex randomPoints.eps "Point generator" width=10cm
+* \image latex randomPoints.eps "Point generator" width=15cm
 *
 */
 CLASS_DECLSPEC
@@ -117,7 +100,7 @@ void generateRandomPoints(	size_t numRandomPoints,
  *
  *
 * \image html randomPolygon.png "Polygon generator: Random simple polygon"
-* \image latex randomPolygon.eps "Polygon generator: Random simple polygon" width=10cm
+* \image latex randomPolygon.eps "Polygon generator: Random simple polygon" width=15cm
  */
 CLASS_DECLSPEC
 void generateRandomPolygon(	size_t numSegments,
@@ -140,7 +123,7 @@ void generateRandomPolygon(	size_t numSegments,
  *
  *
 * \image html randomSegments.png "Segment generator: Random line segments"
-* \image latex randomSegments.eps "Segment generator: Random line segments" width=10cm
+* \image latex randomSegments.eps "Segment generator: Random line segments" width=15cm
  */
 CLASS_DECLSPEC
 void generateRandomSegments(size_t numSegments,
@@ -162,7 +145,7 @@ void generateRandomSegments(size_t numSegments,
  * @param [out] vSineSegmentsOut is the output vector
  *
  * * \image html sinePolyline.png "Polyline generator: Polylines from sine functions"
-* \image latex sinePolyline.eps "Polyline generator: Polylines from sine functions" width=10cm
+* \image latex sinePolyline.eps "Polyline generator: Polylines from sine functions" width=15cm
  */
 CLASS_DECLSPEC
 void generateSineSegments(
@@ -176,61 +159,6 @@ void generateSineSegments(
 							std::vector<Segment2>& vSineSegmentsOut
 							);
 
-
-/** @brief Generate a circle
- *
- * Returns points on a circle centered at the given coordinates
- */
-#if GEOM_PSEUDO3D==GEOM_TRUE
-CLASS_DECLSPEC
-void generateCircle(
-					int numPoints,
-					double x,
-					double y,
-					double z,
-					double radiusX,
-					double radiusY,
-					std::vector<Point2>& vCirclePointsOut
-					);
-#else
-CLASS_DECLSPEC
-void generateCircle(
-					int numPoints,
-					double x,
-					double y,
-					double radiusX,
-					double radiusY,
-					std::vector<Point2>& vCirclePointsOut
-					);
-#endif
-
-
-
-#if GEOM_PSEUDO3D==GEOM_TRUE
-/** @brief Generate a random surface
- *
- * @param numX,numY specifies the grid size and must be >1. numX*numY points are created
- * @param numCenters defines the number of extreme points (must be >0)
- * @param xmin,ymin,zmin,xmax,ymax,zmax specifies the geometric bounds
- * @param [out] vSurfacePointsOut is the output vector
- * @param seed initializes the random number generator RNG
- * (default: 0...mapped to a random seed, other values: constant initialization)
- *
- */
-CLASS_DECLSPEC
-void generateRandomSurfacePoints(
-							size_t numX,
-							size_t numY,
-							size_t numCenters,
-							double xmin,double ymin,double zmin,double xmax,double ymax,double zmax,
-							std::vector<Point2>& vSurfacePointsOut,
-							unsigned int seed
-						);
-
-#endif
-
-CLASS_DECLSPEC
-void shear(	std::vector<Point2>& vPointsInOut,double shearX,double shearY );
 
 
 /** @}*/
