@@ -118,4 +118,18 @@ inline bool is_collinear(const Point& a, const Point& b, const Point& c)
     return std::abs((b - a) * (c - b)) < EPSILON;
 }
 
+inline bool is_intersect(const Point& p0, const Point& p1, const Point& q0, const Point& q1) {
+  // from https://stackoverflow.com/questions/563198/whats-the-most-efficent-way-to-calculate-where-two-line-segments-intersect
+  Point r = p1 - p0;
+  Point s = q1 - q0;
+  if (fabs(r*s) < EPSILON && fabs((q0-p0)*r) > EPSILON) return false;
+  if (fabs(r*s) >= EPSILON) {
+    double t = (q0-p0)*s / (r*s);
+    double u = (p0-q0)*r / (s*r);
+    if (0<=t && t<=1 && 0<=u && u<=1) return true;
+    return false;
+  }
+  return false;
+}
+
 }
