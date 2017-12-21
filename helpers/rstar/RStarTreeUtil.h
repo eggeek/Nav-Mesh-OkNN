@@ -1,5 +1,4 @@
-#ifndef RSTARTREEUTIL_H
-#define RSTARTREEUTIL_H
+#pragma once
 #include "RStarTree.h"
 #include "Data.h"
 
@@ -125,12 +124,15 @@ class RStarTreeUtil
         static size_t rangeQuery2(RStarTree& tree, Point& center, double r, size_t k); // Exclusive outer range query
         static size_t rangeQuery2SmallTree(RStarTree& tree, Point& center, double r, size_t k); // Exclusive outer range query
 
+        // range query in ring(minr, maxr, q)
+        static void rangeQuery(const RStarTree& tree, const Point& q, double minr, double maxr, std::vector<Data_P>& outIter);
+
         static bool find(RStarTree& tree, Coord point[DIM]);
 
         // inline functions
         static bool isEnclosed(Point& point, Node_P node); // test if point is inclusive enclosed by node
-        static double minDis2(Point& point, Mbr& mbr); // min distance from point to node
-        static double maxDis2(Point& point, Mbr& mbr); // max distance from point to node
+        static double minDis2(const Point& point, const Mbr& mbr); // min distance from point to node
+        static double maxDis2(const Point& point, const Mbr& mbr); // max distance from point to node
         static double dis2(Point& point, Mbr& mbr); // max distance from point to point
 };
 
@@ -143,7 +145,7 @@ inline bool RStarTreeUtil::isEnclosed(Point& point, Node_P node)
     return true;
 }
 
-inline double RStarTreeUtil::minDis2(Point& point, Mbr& mbr)
+inline double RStarTreeUtil::minDis2(const Point& point, const Mbr& mbr)
 {
     double dis = 0;
     for(size_t dim = 0; dim < DIM; dim++)
@@ -155,7 +157,7 @@ inline double RStarTreeUtil::minDis2(Point& point, Mbr& mbr)
     return dis;
 }
 
-inline double RStarTreeUtil::maxDis2(Point& point, Mbr& mbr)
+inline double RStarTreeUtil::maxDis2(const Point& point, const Mbr& mbr)
 {
     double dis = 0;
     for(size_t dim = 0; dim < DIM; dim++)
@@ -177,7 +179,6 @@ inline double RStarTreeUtil::dis2(Point& point, Mbr& mbr)
     return dis;
 }
 
-#endif // RSTARTREEUTIL_H
 }
 
 

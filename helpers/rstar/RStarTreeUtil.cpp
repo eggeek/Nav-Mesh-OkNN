@@ -2,6 +2,8 @@
 
 namespace rstar {
 
+using namespace std;
+
 void RStarTreeUtil::validate(RStarTree& tree)
 {
     size_t cnt = 0;
@@ -168,6 +170,31 @@ bool RStarTreeUtil::find(RStarTree& tree, Coord point[DIM])
         }
     }
     return false;
+}
+
+void RStarTreeUtil::rangeQuery(const RStarTree& tree, const Point& q, double minr, double maxr, vector<Data_P>& outIter) {
+  Node_P_V queue;
+  queue.push_back(tree.root);
+  while (!queue.empty()) {
+    Node_P nodePtr = queue.back(); queue.pop_back();
+    if (nodePtr->level) {
+      const Node_P_V& children = *nodePtr->children;
+      for (size_t i = 0; i < children.size(); i++) {
+        const Mbr& mbr = children[i]->mbrn;
+        if (sqrt(minDis2(q, mbr)) <= maxr && sqrt(maxDis2(q, mbr)) >= minr)
+          queue.push_back(children[i]);
+      }
+    }
+    else {
+      const Entry_P_V& entries = *nodePtr->entries;
+      for (size_t i = 0; i < entries.size(); i++) {
+        Mbr& mbr = entries[i]->mbre;
+        if (sqrt(minDis2(q, mbr)) <= maxr && sqrt(maxDis2(q, mbr)) >= minr) {
+          outIter.push_back(entries[i]->data);
+        }
+      }
+    }
+  }
 }
 
 }
