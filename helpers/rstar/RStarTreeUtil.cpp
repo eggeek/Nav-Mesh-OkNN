@@ -197,6 +197,34 @@ void RStarTreeUtil::rangeQuery(const RStarTree& tree, const Point& q, double min
   }
 }
 
+MinHeapEntry RStarTreeUtil::iNearestNeighbour(MinHeap& heap, Point q) {
+  MinHeapEntry res(0, (Entry_P)nullptr);
+  while (!heap.isEmpty()) {
+    MinHeapEntry e = heap.pop();
+    Node_P nodePtr = e.nodePtr;
+    if (nodePtr) {
+      if (nodePtr->level) {
+        Node_P_V& children = *nodePtr->children;
+        for (const auto& it: children) {
+          double d = dis2(q, it->mbrn);
+          heap.push(MinHeapEntry(d, it));
+        }
+      }
+      else {
+        Entry_P_V& entries = *nodePtr->entries;
+        for (const auto& it: entries) {
+          double d = dis2(q, it->mbre);
+          heap.push(MinHeapEntry(d, it));
+        }
+      }
+    } else {
+      res = e;
+      break;
+    }
+  }
+  return res;
 }
+
+} // namespace rstar
 
 

@@ -126,6 +126,8 @@ class RStarTreeUtil
 
         // range query in ring(minr, maxr, q)
         static void rangeQuery(const RStarTree& tree, const Point& q, double minr, double maxr, std::vector<Data_P>& outIter);
+        // incremental nearest neighbor retrieval
+        static MinHeapEntry iNearestNeighbour(MinHeap& heap, Point q);
 
         static bool find(RStarTree& tree, Coord point[DIM]);
 
