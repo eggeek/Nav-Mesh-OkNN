@@ -112,7 +112,7 @@ void EDBTkNN::enlargeExplored(double preR, double newR) {
   updateObstacles(obs);
 }
 
-double EDBTkNN::ODC(Graph& g, pPoint p, double curR) {
+double EDBTkNN::ODC(Graph& g, pPoint p, double& curR) {
   // before call this function, Graph g must be initilized
   changeTarget(p);
   if (curR <= EPSILON) { // first time call ODC
@@ -132,6 +132,64 @@ double EDBTkNN::ODC(Graph& g, pPoint p, double curR) {
     }
   } while (true);
   return d;
+}
+
+vector<pPoint> EDBTkNN::OkNN(int k) {
+  vector<pPoint> res;
+  vector<pair<pPoint, double>> ps = Euclidean_NN(k);
+  priority_queue<pair<double, pPoint>, vector<pair<double, pPoint>>, less<pair<double, pPoint>>> que;
+  if (ps.empty()) return res;
+  pPoint p_ = ps.back().first;
+  double r = p_.distance(q);
+  double dmax;
+  enlargeExplored(0, r);
+  for (auto& it: ps) {
+    changeTarget(it.first);
+    it.second = ODC(g, it.first, r);
+  }
+  auto cmp = [&](pair<pPoint, double>& lhs, pair<pPoint, double>& rhs) {
+    return lhs.second < rhs.second;
+  };
+  sort(ps.begin(), ps.end(), cmp);
+  dmax = ps.back().second;
+  for (auto& it: ps) que.push({it.second, it.first});
+  do {
+    pair<pPoint, double> nxt = next_Euclidean_NN();
+    double d_o = ODC(g, nxt.first, r);
+    if (d_o < que.top().first) {
+      que.pop();
+      que.push({d_o, nxt.first});
+      dmax = que.top().first;
+    }
+    if (nxt.second > dmax) break;
+  } while (true);
+  while (!que.empty()) {
+    res.push_back(que.top().second);
+    que.pop();
+  }
+  return res;
+}
+
+vector<pair<pPoint, double>> EDBTkNN::Euclidean_NN(int k) {
+  heap.clear();
+  vector<pair<pPoint, double> > res;
+  for (int i=0; i<k; i++) {
+    rs::MinHeapEntry e = rs::RStarTreeUtil::iNearestNeighbour(heap, rs::Point(q.x, q.y));
+    if (e.entryPtr == nullptr) break;
+    pPoint p = *((pPoint*)e.entryPtr->data);
+    double d = e.key;
+    res.push_back({p, d});
+  }
+  return res;
+}
+
+pair<pPoint, double> EDBTkNN::next_Euclidean_NN() {
+  rs::MinHeapEntry e = rs::RStarTreeUtil::iNearestNeighbour(heap, rs::Point(q.x, q.y));
+  if (e.entryPtr == nullptr) return {pPoint{INF, INF}, INF};
+  else {
+    pPoint p = *((pPoint*)e.entryPtr->data);
+    return {p, e.key};
+  }
 }
 
 }// namespace EDBT

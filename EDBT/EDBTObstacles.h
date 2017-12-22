@@ -43,7 +43,7 @@ class ObstacleMap {
   vector<Obstacle> obs;
   rs::RStarTree rtree;
 
-  void read(istream& infile) {
+  ObstacleMap(istream& infile) {
     string header;
     int version;
 

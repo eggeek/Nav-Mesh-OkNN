@@ -1,4 +1,5 @@
 #include "RStarTree.h"
+#include "RStarTreeUtil.h"
 #include "Data.h"
 #include "EDBTObstacles.h"
 #include <set>
@@ -52,16 +53,35 @@ class EDBTkNN {
 
 public:
   ObstacleMap O;
+  vector<pPoint> goals;
+  pPoint q;
   Graph g;
+  rs::RStarTree rte; // entities
+  rs::MinHeap heap;
   // < seg({vid, vid}), ... >
   set<pii> explored;
   set<int> exploredV;
-  pPoint q;
 
-  double ODC(Graph& g, pPoint p, double curR);
+  EDBTkNN(ObstacleMap oMap, vector<pPoint> goals, pPoint q): O(oMap), goals(goals), q(q) {
+    g.init(O.vs, q, goals[0]);
+    initRtree();
+  }
+
+  void initRtree() {
+    for (auto& it: goals) {
+      rs::Mbr mbr(it.x, it.x, it.y, it.y);
+      rs::LeafNodeEntry leaf = rs::LeafNodeEntry(mbr, &it);
+      rte.insertData(&leaf);
+    }
+  }
+
+  double ODC(Graph& g, pPoint p, double& curR);
   void updateObstacles(set<pii> obs);
   void changeTarget(pPoint p);
   void enlargeExplored(double preR, double newR);
+  vector<pPoint> OkNN(int k);
+  vector<pair<pPoint, double>> Euclidean_NN(int k);
+  pair<pPoint, double> next_Euclidean_NN();
   inline pPoint getP(int vid) { return pPoint{(double)O.vs[vid].x, (double)O.vs[vid].y}; }
   inline ObstacleMap::Vertex getV(int vid) { return O.vs[vid]; }
 };
