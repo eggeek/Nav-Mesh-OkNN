@@ -1,22 +1,18 @@
+#pragma once
 #include "RStarTree.h"
 #include "geometry.h"
 #include <vector>
 #include <queue>
 #include <map>
+#include <string>
 #include <cassert>
 #include <iostream>
 
-namespace rs = rstar;
-namespace pl = polyanya;
-
 namespace EDBT {
 
+namespace rs = rstar;
+namespace pl = polyanya;
 using namespace std;
-
-void fail(const string& msg) {
-  cerr << msg << endl;
-  exit(1);
-}
 
 class ObstacleMap {
   public:
@@ -164,6 +160,11 @@ class ObstacleMap {
   }
 
   private:
+
+  static void fail(const string& msg) {
+    cerr << msg << endl;
+    exit(1);
+  }
 
   int AddVert(int x, int y) {
     if (!vert_id.count({x, y})) {

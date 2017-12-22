@@ -134,8 +134,8 @@ double EDBTkNN::ODC(Graph& g, pPoint p, double& curR) {
   return d;
 }
 
-vector<pPoint> EDBTkNN::OkNN(int k) {
-  vector<pPoint> res;
+vector<pair<pPoint, double>> EDBTkNN::OkNN(int k) {
+  vector<pair<pPoint, double>> res;
   vector<pair<pPoint, double>> ps = Euclidean_NN(k);
   priority_queue<pair<double, pPoint>, vector<pair<double, pPoint>>, less<pair<double, pPoint>>> que;
   if (ps.empty()) return res;
@@ -164,7 +164,7 @@ vector<pPoint> EDBTkNN::OkNN(int k) {
     if (nxt.second > dmax) break;
   } while (true);
   while (!que.empty()) {
-    res.push_back(que.top().second);
+    res.push_back({que.top().second, que.top().first});
     que.pop();
   }
   return res;

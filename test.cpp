@@ -9,6 +9,7 @@
 #include "knnheuristic.h"
 #include "RStarTreeUtil.h"
 #include "rtree.h"
+#include "EDBTknn.h"
 #include <stdio.h>
 #include <sstream>
 #include <iomanip>
@@ -24,6 +25,8 @@ using namespace polyanya;
 
 Mesh m;
 Point tp;
+EDBT::ObstacleMap* oMap;
+EDBT::EDBTkNN* edbt;
 SearchInstance* si;
 KnnInstance* ki;
 KnnHeuristic* hi;
@@ -258,11 +261,14 @@ void load_data() {
   //string scenario_path = "/Users/eggeek/project/nav-mesh-ornn/scenarios/arena.scen";
   string mesh_path = "/Users/eggeek/project/nav-mesh-ornn/meshes/aurora-merged.mesh";
   string scenario_path = "/Users/eggeek/project/nav-mesh-ornn/scenarios/aurora.scen";
+  string obs_path = "/Users/eggeek/project/nav-mesh-ornn/polygons/arena.poly";
   ifstream scenfile(scenario_path);
   ifstream meshfile(mesh_path);
+  ifstream obsfile(obs_path);
 
   MeshPtr mp = new Mesh(meshfile);
   m = *mp;
+  oMap = new EDBT::ObstacleMap(obsfile);
   unix = uniform_real_distribution<double>(m.get_minx(), m.get_maxx());
   uniy = uniform_real_distribution<double>(m.get_miny(), m.get_maxy());
   meshfile.close();
@@ -373,67 +379,6 @@ void test_heuristic_knn(int idx) {
   printf("total: %d, wrong: %d\n", actual, cnt);
 }
 
-void test_rtree() {
-  bgi::rtree<std::pair<Point, int>, bgi::rstar<16> > rtree;
-  pl::Point start = scenarios[0].start;
-  for (int i=0; i<(int)scenarios.size(); i++) {
-    rtree.insert(std::make_pair(scenarios[i].goal, i));
-  }
-  std::vector<std::pair<Point, int> > res;
-  rtree.query(bgi::nearest(start, 20), std::back_inserter(res));
-  reverse(res.begin(), res.end());
-  for (auto it: res) {
-    printf("(%.3lf, %.3lf) dist: %.3lf\n", it.first.x, it.first.y, it.first.distance(start));
-  }
-  Point p1 = rand_point();
-  Point p2 = rand_point();
-  bg::model::segment<Point> seg(p1, p2);
-  typedef bg::model::box<Point> box;
-  box b(Point{0, 0}, Point{scenarios[0].goal.x + EPSILON, scenarios[0].goal.y + EPSILON});
-  res.clear();
-  rtree.query(bgi::within(b) && bgi::nearest(seg, 10), std::back_inserter(res));
-  reverse(res.begin(), res.end());
-  printf("top1:\n");
-  printf("box: (%.5lf, %.5lf) (%.5lf, %.5lf)\n", b.min_corner().x, b.min_corner().y, b.max_corner().x, b.max_corner().y);
-  for (auto it: res) {
-    printf("seg:[(%.3lf, %.3lf), (%.3lf, %.3lf)] to point (%.3lf, %.3lf) dist: %.3lf\n",
-        seg.first.x, seg.first.y, seg.second.x, seg.second.y, it.first.x, it.first.y, it.first.distance_to_seg(seg.first, seg.second));
-  }
-  res.clear();
-  rtree.query(bgi::nearest(seg, 10), std::back_inserter(res));
-  reverse(res.begin(), res.end());
-  printf("top10:\n");
-  for (auto it: res) {
-    printf("seg:[(%.3lf, %.3lf), (%.3lf, %.3lf)] to point (%.3lf, %.3lf) dist: %.3lf\n",
-        seg.first.x, seg.first.y, seg.second.x, seg.second.y, it.first.x, it.first.y, it.first.distance_to_seg(seg.first, seg.second));
-  }
-
-  printf("size of rtree: %d\n", (int)rtree.size());
-  for (int i=0; i<(int)scenarios.size(); i++) {
-    size_t f = remove_ids_bulk(rtree, i);
-    if (f <= 0) assert(false);
-  }
-  printf("size of rtree: %d\n", (int)rtree.size());
-  assert(rtree.size() == 0);
-  int N = 50000;
-  std::vector<std::pair<Point, int> > nodes;
-  for (int i=0; i<N; i++) {
-    Point p = rand_point();
-    nodes.push_back(std::make_pair(p, i));
-  }
-  for (int i=0; i<N; i++) {
-    rtree.insert(nodes[i]);
-  }
-
-
-  printf("size of rtree: %d\n", (int)rtree.size());
-  for (int i=0; i<N; i++) {
-    int f = rtree.remove(std::make_pair(nodes[i].first, i));
-    if (f <= 0) assert(false);
-  }
-  printf("size of rtree: %d\n", (int)rtree.size());
-}
-
 void test_rstar() {
   using namespace rstar;
   RStarTree t;
@@ -451,10 +396,14 @@ void test_rstar() {
   }
 }
 
+void test_edbt(int idx, Scenario scen) {
+  edbt = new EDBT::EDBTkNN(*oMap, {scen.goal}, scen.start);
+  pair<Point, double> res = edbt->OkNN(1).back();
+  printf("idx:%d, point(%.3lf, %.3lf) dist: %.5lf\n", idx, res.first.x, res.first.y, res.second);
+}
+
 int main(int argv, char* args[]) {
   load_data();
-  test_rstar();
-  return 0;
   if (argv == 3) {
   // example1: ./bin/test knn 3
   // example2: ./bin/test poly 3
@@ -462,8 +411,12 @@ int main(int argv, char* args[]) {
     int idx = std::atoi(args[2]);
     if (t == "knn") {
       test_knn(idx, scenarios[idx]);
-    } else {
+    }
+    else if (t == "poly") {
       test_polyanya(idx, scenarios[idx]);
+    }
+    else if (t == "edbt") {
+      test_edbt(idx, scenarios[idx]);
     }
   }
   else {

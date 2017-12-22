@@ -1,6 +1,4 @@
-#ifndef DATA_H
-#define DATA_H
-
+#pragma once
 #include <sys/time.h>
 #include <stdio.h>
 #include <unistd.h>
@@ -257,7 +255,6 @@ inline void ConvexPolygon::print()
     crOFS.close();
 }
 
-#endif // DATA_H
 }
 
 

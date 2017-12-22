@@ -1,13 +1,14 @@
+#pragma once
 #include "RStarTree.h"
 #include "RStarTreeUtil.h"
 #include "Data.h"
 #include "EDBTObstacles.h"
 #include <set>
 
-namespace rs = rstar;
 
 namespace EDBT {
 
+namespace rs = rstar;
 using namespace std;
 typedef polyanya::Point pPoint;
 typedef pair<int, int> pii;
@@ -79,7 +80,7 @@ public:
   void updateObstacles(set<pii> obs);
   void changeTarget(pPoint p);
   void enlargeExplored(double preR, double newR);
-  vector<pPoint> OkNN(int k);
+  vector<pair<pPoint, double>> OkNN(int k);
   vector<pair<pPoint, double>> Euclidean_NN(int k);
   pair<pPoint, double> next_Euclidean_NN();
   inline pPoint getP(int vid) { return pPoint{(double)O.vs[vid].x, (double)O.vs[vid].y}; }
