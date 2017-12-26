@@ -1,4 +1,5 @@
 #include "RStarTreeUtil.h"
+#include "consts.h"
 
 namespace rstar {
 
@@ -172,11 +173,12 @@ bool RStarTreeUtil::find(RStarTree& tree, Coord point[DIM])
     return false;
 }
 
-void RStarTreeUtil::rangeQuery(const RStarTree& tree, const Point& q, double minr, double maxr, vector<Data_P>& outIter) {
+void RStarTreeUtil::rangeQuery(RStarTree* tree, Point q, double minr, double maxr, vector<Data_P>& outIter) {
   Node_P_V queue;
-  queue.push_back(tree.root);
+  queue.push_back(tree->root);
   while (!queue.empty()) {
     Node_P nodePtr = queue.back(); queue.pop_back();
+    if (!nodePtr) break;
     if (nodePtr->level) {
       const Node_P_V& children = *nodePtr->children;
       for (size_t i = 0; i < children.size(); i++) {
@@ -198,7 +200,7 @@ void RStarTreeUtil::rangeQuery(const RStarTree& tree, const Point& q, double min
 }
 
 MinHeapEntry RStarTreeUtil::iNearestNeighbour(MinHeap& heap, Point q) {
-  MinHeapEntry res(0, (Entry_P)nullptr);
+  MinHeapEntry res(INF, (Entry_P)nullptr);
   while (!heap.isEmpty()) {
     MinHeapEntry e = heap.pop();
     Node_P nodePtr = e.nodePtr;
@@ -206,14 +208,14 @@ MinHeapEntry RStarTreeUtil::iNearestNeighbour(MinHeap& heap, Point q) {
       if (nodePtr->level) {
         Node_P_V& children = *nodePtr->children;
         for (const auto& it: children) {
-          double d = dis2(q, it->mbrn);
+          double d = sqrt(dis2(q, it->mbrn));
           heap.push(MinHeapEntry(d, it));
         }
       }
       else {
         Entry_P_V& entries = *nodePtr->entries;
         for (const auto& it: entries) {
-          double d = dis2(q, it->mbre);
+          double d = sqrt(dis2(q, it->mbre));
           heap.push(MinHeapEntry(d, it));
         }
       }

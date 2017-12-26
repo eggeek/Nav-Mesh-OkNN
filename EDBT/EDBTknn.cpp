@@ -29,7 +29,7 @@ void EDBTkNN::updateObstacles(set<pii> obs) {
     Vertex v = getV(vid);
     for (int newid: newV) {
       Vertex newv = getV(newid);
-      if (O.isVisible({v, newv})) {
+      if (O->isVisible({v, newv})) {
         g.add_edge(v.id, newv.id, sqrt(Vertex::dist2(v, newv)));
       }
     }
@@ -38,11 +38,11 @@ void EDBTkNN::updateObstacles(set<pii> obs) {
     Vertex v = getV(vid);
     pPoint p = pPoint{(double)v.x, (double)v.y};
     // add edges between (s, v);
-    if (O.isVisible(g.start, p)) {
+    if (O->isVisible(g.start, p)) {
       g.add_edge(v.id, g.sid(), p.distance(g.start));
     }
     // add edges between (t, v);
-    if (O.isVisible(g.goal, p)) {
+    if (O->isVisible(g.goal, p)) {
       g.add_edge(v.id, g.tid(), p.distance(g.goal));
     }
   }
@@ -62,9 +62,13 @@ void EDBTkNN::changeTarget(pPoint p) {
   for (int vid: exploredV) {
     Vertex v = getV(vid);
     pPoint vp = pPoint{(double)v.x, (double)v.y};
-    if (O.isVisible(g.goal, vp)) {
+    if (O->isVisible(g.goal, vp)) {
       g.add_edge(vid, g.tid(), vp.distance(g.goal));
     }
+  }
+  // try to add edge between start and end
+  if (O->isVisible(p, q)) {
+    g.add_edge(g.sid(), g.tid(), p.distance(q));
   }
 }
 
@@ -103,7 +107,7 @@ double Graph::Dijkstra(double r) {
 
 void EDBTkNN::enlargeExplored(double preR, double newR) {
   vector<rs::Data_P> rawObs;
-  rs::RStarTreeUtil::rangeQuery(O.rtree, rs::Point(q.x, q.y), preR, newR, rawObs);
+  rs::RStarTreeUtil::rangeQuery(O->rtree, rs::Point(q.x, q.y), preR, newR, rawObs);
   set<pii> obs;
   for (auto itPtr: rawObs) {
     Seg seg = *((Seg*)itPtr);
@@ -114,14 +118,16 @@ void EDBTkNN::enlargeExplored(double preR, double newR) {
 
 double EDBTkNN::ODC(Graph& g, pPoint p, double& curR) {
   // before call this function, Graph g must be initilized
-  changeTarget(p);
+  // if didn't initialized with goal=p, change target
+  if (g.goal.distance(p) > EPSILON)
+    changeTarget(p);
   if (curR <= EPSILON) { // first time call ODC
     double r = p.distance(q);
     enlargeExplored(0, r);
   }
   double d = INF;
   do {
-    double d = g.Dijkstra(curR);
+    d = g.Dijkstra(curR);
     if (d <= curR) // find valid shortest path
       break;
     else if (fabs(d - INF) <= EPSILON) // not reachable
@@ -135,6 +141,8 @@ double EDBTkNN::ODC(Graph& g, pPoint p, double& curR) {
 }
 
 vector<pair<pPoint, double>> EDBTkNN::OkNN(int k) {
+  initRtree();
+  timer.start();
   vector<pair<pPoint, double>> res;
   vector<pair<pPoint, double>> ps = Euclidean_NN(k);
   priority_queue<pair<double, pPoint>, vector<pair<double, pPoint>>, less<pair<double, pPoint>>> que;
@@ -144,7 +152,6 @@ vector<pair<pPoint, double>> EDBTkNN::OkNN(int k) {
   double dmax;
   enlargeExplored(0, r);
   for (auto& it: ps) {
-    changeTarget(it.first);
     it.second = ODC(g, it.first, r);
   }
   auto cmp = [&](pair<pPoint, double>& lhs, pair<pPoint, double>& rhs) {
@@ -167,17 +174,22 @@ vector<pair<pPoint, double>> EDBTkNN::OkNN(int k) {
     res.push_back({que.top().second, que.top().first});
     que.pop();
   }
+  timer.stop();
   return res;
 }
 
 vector<pair<pPoint, double>> EDBTkNN::Euclidean_NN(int k) {
   heap.clear();
+  double d;
+  rs::Point rq(q.x, q.y);
+  d = sqrt(rs::RStarTreeUtil::dis2(rq, rte->root->mbrn));
+  heap.push(rs::MinHeapEntry(d, rte->root));
   vector<pair<pPoint, double> > res;
   for (int i=0; i<k; i++) {
     rs::MinHeapEntry e = rs::RStarTreeUtil::iNearestNeighbour(heap, rs::Point(q.x, q.y));
     if (e.entryPtr == nullptr) break;
     pPoint p = *((pPoint*)e.entryPtr->data);
-    double d = e.key;
+    d = e.key;
     res.push_back({p, d});
   }
   return res;

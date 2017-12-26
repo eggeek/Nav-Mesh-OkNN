@@ -33,12 +33,13 @@ class ObstacleMap {
   int nxt_id = 0;
   map<pii, int> vert_id;
   vector<Vertex> vs;
+  vector<Seg> perimeters;
   // <vid: oid>: find which obstacle vs[vid] belong to
   map<int, int> vid_oid;
   // obs: <obstacle, obstacle, ...>
   vector<Obstacle> obs;
-  rs::RStarTree rtree;
-
+  rs::RStarTree* rtree;
+  vector<rs::LeafNodeEntry> rtEntries;
   ObstacleMap(istream& infile) {
     string header;
     int version;
@@ -109,6 +110,12 @@ class ObstacleMap {
     {
         fail("Error parsing map (read too much)");
     }
+    rtree = new rs::RStarTree();
+  }
+  ObstacleMap() { }
+
+  ~ObstacleMap() {
+    if (rtree) delete rtree;
   }
 
   void initRtree() {
@@ -116,10 +123,17 @@ class ObstacleMap {
       for (int j=1; j<(int)obs[i].size(); j++) {
         const Vertex& v1 = vs[obs[i][j-1]];
         const Vertex& v2 = vs[obs[i][j]];
-        Seg seg(v1, v2);
-        rs::LeafNodeEntry leaf = rs::LeafNodeEntry(genSegMbr(v1, v2), &seg);
-        rtree.insertData(&leaf);
+        perimeters.push_back(Seg(v1, v2));
       }
+      const Vertex& v1 = vs[obs[i].back()];
+      const Vertex& v2 = vs[obs[i][0]];
+      perimeters.push_back(Seg(v1, v2));
+
+    }
+    for (Seg it: perimeters) {
+      rs::LeafNodeEntry leaf(genSegMbr(it.first, it.second), (rs::Data_P)&it);
+      rtEntries.push_back(leaf);
+      rtree->insertData(&(rtEntries.back()));
     }
   }
 
@@ -132,8 +146,8 @@ class ObstacleMap {
 
   bool isVisible(const pl::Point& p0, const pl::Point& p1) {
     rs::Node_P_V stack;
-    stack.push_back(rtree.root);
-    bool flag = false;
+    stack.push_back(rtree->root);
+    bool flag = true;
     while (!stack.empty()) {
       rs::Node_P c = stack.back(); stack.pop_back();
       rs::Mbr& mbr = c->mbrn;
@@ -149,7 +163,7 @@ class ObstacleMap {
           pl::Point v0 = pl::Point{(double)seg->first.x, (double)seg->first.y};
           pl::Point v1 = pl::Point{(double)seg->second.x, (double)seg->second.y};
           if (is_intersect(p0, p1, v0, v1)) {
-            flag = true;
+            flag = false;
             break;
           }
         }

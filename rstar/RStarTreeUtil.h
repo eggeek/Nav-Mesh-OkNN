@@ -125,7 +125,7 @@ class RStarTreeUtil
         static size_t rangeQuery2SmallTree(RStarTree& tree, Point& center, double r, size_t k); // Exclusive outer range query
 
         // range query in ring(minr, maxr, q)
-        static void rangeQuery(const RStarTree& tree, const Point& q, double minr, double maxr, std::vector<Data_P>& outIter);
+        static void rangeQuery(RStarTree* tree, Point q, double minr, double maxr, std::vector<Data_P>& outIter);
         // incremental nearest neighbor retrieval
         static MinHeapEntry iNearestNeighbour(MinHeap& heap, Point q);
 
