@@ -14,11 +14,13 @@ using namespace std;
 typedef polyanya::Point pPoint;
 typedef pair<int, int> pii;
 typedef ObstacleMap::Vertex Vertex;
+typedef const pPoint* pPtr;
 
 class Graph {
 public:
   vector<map<int, double>> es;
   vector<pPoint> vs;
+  vector<int> pre;
   int vertNum;
   vector<double> dist;
   // start id: vertNum, target id: vertNum+1;
@@ -38,6 +40,7 @@ public:
     vertNum = (int)vertices.size();
     vs.resize(vertNum + 2);
     es.resize(vertNum + 2);
+    pre.resize(vertNum + 2);
     for (int i=0; i<vertNum + 2; i++) es[i].clear();
     dist.resize(vertNum + 2);
     for (const Vertex& v: vertices)
@@ -66,6 +69,7 @@ public:
   set<pii> explored;
   set<int> exploredV;
   ObstacleMap* O;
+  vector<vector<pPoint>> paths;
 
   EDBTkNN(ObstacleMap* mapPtr) {
     O = mapPtr;
@@ -106,18 +110,25 @@ public:
       rte->insertData(&it);
   }
 
-  double ODC(Graph& g, pPoint p, double& curR);
+  double ODC(Graph& g, pPtr p, double& curR);
   double get_search_micro() {
     return timer.elapsed_time_micro();
   }
   void updateObstacles(set<pii> obs);
-  void changeTarget(pPoint p);
+  void changeTarget(pPtr p);
   void enlargeExplored(double preR, double newR);
-  vector<pair<pPoint, double>> OkNN(int k);
-  vector<pair<pPoint, double>> Euclidean_NN(int k);
-  pair<pPoint, double> next_Euclidean_NN();
+  vector<pair<pPtr, double>> OkNN(int k);
+  vector<pair<pPtr, double>> Euclidean_NN(int k);
+  pair<pPtr, double> next_Euclidean_NN();
   inline pPoint getP(int vid) { return pPoint{(double)O->vs[vid].x, (double)O->vs[vid].y}; }
   inline ObstacleMap::Vertex getV(int vid) { return O->vs[vid]; }
+
+  vector<pPoint> to_point_path(vector<int>& path_ids) {
+    vector<pPoint> res;
+    for (int i: path_ids)
+      res.push_back(g.vs[i]);
+    return res;
+  }
 
 private:
   warthog::timer timer;

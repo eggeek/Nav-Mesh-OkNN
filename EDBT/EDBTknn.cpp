@@ -49,7 +49,7 @@ void EDBTkNN::updateObstacles(set<pii> obs) {
   exploredV.insert(newV.begin(), newV.end());
 }
 
-void EDBTkNN::changeTarget(pPoint p) {
+void EDBTkNN::changeTarget(pPtr p) {
   // remove previous edges
   for (const auto& it: g.es[g.tid()]) {
     int to = it.first;
@@ -58,7 +58,7 @@ void EDBTkNN::changeTarget(pPoint p) {
     g.es[to].erase(rmIt);
   }
   g.es[g.tid()].clear();
-  g.vs[g.tid()] = g.goal = p;
+  g.vs[g.tid()] = g.goal = *p;
   for (int vid: exploredV) {
     Vertex v = getV(vid);
     pPoint vp = pPoint{(double)v.x, (double)v.y};
@@ -67,13 +67,14 @@ void EDBTkNN::changeTarget(pPoint p) {
     }
   }
   // try to add edge between start and end
-  if (O->isVisible(p, q)) {
-    g.add_edge(g.sid(), g.tid(), p.distance(q));
+  if (O->isVisible(*p, q)) {
+    g.add_edge(g.sid(), g.tid(), p->distance(q));
   }
 }
 
 double Graph::Dijkstra(double r) {
   fill(dist.begin(), dist.end(), INF);
+  fill(pre.begin(), pre.end(), -1);
   dist[sid()] = 0;
   // <dist, vid>
   priority_queue<pair<double, int>, vector<pair<double, int>>, greater<pair<double, int>>> q;
@@ -97,6 +98,7 @@ double Graph::Dijkstra(double r) {
       double nxtd = c.first + it.second;
       if (nxtd < dist[it.first]) {
         dist[it.first] = nxtd;
+        pre[it.first] = c.second;
         q.push({nxtd, it.first});
       }
     }
@@ -116,13 +118,13 @@ void EDBTkNN::enlargeExplored(double preR, double newR) {
   updateObstacles(obs);
 }
 
-double EDBTkNN::ODC(Graph& g, pPoint p, double& curR) {
+double EDBTkNN::ODC(Graph& g, pPtr p, double& curR) {
   // before call this function, Graph g must be initilized
   // if didn't initialized with goal=p, change target
-  if (g.goal.distance(p) > EPSILON)
+  if (g.goal.distance(*p) > EPSILON)
     changeTarget(p);
   if (curR <= EPSILON) { // first time call ODC
-    double r = p.distance(q);
+    double r = p->distance(q);
     enlargeExplored(0, r);
   }
   double d = INF;
@@ -140,28 +142,31 @@ double EDBTkNN::ODC(Graph& g, pPoint p, double& curR) {
   return d;
 }
 
-vector<pair<pPoint, double>> EDBTkNN::OkNN(int k) {
-  initRtree();
+vector<pair<pPtr, double>> EDBTkNN::OkNN(int k) {
+  paths.clear();
   timer.start();
-  vector<pair<pPoint, double>> res;
-  vector<pair<pPoint, double>> ps = Euclidean_NN(k);
-  priority_queue<pair<double, pPoint>, vector<pair<double, pPoint>>, less<pair<double, pPoint>>> que;
+  initRtree();
+  vector<pair<pPtr, double>> res;
+  vector<pair<pPtr, double>> ps = Euclidean_NN(k);
+  priority_queue<pair<double, pPtr>, vector<pair<double, pPtr>>, less<pair<double, pPtr>>> que;
   if (ps.empty()) return res;
-  pPoint p_ = ps.back().first;
-  double r = p_.distance(q);
+  pPtr p_ = ps.back().first;
+  double r = p_->distance(q);
   double dmax;
   enlargeExplored(0, r);
+  vector<int> curP;
   for (auto& it: ps) {
     it.second = ODC(g, it.first, r);
   }
-  auto cmp = [&](pair<pPoint, double>& lhs, pair<pPoint, double>& rhs) {
+  auto cmp = [&](pair<pPtr, double>& lhs, pair<pPtr, double>& rhs) {
     return lhs.second < rhs.second;
   };
   sort(ps.begin(), ps.end(), cmp);
   dmax = ps.back().second;
   for (auto& it: ps) que.push({it.second, it.first});
   do {
-    pair<pPoint, double> nxt = next_Euclidean_NN();
+    pair<pPtr, double> nxt = next_Euclidean_NN();
+    if(nxt.first == nullptr) break;
     double d_o = ODC(g, nxt.first, r);
     if (d_o < que.top().first) {
       que.pop();
@@ -178,28 +183,28 @@ vector<pair<pPoint, double>> EDBTkNN::OkNN(int k) {
   return res;
 }
 
-vector<pair<pPoint, double>> EDBTkNN::Euclidean_NN(int k) {
+vector<pair<pPtr, double>> EDBTkNN::Euclidean_NN(int k) {
   heap.clear();
   double d;
   rs::Point rq(q.x, q.y);
   d = sqrt(rs::RStarTreeUtil::dis2(rq, rte->root->mbrn));
   heap.push(rs::MinHeapEntry(d, rte->root));
-  vector<pair<pPoint, double> > res;
+  vector<pair<pPtr, double> > res;
   for (int i=0; i<k; i++) {
     rs::MinHeapEntry e = rs::RStarTreeUtil::iNearestNeighbour(heap, rs::Point(q.x, q.y));
     if (e.entryPtr == nullptr) break;
-    pPoint p = *((pPoint*)e.entryPtr->data);
+    pPtr p = (pPoint*)e.entryPtr->data;
     d = e.key;
     res.push_back({p, d});
   }
   return res;
 }
 
-pair<pPoint, double> EDBTkNN::next_Euclidean_NN() {
+pair<pPtr, double> EDBTkNN::next_Euclidean_NN() {
   rs::MinHeapEntry e = rs::RStarTreeUtil::iNearestNeighbour(heap, rs::Point(q.x, q.y));
-  if (e.entryPtr == nullptr) return {pPoint{INF, INF}, INF};
+  if (e.entryPtr == nullptr) return {nullptr, INF};
   else {
-    pPoint p = *((pPoint*)e.entryPtr->data);
+    pPtr p = (pPoint*)e.entryPtr->data;
     return {p, e.key};
   }
 }
