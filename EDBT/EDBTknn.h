@@ -98,6 +98,15 @@ public:
     if (O->isVisible(g.start, g.goal)) {
       g.add_edge(g.sid(), g.tid(), g.start.distance(g.goal));
     }
+    initSearch();
+  }
+
+  void initSearch() {
+    heap.clear();
+    rtEntries.clear();
+    paths.clear();
+    explored.clear();
+    exploredV.clear();
   }
 
   void initRtree() {

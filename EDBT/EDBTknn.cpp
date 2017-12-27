@@ -151,9 +151,9 @@ double EDBTkNN::ODC(Graph& g, pPtr p, double& curR) {
 }
 
 vector<pair<pPtr, double>> EDBTkNN::OkNN(int k) {
-  timer.start();
-  paths.clear();
   initRtree();
+  paths.clear();
+  timer.start();
   vector<pair<pPtr, double>> res;
   vector<pair<pPtr, double>> ps = Euclidean_NN(k);
   priority_queue<pair<double, pPtr>, vector<pair<double, pPtr>>, less<pair<double, pPtr>>> que;
