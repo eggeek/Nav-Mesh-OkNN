@@ -23,6 +23,7 @@ public:
   vector<int> pre;
   int vertNum;
   vector<double> dist;
+  vector<int> path_ids;
   // start id: vertNum, target id: vertNum+1;
   pPoint start;
   pPoint goal;
@@ -122,6 +123,14 @@ public:
   pair<pPtr, double> next_Euclidean_NN();
   inline pPoint getP(int vid) { return pPoint{(double)O->vs[vid].x, (double)O->vs[vid].y}; }
   inline ObstacleMap::Vertex getV(int vid) { return O->vs[vid]; }
+
+  void get_path(int k, vector<pPoint>& outIter) {
+    if (k >= (int)paths.size()) return;
+    else {
+      for (pPoint i: paths[k])
+        outIter.push_back(i);
+    }
+  }
 
   vector<pPoint> to_point_path(vector<int>& path_ids) {
     vector<pPoint> res;

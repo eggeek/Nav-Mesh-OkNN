@@ -111,6 +111,7 @@ class ObstacleMap {
         fail("Error parsing map (read too much)");
     }
     rtree = new rs::RStarTree();
+    initRtree();
   }
   ObstacleMap() { }
 
@@ -128,13 +129,13 @@ class ObstacleMap {
       const Vertex& v1 = vs[obs[i].back()];
       const Vertex& v2 = vs[obs[i][0]];
       perimeters.push_back(Seg(v1, v2));
-
     }
-    for (Seg it: perimeters) {
-      rs::LeafNodeEntry leaf(genSegMbr(it.first, it.second), (rs::Data_P)&it);
+    for (size_t i=0; i<perimeters.size(); i++) {
+      rs::LeafNodeEntry leaf(genSegMbr(perimeters[i].first, perimeters[i].second), (rs::Data_P)(&perimeters[i]));
       rtEntries.push_back(leaf);
-      rtree->insertData(&(rtEntries.back()));
     }
+    for (auto& it: rtEntries)
+      rtree->insertData(&it);
   }
 
   bool isVisible(const Seg& seg) {
@@ -163,6 +164,11 @@ class ObstacleMap {
           pl::Point v0 = pl::Point{(double)seg->first.x, (double)seg->first.y};
           pl::Point v1 = pl::Point{(double)seg->second.x, (double)seg->second.y};
           if (is_intersect(p0, p1, v0, v1)) {
+            if (is_collinear(p0, p1, v0) ||
+                is_collinear(p0, p1, v1) ||
+                is_collinear(v0, v1, p0) ||
+                is_collinear(v0, v1, p1))
+              continue;
             flag = false;
             break;
           }

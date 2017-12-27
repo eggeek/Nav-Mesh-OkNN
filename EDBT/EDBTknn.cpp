@@ -75,6 +75,7 @@ void EDBTkNN::changeTarget(pPtr p) {
 double Graph::Dijkstra(double r) {
   fill(dist.begin(), dist.end(), INF);
   fill(pre.begin(), pre.end(), -1);
+  path_ids.clear();
   dist[sid()] = 0;
   // <dist, vid>
   priority_queue<pair<double, int>, vector<pair<double, int>>, greater<pair<double, int>>> q;
@@ -85,6 +86,13 @@ double Graph::Dijkstra(double r) {
     if (c.first - EPSILON > dist[c.second]) continue;
     if (c.second == tid()) {
       res = c.first;
+      int last_id = c.second;
+      while (last_id != -1) {
+        path_ids.push_back(last_id);
+        last_id = pre[last_id];
+      }
+      reverse(path_ids.begin(), path_ids.end());
+      assert(path_ids.front() == sid());
       break;
     }
     // because all segments touch the ring will be retrieved
@@ -143,8 +151,8 @@ double EDBTkNN::ODC(Graph& g, pPtr p, double& curR) {
 }
 
 vector<pair<pPtr, double>> EDBTkNN::OkNN(int k) {
-  paths.clear();
   timer.start();
+  paths.clear();
   initRtree();
   vector<pair<pPtr, double>> res;
   vector<pair<pPtr, double>> ps = Euclidean_NN(k);
@@ -154,9 +162,13 @@ vector<pair<pPtr, double>> EDBTkNN::OkNN(int k) {
   double r = p_->distance(q);
   double dmax;
   enlargeExplored(0, r);
+  // `pPtr` is the pointer to goal point
+  // vector<int> is the sequence of vert ids of the path
+  map<pPtr, vector<int>> path_to_goals;
   vector<int> curP;
   for (auto& it: ps) {
     it.second = ODC(g, it.first, r);
+    path_to_goals[it.first] = vector<int>(g.path_ids);
   }
   auto cmp = [&](pair<pPtr, double>& lhs, pair<pPtr, double>& rhs) {
     return lhs.second < rhs.second;
@@ -177,6 +189,7 @@ vector<pair<pPtr, double>> EDBTkNN::OkNN(int k) {
   } while (true);
   while (!que.empty()) {
     res.push_back({que.top().second, que.top().first});
+    paths.push_back(to_point_path(path_to_goals[res.back().first]));
     que.pop();
   }
   timer.stop();
