@@ -17,13 +17,13 @@ void EDBTkNN::updateObstacles(set<pii> obs) {
     if (!exploredV.count(it.first)) newV.insert(it.first);
     if (!exploredV.count(it.second)) newV.insert(it.second);
   }
-  // add perimeters
-  for (const auto it: obs) if (!explored.count(it)){
-    explored.insert(it);
-    const Vertex v1 = getV(it.first);
-    const Vertex v2 = getV(it.second);
-    g.add_edge(v1.id, v2.id, sqrt(Vertex::dist2(v1, v2)));
-  }
+  //// add perimeters
+  //for (const auto it: obs) if (!explored.count(it)){
+  //  explored.insert(it);
+  //  const Vertex v1 = getV(it.first);
+  //  const Vertex v2 = getV(it.second);
+  //  g.add_edge(v1.id, v2.id, sqrt(Vertex::dist2(v1, v2)));
+  //}
   // add edges between vertices
   for (int vid: exploredV) {
     Vertex v = getV(vid);
@@ -32,6 +32,17 @@ void EDBTkNN::updateObstacles(set<pii> obs) {
       if (O->isVisible({v, newv})) {
         g.add_edge(v.id, newv.id, sqrt(Vertex::dist2(v, newv)));
       }
+    }
+  }
+  // add edges between new vertices
+  for (int vid1: newV) {
+    for (int vid2: newV) if (vid2 > vid1) {
+      pii p{vid1, vid2};
+      if (explored.count(p)) continue;
+      const Vertex v1 = getV(vid1);
+      const Vertex v2 = getV(vid2);
+      if (O->isVisible({v1, v2}))
+        g.add_edge(v1.id, v2.id, sqrt(Vertex::dist2(v1, v2)));
     }
   }
   for (int vid: newV) {
