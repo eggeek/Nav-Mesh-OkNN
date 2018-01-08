@@ -17,13 +17,6 @@ void EDBTkNN::updateObstacles(set<pii> obs) {
     if (!exploredV.count(it.first)) newV.insert(it.first);
     if (!exploredV.count(it.second)) newV.insert(it.second);
   }
-  //// add perimeters
-  //for (const auto it: obs) if (!explored.count(it)){
-  //  explored.insert(it);
-  //  const Vertex v1 = getV(it.first);
-  //  const Vertex v2 = getV(it.second);
-  //  g.add_edge(v1.id, v2.id, sqrt(Vertex::dist2(v1, v2)));
-  //}
   // add edges between vertices
   for (int vid: exploredV) {
     Vertex v = getV(vid);
