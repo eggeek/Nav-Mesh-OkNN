@@ -141,10 +141,15 @@ public:
     }
   }
 
-  vector<pPoint> to_point_path(vector<int>& path_ids) {
+  vector<pPoint> to_point_path(vector<int>& path_ids, pPtr last) {
     vector<pPoint> res;
-    for (int i: path_ids)
-      res.push_back(g.vs[i]);
+    assert(path_ids.back() == g.tid());
+    for (int i: path_ids) {
+      if (i != g.tid())
+        res.push_back(g.vs[i]);
+      else
+        res.push_back({last->x, last->y});
+    }
     return res;
   }
 
