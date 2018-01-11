@@ -208,14 +208,14 @@ MinHeapEntry RStarTreeUtil::iNearestNeighbour(MinHeap& heap, Point q) {
       if (nodePtr->level) {
         Node_P_V& children = *nodePtr->children;
         for (const auto& it: children) {
-          double d = sqrt(dis2(q, it->mbrn));
+          double d = sqrt(minDis2(q, it->mbrn));
           heap.push(MinHeapEntry(d, it));
         }
       }
       else {
         Entry_P_V& entries = *nodePtr->entries;
         for (const auto& it: entries) {
-          double d = sqrt(dis2(q, it->mbre));
+          double d = sqrt(minDis2(q, it->mbre));
           heap.push(MinHeapEntry(d, it));
         }
       }
