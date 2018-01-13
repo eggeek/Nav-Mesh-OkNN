@@ -3,6 +3,7 @@
 #include "geometry.h"
 #include "mesh.h"
 #include "rtree.h"
+#include "timer.h"
 #include <vector>
 #include <queue>
 #include <map>
@@ -32,16 +33,17 @@ enum struct ObsSegPosition {
 class ObstacleMap {
   public:
   struct Vertex {
-    int x, y, id;
+    long long x, y;
+    int id;
     public:
-    Vertex(int xx, int yy, int ID): x(xx), y(yy), id(ID) {};
+    Vertex(long long xx, long long yy, int ID): x(xx), y(yy), id(ID) {};
     inline static double dist2(const Vertex& lhs, const Vertex& rhs) {
       double dx = lhs.x - rhs.x;
       double dy = lhs.y - rhs.y;
       return dx*dx + dy*dy;
     }
   };
-  typedef pair<int, int> pii;
+  typedef pair<long long, long long> pii;
   // Obstacle: <vid, vid, ...>
   typedef vector<int> Obstacle;
   typedef pair<Vertex, Vertex> Seg;
@@ -85,7 +87,7 @@ class ObstacleMap {
     {
         fail("Error getting version number");
     }
-    if (version != 1)
+    if (version != 1 && version != 2)
     {
         cerr << "Got file with version " << version << endl;
         fail("Invalid version (expecting 1)");
@@ -102,6 +104,8 @@ class ObstacleMap {
         fail("Invalid number of polys");
     }
 
+    visObs.clear();
+    visObs.resize(N);
     for (int i = 0; i < N; i++)
     {
 
@@ -118,7 +122,7 @@ class ObstacleMap {
       }
       for (int j = 0; j < M; j++)
       {
-          int x, y;
+          long long x, y;
           if (!(infile >> x >> y))
           {
               fail("Error parsing map (can't get point)");
@@ -129,6 +133,22 @@ class ObstacleMap {
       }
       assert((int)cur.size() == M);
       obs.push_back(cur);
+      if (version == 2) {
+        int K;
+        if (!(infile >> K))
+        {
+          fail("Error parsing map (can't get visbility edges num)");
+        }
+        for (int k=0; k<K; k++) {
+          int u, v;
+          if (!(infile >> u >> v))
+          {
+            fail("Error parsing map (can't get visibility edges)");
+          }
+          assert(u < v);
+          visObs[i].insert({u, v});
+        }
+      }
     }
     assert((int)obs.size() == N);
 
@@ -141,7 +161,8 @@ class ObstacleMap {
     traversableRtree = new rs::RStarTree();
     initRtree();
     initTraversableRtree();
-    initVisObs();
+    if (version != 2)
+      initVisObs();
   }
   ObstacleMap() { }
 
@@ -152,7 +173,10 @@ class ObstacleMap {
 
   void initVisObs() {
     visObs.resize(obs.size());
+    double tot = 0.0;
     for (size_t i=0; i<obs.size(); i++) {
+      cerr << "obs: " << i << ", size: " << obs[i].size();
+      timer.start();
       for (size_t j=0; j<obs[i].size(); j++) {
         for (size_t k=j+1; k<obs[i].size(); k++) {
           if (isObsVisible(obs[i], j, k)) {
@@ -162,7 +186,12 @@ class ObstacleMap {
           }
         }
       }
+      timer.stop();
+      double t = timer.elapsed_time_micro();
+      tot += t;
+      cerr  << ", time: " << t / 1000.00 << "ms" << endl;
     }
+    cerr << "total cost: " << tot / 1000.00 << "ms" << endl;
   }
 
   void initTraversableRtree() {
@@ -248,14 +277,14 @@ class ObstacleMap {
 
       //printf("pop out seg: (%.9lf, %.9lf) (%.9lf, %.9lf)\n", cur.first.x, cur.first.y, cur.second.x, cur.second.y);
       for (const auto& p: polys) {
-        #ifndef NDEBUG
+        //#ifndef NDEBUG
         //for (size_t i=0; i< p->vertices.size(); i++) {
         //  pl::Vertex pv = mesh->mesh_vertices[p->vertices[i]];
         //  printf("(%.9lf, %.9lf) ", pv.p.x, pv.p.y);
         //}
         //pl::Vertex pv0 = mesh->mesh_vertices[p->vertices[0]];
         //printf("(%.9lf, %.9lf)\n", pv0.p.x, pv0.p.y);
-        #endif
+        //#endif
         PolySegPosition segPos = getPolySegPosition(cur.first, cur.second, *p);
         if (segPos == PolySegPosition::SEPARATED)
           continue;
@@ -394,14 +423,35 @@ class ObstacleMap {
     return !polys.empty();
   }
 
+  void printObsMap() {
+    printf("poly\n2\n");
+    int N = (int)obs.size();
+    printf("%d\n", N);
+    for (int i=0; i<N; i++) {
+      Obstacle ob = obs[i];
+      int M = (int)ob.size();
+      printf("%d", M);
+      for (size_t j=0; j<ob.size(); j++) {
+        printf(" %lld %lld", vs[ob[j]].x, vs[ob[j]].y);
+      }
+      printf("\n");
+      int K = (int)visObs[i].size();
+      printf("%d\n", K);
+      for (const auto& it: visObs[i]) {
+        printf("%lld %lld\n", it.first, it.second);
+      }
+    }
+  }
+
   private:
+    warthog::timer timer;
 
   static void fail(const string& msg) {
     cerr << msg << endl;
     exit(1);
   }
 
-  int AddVert(int x, int y) {
+  int AddVert(long long x, long long y) {
     if (!vert_id.count({x, y})) {
       vs.push_back(Vertex(x, y, nxt_id));
       vert_id[{x, y}] = nxt_id++;
