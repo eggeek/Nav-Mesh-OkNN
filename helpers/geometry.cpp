@@ -115,9 +115,10 @@ SegIntPos intersect2D_2Segments(const Point& p0, const Point& p1, const Point& q
       I0 = Point{q0.x, q0.y};
       return SegIntPos::INTERSECT;
     }
+    // they are collinear segments - get overlap or not
     double t0, t1;
     Point w2 = p1 - q0;
-    if (fabs(v.x) > EPSILON) {
+    if (fabs(v.x) > EPSILON) { // end of s1 in eqn for s2
       t0 = w.x / v.x;
       t1 = w2.x / v.x;
     } else {
@@ -127,7 +128,7 @@ SegIntPos intersect2D_2Segments(const Point& p0, const Point& p1, const Point& q
     if (t0 > t1) {
       std::swap(t0, t1);
     }
-    if (fabs(t0-1.0) > EPSILON || t1 < 0) {
+    if (t0 > 1.0 + EPSILON || t1 < -EPSILON) {
       return SegIntPos::DISJOINT; // NOT overlap
     }
     t0 = t0<0?0: t0;
@@ -146,12 +147,12 @@ SegIntPos intersect2D_2Segments(const Point& p0, const Point& p1, const Point& q
   // segments are skew and may intersect in a point
   // get the intersect parameter for s1
   double sI = (v * w) / D;
-  if (sI < 0 || sI > 1) // not intersect with s1
+  if (sI <= -EPSILON || sI >= 1 + EPSILON) // not intersect with s1
     return SegIntPos::DISJOINT;
 
   // get the intersect parameter for s2
   double tI = u * w / D;
-  if (tI < 0 || tI > 1) // not intersect with s2
+  if (tI <= -EPSILON || tI >= 1 + EPSILON) // not intersect with s2
     return SegIntPos::DISJOINT;
 
   I0 = p0 + sI * u;
