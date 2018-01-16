@@ -110,8 +110,10 @@ class KnnInstance {
 
         void set_start_goal(Point s, std::vector<Point> gs) {
             start = s;
-            goals = std::vector<Point>(gs);
-            final_nodes = std::vector<SearchNodePtr>();
+            goals.clear();
+            for (const auto it: gs)
+              goals.push_back(it);
+            final_nodes.clear();
         }
 
         int search();
