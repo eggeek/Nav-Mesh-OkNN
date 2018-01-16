@@ -274,8 +274,8 @@ void KnnInstance::gen_initial_nodes() {
 #define root_to_point(root) ((root) == -1 ? start : mesh->mesh_vertices[root].p)
 
 int KnnInstance::search() {
-  timer.start();
   init_search();
+  timer.start();
   if (mesh == nullptr) {
     timer.stop();
     return 0;
