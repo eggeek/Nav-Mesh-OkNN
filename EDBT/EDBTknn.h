@@ -86,11 +86,13 @@ public:
 
   ~EDBTkNN() {
     if (rte) delete rte;
-    if (O) delete O;
   }
 
   void set_start_goals(pPoint queryP, vector<pPoint> targets) {
-    if (rte) delete rte;
+    if (rte) {
+      delete rte;
+      rte = nullptr;
+    }
     q = queryP;
     goals.clear();
     for (auto it: targets) goals.push_back(it);
