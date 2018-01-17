@@ -129,6 +129,9 @@ class ObstacleMap {
           }
           int vid = AddVert(x, y);
           cur.push_back(vid);
+          if (vid_oid.count(vid)) {
+            assert(vid_oid[vid] == obs.size());
+          }
           vid_oid[vid] = obs.size();
       }
       assert((int)cur.size() == M);
@@ -251,7 +254,6 @@ class ObstacleMap {
         return isCoveredByTraversable(p0, p1);
     }
     else { // sPos == ObsSegPosition::ONBORDER
-      assert(vid_oid[seg.first.id] == vid_oid[seg.second.id]);
       return true;
     }
   }
