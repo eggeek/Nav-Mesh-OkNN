@@ -76,9 +76,13 @@ void normalize_polys(const vector<vector<pl::Point>>& polys, vector<vector<pl::P
     vector<pl::Point> normalPoly;
     for (int i=0; i<N; i++) {
       pl::Point newP = {(poly[i].x - min_x) / rangex, (poly[i].y - min_y) / rangey};
-      normalPoly.push_back(newP);
+      if (normalPoly.empty() || normalPoly.back().distance(newP) > EPS)
+        normalPoly.push_back(newP);
     }
-    normalized.push_back(normalPoly);
+    if (normalPoly.back().distance(normalPoly.front()) < EPS)
+      normalPoly.pop_back();
+    if (normalPoly.size() >= 3)
+      normalized.push_back(normalPoly);
   }
 }
 

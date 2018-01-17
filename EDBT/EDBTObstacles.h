@@ -180,9 +180,13 @@ class ObstacleMap {
       for (size_t j=0; j<obs[i].size(); j++) {
         for (size_t k=j+1; k<obs[i].size(); k++) {
           if (isObsVisible(obs[i], j, k)) {
-              int vid0 = min(obs[i][j], obs[i][k]);
-              int vid1 = max(obs[i][j], obs[i][k]);
-              visObs[i].insert({vid0, vid1});
+            int vid0 = min(obs[i][j], obs[i][k]);
+            int vid1 = max(obs[i][j], obs[i][k]);
+            if (vid0 == vid1) {
+              cerr << "duplicated index" << endl;
+              exit(1);
+            }
+            visObs[i].insert({vid0, vid1});
           }
         }
       }
