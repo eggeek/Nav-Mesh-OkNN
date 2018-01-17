@@ -13,7 +13,7 @@ def parse_poly(line):
         a, b = i.strip('()').split('&')
         ps.append((float(a), float(b)))
     if (dist(ps[0], ps[-1]) < 1e-8):
-        ps.pop()
+       ps.pop()
     return ps
 
 def parse(fname):
@@ -45,7 +45,7 @@ def rescale(polys):
     return polys
 
 def main(fname):
-    polys = [[(1, 1), (1, -1), (-1, -1), (-1, 1)]]
+    polys = []
     polys.extend(parse(fname))
     with open("real.poly", "w") as f:
         f.write("poly\n")
