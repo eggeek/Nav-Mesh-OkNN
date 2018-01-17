@@ -104,7 +104,8 @@ double Graph::Dijkstra(double r) {
     //  1. a path has been found
     //  2. terminate with res=INF (not reachable)
     // otherwise there is a `c` in queue that c.first >= r
-    if (c.first >= r) res = min(res, c.first);
+    if (c.first > r + EPSILON)
+      res = min(res, c.first);
 
     for (const auto& it: es[c.second]) {
       double nxtd = c.first + it.second;
