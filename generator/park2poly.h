@@ -59,8 +59,12 @@ void simplify_polys(const vector<vector<pl::Point>>& polys, vector<vector<pl::Po
   for (const auto& poly: polys) {
     vector<pl::Point> simpPoly;
     for (const auto p: poly) {
-      if (simpPoly.empty() || p.distance(simpPoly.back()) > EPSILON)
+      int sz = simpPoly.size();
+      if (simpPoly.empty() || p.distance(simpPoly.back()) > EPSILON) {
+        if (sz >= 2 && is_collinear(simpPoly[sz-2], simpPoly[sz-1], p))
+          simpPoly.pop_back();
         simpPoly.push_back(p);
+      }
     }
     if (simpPoly.back().distance(simpPoly.front()) <= EPSILON)
       simpPoly.pop_back();
