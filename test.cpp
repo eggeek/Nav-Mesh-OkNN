@@ -32,6 +32,8 @@ SearchInstance* si;
 KnnInstance* ki;
 KnnHeuristic* hi;
 vector<Scenario> scenarios;
+vector<Point> pts;
+Point global_start;
 
 const int MIN_X = 0, MAX_X = 1024, MIN_Y = 0, MAX_Y = 768;
 const int MAX_ITER = 10000;
@@ -236,17 +238,30 @@ void test_search() {
   //test_run_scenario(i, scenarios[i]);
 }
 
+void load_points(istream& infile ) {
+  int N;
+  infile >> N;
+  pts.resize(N);
+  for (int i=0; i<N; i++) {
+    infile >> pts[i].x >> pts[i].y;
+  }
+  infile >> global_start.x >> global_start.y;
+}
+
 void load_data() {
-  string mesh_path = "/Users/eggeek/project/nav-mesh-ornn/meshes/arena.mesh";
+  string mesh_path = "/Users/eggeek/project/nav-mesh-ornn/meshes/test.mesh";
   string scenario_path = "/Users/eggeek/project/nav-mesh-ornn/scenarios/arena.scen";
-  string obs_path = "/Users/eggeek/project/nav-mesh-ornn/polygons/arena.poly";
+  string obs_path = "/Users/eggeek/project/nav-mesh-ornn/polygons/test.poly2";
+  string pts_path = "/Users/eggeek/project/nav-mesh-ornn/points/test500.points";
   //string mesh_path = "/Users/eggeek/project/nav-mesh-ornn/meshes/aurora-merged.mesh";
   //string scenario_path = "/Users/eggeek/project/nav-mesh-ornn/scenarios/aurora.scen";
   //string obs_path = "/Users/eggeek/project/nav-mesh-ornn/polygons/aurora.poly";
   ifstream scenfile(scenario_path);
   ifstream meshfile(mesh_path);
   ifstream obsfile(obs_path);
+  ifstream ptsfile(pts_path);
 
+  load_points(ptsfile);
   mp = new Mesh(meshfile);
   m = *mp;
   oMap = new EDBT::ObstacleMap(obsfile, &m);
@@ -370,30 +385,67 @@ void test_edbt(int idx, Scenario scen) {
   print_path(path, idx);
 }
 
-bool compare_edbt_polyanya(int idx, Scenario scen, int verbose=false) {
+int compare_edbt_polyanya(int idx, Point start, int K=1, int verbose=false) {
   ki->verbose = verbose;
-  ki->set_K(1);
-  ki->set_start_goal(scen.start, {scen.goal});
+  ki->set_K(K);
+  ki->set_start_goal(start, pts);
   ki->search();
-  double dist_ki = ki->get_cost(0);
-  double cost_ki = ki->get_search_micro();
-
-  edbt->set_start_goals(scen.start, {scen.goal});
-  vector<pair<EDBT::pPtr, double>> res =  edbt->OkNN(1);
-  double dist_edbt = res.back().second;
-  double cost_edbt = edbt->get_search_micro();
-
-  printf("%10d,%10.5lf,%10.5lf,%10.5lf,%10.5lf\n", idx, dist_ki, dist_edbt, cost_ki, cost_edbt);
-  if (fabs(dist_edbt - dist_ki) > EPSILON) {
-    get_path_knn(idx);
-
-    vector<Point> path;
-    edbt->get_path(0, path);
-    print_path(path, idx);
-    return false;
+  if (verbose) {
+    cout << "knn-polyanya:" << endl;
+    for (int i=0; i<K; i++) {
+      get_path_knn(idx, i);
+      cout << setw(10) << idx << "/" << i << ",";
+      cout << setw(20) << ki->get_cost(i) << ",";
+      cout << setw(20) << ki->get_search_micro()<< endl;
+    }
   }
-    //assert(false);
-  return true;
+
+  edbt->set_start_goals(start, pts);
+  vector<pair<EDBT::pPtr, double>> res =  edbt->OkNN(K);
+  if (verbose) {
+    cout << "EDBT:" << endl;
+    for (int i=0; i<K; i++) {
+      vector<Point> path;
+      edbt->get_path(i, path);
+      print_path(path, idx);
+      cout << setw(10) << idx << "/" << i << ",";
+      cout << setw(20) << res[i].second << ",";
+      cout << setw(20) << edbt->get_search_micro()<< endl;
+    }
+  }
+
+  int cnt = 0;
+  for (int i=0; i<K; i++) {
+    double dist_ki = ki->get_cost(i);
+    double cost_ki = ki->get_search_micro();
+    double dist_edbt = res[i].second;
+    double cost_edbt = edbt->get_search_micro();
+    vector<Point> path;
+    ki->get_path_points(path, i);
+    int vnum_ki = (int)path.size();
+
+    edbt->get_path(i, path);
+    int vnum_edbt = (int)path.size();
+    cout << setw(10) << idx << "/" << i << ",";
+    cout << setw(20) << dist_ki << ",";
+    cout << setw(20) << dist_edbt << ",";
+    cout << setw(20) << cost_ki << ",";
+    cout << setw(20) << cost_edbt << ",";
+    cout << setw(10) << vnum_ki << ",";
+    cout << setw(10) << vnum_edbt << endl;
+    //printf("%10d/%d,%10.5lf,%10.5lf,%10.5lf,%10.5lf\n", idx, i, dist_ki, dist_edbt, cost_ki, cost_edbt);
+    if (fabs(dist_edbt - dist_ki) > EPSILON) {
+      cout << "Wrong: " << endl;
+      ki->get_path_points(path, i);
+      print_path(path, idx);
+      path.clear();
+      edbt->get_path(i, path);
+      print_path(path, idx);
+      //assert(false);
+    }
+    else cnt++;
+  }
+  return cnt;
 }
 
 int main(int argv, char* args[]) {
@@ -413,26 +465,20 @@ int main(int argv, char* args[]) {
       test_edbt(idx, scenarios[idx]);
     }
     else if (t == "cmp") {
+      int K = 5;
       if (idx >= 0)
-        compare_edbt_polyanya(idx, scenarios[idx], true);
+        compare_edbt_polyanya(idx, pts[idx], K, true);
       else {
         //for (int i=0; i<(int)scenarios.size(); i++) test_heuristic_knn(i);
-        printf("%10s,%10s,%10s,%10s,%10s\n","idx","dist_ki","dist_edbt","cost_ki","cost_edbt");
+        printf("%10s,%20s,%20s,%20s,%20s,%10s,%10s\n","idx","dist_ki","dist_edbt","cost_ki","cost_edbt", "vnum_ki", "vnum_edbt");
         int cnt = 0;
-        for (int i = 0; i < (int) scenarios.size(); i++) {
+        for (int i = 0; i < (int) pts.size(); i++) {
           //test_run_scenario(i, scenarios[i]);
-          cnt += compare_edbt_polyanya(i, scenarios[i]);
+          cnt += compare_edbt_polyanya(i, pts[i], K);
         }
-        printf("Total: %d, Correct: %d\n", (int)scenarios.size(), cnt);
+        printf("Total: %d, Correct: %d\n", (int)pts.size() * K, cnt);
       }
     }
-  }
-  else {
-    Scenario scen = scenarios[0];
-    // (3, 15) (19, 18)
-    scen.start = Point{1, 10};
-    scen.goal = Point{45, 10};
-    compare_edbt_polyanya(-1, scen);
   }
 
   // test_containment(tp);
@@ -447,5 +493,6 @@ int main(int argv, char* args[]) {
   if (ki) delete ki;
   if (hi) delete hi;
   if (mp) delete mp;
+  if (oMap) delete oMap;
   return 0;
 }
