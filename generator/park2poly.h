@@ -23,6 +23,23 @@ void print_polygons(vector<vector<pl::Point>>& outPolys) {
 
 }
 
+bool is_self_intersected(const vector<pl::Point>& poly) {
+  int N = (int)poly.size();
+  if (N == 3) return false;
+  for (int i=0; i<N; i++) {
+    pl::Point v0 = poly[i];
+    pl::Point v1 = poly[(i+1) % N];
+    for (int j=i+2; j<N; j++) {
+      pl::Point u0 = poly[j];
+      pl::Point u1 = poly[(j+1) % N];
+      if ((j+1) % N == i) continue;
+      if (is_intersect(v0, v1, u0, u1))
+        return true;
+    }
+  }
+  return false;
+}
+
 vector<vector<pl::Point>> read_polys(istream& infile) {
   // format:
   // poly
@@ -68,8 +85,25 @@ void simplify_polys(const vector<vector<pl::Point>>& polys, vector<vector<pl::Po
     }
     if (simpPoly.back().distance(simpPoly.front()) <= EPSILON)
       simpPoly.pop_back();
-    if (simpPoly.size() >= 3)
+    if (simpPoly.size() >= 3) {
+      if (is_self_intersected(simpPoly)) {
+        cerr << "found bad poly: " << endl;
+        cerr << simpPoly.size();
+        for (int k=0; k<(int)simpPoly.size(); k++) {
+          cerr << " " << simpPoly[k].x << " " << simpPoly[k].y;
+        }
+        cerr << endl;
+
+        cerr << "before simplify: " << endl;
+        cerr << poly.size();
+        for (int k=0; k<(int)poly.size(); k++) {
+          cerr << " " << poly[k].x << " " << poly[k].y;
+        }
+        cerr << endl;
+      }
+      assert(is_self_intersected(simpPoly) == false);
       simplified.push_back(simpPoly);
+    }
   }
 }
 
@@ -135,7 +169,6 @@ void sort_by_corner(vector<vector<pl::Point>>& polys) {
   sort(polys.begin(), polys.end(), cmp);
 }
 
-
 void normalize_polys(vector<vector<pl::Point>>& polys,  double size) {
   sort_by_corner(polys);
   int tot = (int)polys.size();
@@ -154,13 +187,26 @@ void normalize_polys(vector<vector<pl::Point>>& polys,  double size) {
       cerr << mbr.coord[0][0] << " " << mbr.coord[0][1] << "," << mbr.coord[1][0] << " " << mbr.coord[1][1] << endl;
     }
   }
-  //polys.insert(polys.begin(), {{d, d}, {size-d, d}, {size-d, size-d}, {d, size-d}});
+  //for (auto& poly: polys) {
+  //  reverse(poly.begin(), poly.end());
+  //}
+  // add border
+  polys.insert(polys.begin(), {{d, d}, {size-d, d}, {size-d, size-d}, {d, size-d}});
 }
 
 void random_choose_polys(vector<vector<pl::Point>>& polys, int num) {
   std::random_shuffle(polys.begin(), polys.end());
-  polys.erase(polys.begin() + num, polys.end());
+  if (num < (int)polys.size())
+    polys.erase(polys.begin() + num, polys.end());
 }
 
+vector<vector<pl::Point>> remove_bad_polys(vector<vector<pl::Point>>& raw_polys) {
+  vector<vector<pl::Point>> res;
+  for (auto& it: raw_polys) {
+    if (!is_self_intersected(it))
+      res.push_back(it);
+  }
+  return res;
+}
 
 }// namesapce geneartor
