@@ -16,17 +16,19 @@ void gen_vg(string polypath, string meshpath) {
   oMap->printObsMap();
 }
 
-void gen_poly(string parkpath, double EPS) {
+void gen_poly(string parkpath, double size, int num) {
   vector<vector<polyanya::Point>> polys;
   ifstream parkfile(parkpath);
   polys = generator::read_polys(parkfile);
+  if (num != -1)
+    generator::random_choose_polys(polys, num);
+  cerr << "size of polys: " << polys.size() << endl;
 
-  vector<vector<pl::Point>> normalized;
-  generator::normalize_polys(polys, normalized, EPS);
+  //vector<vector<pl::Point>> normalized;
+  generator::normalize_polys(polys, size);
 
   vector<vector<pl::Point>> simplified;
-  generator::simplify_polys(normalized, simplified, EPS);
-
+  generator::simplify_polys(polys, simplified);
   generator::print_polygons<long long>(simplified);
 }
 
@@ -73,8 +75,9 @@ int main(int argc, char* argv[]) {
     }
     else if (t == "pl") {
       string parkpath = string(argv[2]);
-      string eps = string(argv[3]);
-      gen_poly(parkpath, stod(eps));
+      string size = string(argv[3]);
+      string num = string(argv[4]);
+      gen_poly(parkpath, stod(size), stod(num));
     }
     else if (t == "pts") {
       string polypath = string(argv[2]);
