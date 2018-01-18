@@ -76,11 +76,16 @@ void EDBTkNN::changeTarget(pPtr p) {
   }
 }
 
-double Graph::Dijkstra(double r) {
-  fill(dist.begin(), dist.end(), INF);
-  fill(pre.begin(), pre.end(), -1);
-  path_ids.clear();
+double Graph::Dijkstra(double r, const set<int>& exploredV) {
+  for (int i: exploredV) {
+    dist[i] = INF;
+    pre[i] = -1;
+  }
   dist[sid()] = 0;
+  dist[tid()] = INF;
+  pre[sid()] = -1;
+  pre[tid()] = -1;
+  path_ids.clear();
   // <dist, vid>
   priority_queue<pair<double, int>, vector<pair<double, int>>, greater<pair<double, int>>> q;
   q.push({0, sid()});
@@ -142,7 +147,7 @@ double EDBTkNN::ODC(Graph& g, pPtr p, double& curR) {
   }
   double d = INF;
   do {
-    d = g.Dijkstra(curR);
+    d = g.Dijkstra(curR, exploredV);
     if (d <= curR) // find valid shortest path
       break;
     else if (fabs(d - INF) <= EPSILON) // not reachable

@@ -53,7 +53,7 @@ public:
   inline int sid() { return vertNum; }
   inline int tid() { return vertNum + 1; }
 
-  double Dijkstra(double r);
+  double Dijkstra(double r, const set<int>& exploredV);
 };
 
 
@@ -138,6 +138,7 @@ public:
   void get_path(int k, vector<pPoint>& outIter) {
     if (k >= (int)paths.size()) return;
     else {
+      outIter.clear();
       for (pPoint i: paths[k])
         outIter.push_back(i);
     }
