@@ -163,7 +163,7 @@ SegIntPos intersect2D_2Segments(const Point& p0, const Point& p1, const Point& q
 //    Input:  a point P, and a collinear segment S
 //    Return: 1 = P is inside S
 //            0 = P is  not inside S
-inline int inSegment( const Point& P, const Point& s0, const Point& s1) {
+int inSegment( const Point& P, const Point& s0, const Point& s1) {
     if (s0.x != s1.x) {    // S is not  vertical
         if (s0.x <= P.x && P.x <= s1.x)
             return 1;

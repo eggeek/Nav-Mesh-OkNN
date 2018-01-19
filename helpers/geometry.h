@@ -141,7 +141,7 @@ inline bool is_intersect(const Point& p0, const Point& p1, const Point& q0, cons
   return false;
 }
 
-inline int inSegment(const Point& p, const Point& s1, const Point& s2);
+int inSegment(const Point& p, const Point& s1, const Point& s2);
 SegIntPos intersect2D_2Segments(const Point& p0, const Point& p1, const Point& q0, const Point& q1, Point& I0, Point& I1);
 
 }
