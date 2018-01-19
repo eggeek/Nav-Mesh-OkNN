@@ -535,6 +535,7 @@ class ObstacleMap {
           pPoint v0 = pPoint{(double)seg->first.x, (double)seg->first.y};
           pPoint v1 = pPoint{(double)seg->second.x, (double)seg->second.y};
           pPoint I0, I1;
+
           SegIntPos sPos = intersect2D_2Segments(p0, p1, v0, v1, I0, I1);
           if (sPos == SegIntPos::DISJOINT) // joint at one vertex, regard this case as disjoint
             continue;
@@ -546,8 +547,12 @@ class ObstacleMap {
             break;
           }
           if (sPos == SegIntPos::OVERLAP) {
-            res = ObsSegPosition::ONBORDER;
-            break;
+            if (pl::inSegment(p0, v0, v1) == 1 && pl::inSegment(p1, v0, v1) == 1) {
+              res = ObsSegPosition::ONBORDER;
+              break;
+            }
+            else
+              continue;
           }
         }
       }
