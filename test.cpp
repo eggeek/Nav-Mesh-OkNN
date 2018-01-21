@@ -249,10 +249,10 @@ void load_points(istream& infile ) {
 }
 
 void load_data() {
-  string mesh_path = "/Users/eggeek/project/nav-mesh-ornn/meshes/test.mesh";
+  string mesh_path = "/Users/eggeek/project/nav-mesh-ornn/meshes/9000.mesh";
   string scenario_path = "/Users/eggeek/project/nav-mesh-ornn/scenarios/arena.scen";
-  string obs_path = "/Users/eggeek/project/nav-mesh-ornn/polygons/test.poly2";
-  string pts_path = "/Users/eggeek/project/nav-mesh-ornn/points/test500.points";
+  string obs_path = "/Users/eggeek/project/nav-mesh-ornn/polygons/9000.poly2";
+  string pts_path = "/Users/eggeek/project/nav-mesh-ornn/points/polys9000_pts9000.points";
   //string mesh_path = "/Users/eggeek/project/nav-mesh-ornn/meshes/aurora-merged.mesh";
   //string scenario_path = "/Users/eggeek/project/nav-mesh-ornn/scenarios/aurora.scen";
   //string obs_path = "/Users/eggeek/project/nav-mesh-ornn/polygons/aurora.poly";
@@ -426,7 +426,9 @@ int compare_edbt_polyanya(int idx, Point start, int K=1, int verbose=false) {
 
     edbt->get_path(i, path);
     int vnum_edbt = (int)path.size();
-    cout << setw(10) << idx << "/" << i << ",";
+    cout << setw(10) << idx << ",";
+    cout << setw(5) << K << ",";
+    cout << setw(5) << i << ",";
     cout << setw(20) << dist_ki << ",";
     cout << setw(20) << dist_edbt << ",";
     cout << setw(20) << cost_ki << ",";
@@ -465,18 +467,21 @@ int main(int argv, char* args[]) {
       test_edbt(idx, scenarios[idx]);
     }
     else if (t == "cmp") {
-      int K = 5;
       if (idx >= 0)
-        compare_edbt_polyanya(idx, pts[idx], K, true);
+        compare_edbt_polyanya(idx, pts[idx], 5, true);
       else {
-        //for (int i=0; i<(int)scenarios.size(); i++) test_heuristic_knn(i);
-        printf("%10s,%20s,%20s,%20s,%20s,%10s,%10s\n","idx","dist_ki","dist_edbt","cost_ki","cost_edbt", "vnum_ki", "vnum_edbt");
-        int cnt = 0;
-        for (int i = 0; i < (int) pts.size(); i++) {
-          //test_run_scenario(i, scenarios[i]);
-          cnt += compare_edbt_polyanya(i, pts[i], K);
+        printf("%10s,%5s,%5s,%20s,%20s,%20s,%20s,%10s,%10s\n",
+            "idx","K","order","dist_ki","dist_edbt","cost_ki","cost_edbt", "vnum_ki", "vnum_edbt");
+        int total = 0;
+        for (int K=5; K<=20; K+=5) {
+          int cnt = 0;
+          for (int i = 0; i < (int) pts.size(); i++) {
+            //test_run_scenario(i, scenarios[i]);
+            cnt += compare_edbt_polyanya(i, pts[i], K);
+            total++;
+          }
+          printf("Total: %d, Correct: %d\n", total, cnt);
         }
-        printf("Total: %d, Correct: %d\n", (int)pts.size() * K, cnt);
       }
     }
   }
