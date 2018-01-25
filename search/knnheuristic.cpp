@@ -108,7 +108,7 @@ int KnnHeuristic::succ_to_node(
         }
       }
       nodes[out++] = {nullptr, root, succ.left, succ.right, left_vertex, right_vertex, next_polygon, g, g};
-      nodes[out-1].heuristic_gid = parent->heuristic_gid;
+      nodes[out-1].heuristic_gid = -1;
     };
 
     const Point& parent_root = (parent->root == -1? start: mesh->mesh_vertices[parent->root].p);
@@ -205,11 +205,9 @@ void KnnHeuristic::gen_initial_nodes() {
     for (int i = 0; i < num_nodes; i++) {
       SearchNodePtr nxt = new (node_pool->allocate()) SearchNode(nodes[i]);
       const Point& nxt_root = (nxt->root == -1? start: mesh->mesh_vertices[nxt->root].p);
-      //nxt->f += get_knn_h_value(nxt_root, nxt->left, nxt->right);
-      nxt->heuristic_gid = get_knn(nxt->left, nxt->right);
-      //nxt->heuristic_gid = get_knn(nxt_root, 1);
-      Point goal = Point(goals[nxt->heuristic_gid]);
-      nxt->f += get_h_value(nxt_root, goal, nxt->left, nxt->right);
+      std::pair<int, double> nxth = get_min_hueristic(nxt_root, nxt->left, nxt->right);
+      nxt->heuristic_gid = nxth.first;
+      nxt->f = nxth.second + nxt->g;
       nxt->parent = lazy;
       #ifndef NDEBUG
       if (verbose) {
@@ -280,8 +278,8 @@ void KnnHeuristic::gen_initial_nodes() {
 #define root_to_point(root) ((root) == -1 ? start : mesh->mesh_vertices[root].p)
 
 int KnnHeuristic::search() {
-  timer.start();
   init_search();
+  timer.start();
   if (mesh == nullptr) {
     timer.stop();
     return 0;
@@ -309,14 +307,21 @@ int KnnHeuristic::search() {
     if (reached.find(node->heuristic_gid) != reached.end()) {
       // reset heuristic goal
       const Point& root = node->root == -1? start: mesh->mesh_vertices[node->root].p;
-      node->heuristic_gid = get_knn(node->left, node->right);
-      //node->heuristic_gid = get_knn(root, 1);
+      //node->heuristic_gid = get_knn(node->left, node->right);
+      std::pair<int, double> nexth = get_min_hueristic(root, node->left, node->right);
+      node->heuristic_gid = nexth.first;
+      node->f = nexth.second + node->g;
       if (node->heuristic_gid == -1) {
-        assert((int)final_nodes.size() == K);
+        assert((int)final_nodes.size() == std::min(K, (int)goals.size()));
         break;
       };
-      node->f = node->g + get_h_value(root, goals[node->heuristic_gid], node->left, node->right);
-      assert(node->heuristic_gid != -1);
+      #ifndef NDEBUG
+      if (verbose) {
+        std::cerr << "\tpushing: ";
+        print_node(node, std::cerr);
+        std::cerr << std::endl;
+      }
+      #endif
       open_list.push(node);
       nodes_pushed++;
       continue;
@@ -354,7 +359,6 @@ int KnnHeuristic::search() {
           // node pointer to this after allocating space for it.
           search_nodes_to_push[0].parent = node;
           node = new (node_pool->allocate()) SearchNode(search_nodes_to_push[0]);
-          node->heuristic_gid = get_knn(node->left, node->right);
           nodes_generated++;
         }
         if (!end_polygons[search_nodes_to_push[0].next_polygon].empty()) {
@@ -377,12 +381,9 @@ int KnnHeuristic::search() {
       // update h value before we push
       const SearchNodePtr nxt = new (node_pool->allocate()) SearchNode(search_nodes_to_push[i]);
       const Point& nxt_root = (nxt->root == -1 ? start: mesh->mesh_vertices[nxt->root].p);
-      //nxt->f += get_knn_h_value(nxt_root, nxt->left, nxt->right);
-      if (nxt->root != node->root) nxt->heuristic_gid = get_knn(nxt->left, nxt->right);
-      else nxt->heuristic_gid = node->heuristic_gid;
-      //nxt->heuristic_gid = get_knn(nxt_root, 1);
-      Point goal = goals[nxt->heuristic_gid];
-      nxt->f += get_h_value(nxt_root, goal, nxt->left, nxt->right);
+      std::pair<int, double> nxth = get_min_hueristic(nxt_root, nxt->left, nxt->right);
+      nxt->heuristic_gid = nxth.first;
+      nxt->f = nxt->g + nxth.second;
       nxt->parent = node;
       #ifndef NDEBUG
       if (verbose) {
@@ -407,7 +408,9 @@ int KnnHeuristic::search() {
 void KnnHeuristic::print_node(SearchNodePtr node, std::ostream& outfile) {
   outfile << "root=" << root_to_point(node->root) << "; left=" << node->left
           << "; right=" << node->right << "; f=" << node->f << ", g="
-          << node->g;
+          << node->g << "; heuristic_gid=" << node->heuristic_gid;
+  if (node->heuristic_gid != -1)
+    outfile << "(" << this->goals[node->heuristic_gid].x << "," << this->goals[node->heuristic_gid].y << ")";
 }
 
 void KnnHeuristic::get_path_points(std::vector<Point>& out, int k) {
@@ -458,7 +461,7 @@ void KnnHeuristic::deal_final_node(const SearchNodePtr node) {
   }();
 
   assert(node->goal_id != -1);
-  //assert(reached.find(node->goal_id) == reached.end() || reached[node->goal_id] < node->f);
+  assert(reached.find(node->goal_id) == reached.end() || reached[node->goal_id] <= node->f);
 
   if (reached.find(node->goal_id) == reached.end()) {
     int end_polygon = node->next_polygon;
@@ -469,9 +472,21 @@ void KnnHeuristic::deal_final_node(const SearchNodePtr node) {
     true_final->set_goal_id(node->goal_id);
     reached[node->goal_id] = node->f;
     final_nodes.push_back(true_final);
-    bool flag = rtree.remove(std::make_pair(goals[node->goal_id], node->goal_id));
-    if (!flag) assert(false);
+    //bool flag = rtree.remove(std::make_pair(goals[node->goal_id], node->goal_id));
+    //if (!flag) assert(false);
     nodes_generated++;
+
+    #ifndef NDEBUG
+    if (verbose) {
+      std::vector<Point> out;
+      get_path_points(out, final_nodes.size() - 1);
+      std::cout << "path " << final_nodes.size() - 1 << ";";
+      for (size_t i=0; i<out.size(); i++) {
+        std::cout << " (" << out[i].x << ", " << out[i].y << ")";
+      }
+      std::cout << std::endl;
+    }
+    #endif
   }
 }
 
@@ -493,6 +508,178 @@ void KnnHeuristic::gen_final_nodes(const SearchNodePtr node, const Point& rootPo
       nodes_generated++;
       nodes_pushed++;
     }
+}
+
+/*
+ *   .........\.......p'......../...........
+ *   ..........\....area:C...../............
+ *   area:A     l-------------r.....area:B
+ *   ........../....area:C'...\.............
+ *   ........./.......p........\............
+ *
+ * A : nearest neighbour of point l
+ * B : nearest neigbhour of point r
+ * C : nearest neighbour of point p
+ * C': nearest neighbour of point p'
+ */
+
+rs::MinHeapEntry KnnHeuristic::NearestInAreaAB(double angle0, double angle1, const Point& a, double curMin) {
+
+  double angleDiff = angle1 - angle0;
+  if (angleDiff <= -EPSILON)
+    angleDiff += 360.0;
+
+  auto isInArea = [&](const Point& v0, const Point& v1) {
+    Point vec0 = v0 - a;
+    Point vec1 = v1 - a;
+    angle_timer.start();
+    double angleV0 = get_angle(vec0, true) - angle0;
+    double angleV1 = get_angle(vec1, true) - angle0;
+    angle_timer.stop();
+    angle_using += angle_timer.elapsed_time_micro();
+    if (angleV1 < angleV0 - EPSILON)
+      angleV0 -= 360.0;
+    if (angleV1 < -EPSILON || angleV0 > angleDiff + EPSILON) {
+      if (angleV1 + 360 < -EPSILON || angleV0 + 360 > angleDiff + EPSILON)
+        return false;
+      return true;
+    }
+    return true;
+  };
+
+  auto isMbrInArea = [&](const rs::Mbr mbr) {
+    std::vector<Point> ps({
+        {mbr.coord[0][0], mbr.coord[1][0]},
+        {mbr.coord[0][1], mbr.coord[1][0]},
+        {mbr.coord[0][1], mbr.coord[1][1]},
+        {mbr.coord[0][0], mbr.coord[1][1]}
+    });
+    for (int i=0; i<4; i++) {
+      const Point& v0 = ps[i];
+      const Point& v1 = ps[(i+1)%4];
+      if (isInArea(v0, v1))
+        return true;
+    }
+    return false;
+  };
+
+  rs::MinHeap heap;
+  rs::Point P(a.x, a.y);
+  double initD = sqrt(rs::RStarTreeUtil::minDis2(P, rte->root->mbrn));
+  heap.push(rs::MinHeapEntry(initD, rte->root));
+  rs::MinHeapEntry res(INF, rte->root);
+  while (!heap.isEmpty()) {
+    rs::MinHeapEntry c = heap.pop();
+    if (c.nodePtr) { // it's interior node
+      if (c.nodePtr->level) {
+        for (const auto& it: *c.nodePtr->children) if (isMbrInArea(it->mbrn)) {
+          double d = sqrt(rs::RStarTreeUtil::minDis2(P, it->mbrn));
+          if (d <= curMin + EPSILON)
+            heap.push(rs::MinHeapEntry(d, it));
+        }
+      }
+      else {
+        for (const auto& it: *c.nodePtr->entries) {
+          int gid = *((int*)(it->data));
+          if (reached.find(gid) != reached.end())
+            continue;
+          if (isMbrInArea(it->mbre)) {
+            double d = sqrt(rs::RStarTreeUtil::minDis2(P, it->mbre));
+            if (d <= curMin + EPSILON)
+              heap.push(rs::MinHeapEntry(d, it));
+          }
+        }
+      }
+    }
+    else { // it's leaf node
+      res = c;
+      break;
+    }
+  }
+  while (!heap.isEmpty()) heap.pop();
+  return res;
+}
+
+rs::MinHeapEntry KnnHeuristic::NearestInAreaC(double angle0, double angle1, const Point& p, const Point& l, const Point& r, double curMin) {
+
+  double angleDiff = angle1 - angle0;
+  if (angleDiff <= -EPSILON)
+    angleDiff += 360.0;
+
+  auto isInArea = [&](const Point& v0, const Point& v1) {
+    if (v0.distance(v1) <= EPSILON) {
+      Orientation o = get_orientation(v0, l, r);
+      if (o == Orientation::CW)
+        return false;
+    }
+    Point vec0 = v0 - p;
+    Point vec1 = v1 - p;
+    angle_timer.start();
+    double angleV0 = get_angle(vec0) - angle0;
+    double angleV1 = get_angle(vec1) - angle0;
+    angle_timer.stop();
+    angle_using += angle_timer.elapsed_time_micro();
+    if (angleV1 < angleV0 - EPSILON)
+      angleV0 -= 360.0;
+    if (angleV1 < - EPSILON || angleV0 > angleDiff + EPSILON) {
+      if (angleV1 + 360 < -EPSILON || angleV0 + 360 > angleDiff + EPSILON)
+        return false;
+      return true;
+    }
+    else return true;
+  };
+
+  auto isMbrInArea = [&](const rs::Mbr mbr) {
+    std::vector<Point> ps({
+        {mbr.coord[0][0], mbr.coord[1][0]},
+        {mbr.coord[0][1], mbr.coord[1][0]},
+        {mbr.coord[0][1], mbr.coord[1][1]},
+        {mbr.coord[0][0], mbr.coord[1][1]}
+    });
+    for (int i=0; i<4; i++) {
+      const Point& v0 = ps[i];
+      const Point& v1 = ps[(i+1)%4];
+      if (isInArea(v0, v1))
+        return true;
+    }
+    return false;
+  };
+
+  rs::MinHeap heap;
+  rs::Point P(p.x, p.y);
+  double initD = sqrt(rs::RStarTreeUtil::minDis2(P, rte->root->mbrn));
+  heap.push(rs::MinHeapEntry(initD, rte->root));
+  rs::MinHeapEntry res(INF, rte->root);
+  while (!heap.isEmpty()) {
+    rs::MinHeapEntry c = heap.pop();
+    if (c.nodePtr) { // it's interior node
+      if (c.nodePtr->level) {
+        for (const auto& it: *c.nodePtr->children) if (isMbrInArea(it->mbrn)) {
+          double d = sqrt(rs::RStarTreeUtil::minDis2(P, it->mbrn));
+          if (d <= curMin + EPSILON)
+            heap.push(rs::MinHeapEntry(d, it));
+        }
+      }
+      else {
+        for (const auto& it: *c.nodePtr->entries) {
+          int gid = *((int*)(it->data));
+          if (reached.find(gid) != reached.end())
+            continue;
+          if (isMbrInArea(it->mbre)) {
+            double d = sqrt(rs::RStarTreeUtil::minDis2(P, it->mbre));
+            if (d <= curMin + EPSILON)
+              heap.push(rs::MinHeapEntry(d, it));
+          }
+        }
+      }
+    }
+    else { // it's leaf node
+      res = c;
+      break;
+    }
+  }
+  while (!heap.isEmpty()) heap.pop();
+  return res;
 }
 
 #undef root_to_point
