@@ -36,7 +36,8 @@ class KnnHeuristic {
         // poly_id: goal1, goal2, ...
         std::vector<std::vector<int>> end_polygons;
         // <i, v>: reached ith goal with cost v
-        std::map<int, double> reached;
+        //std::map<int, double> reached;
+        std::vector<double> reached;
         pq open_list;
 
         // Best g value for a specific vertex.
@@ -130,8 +131,10 @@ class KnnHeuristic {
               if (res.key == INF) // not found
                 break;
               int gid = *((int*)res.entryPtr->data);
-              if (reached.find(gid) == reached.end())
+              if (fabs(reached[gid] - INF) <= EPSILON)
                 break;
+              //if (reached.find(gid) == reached.end())
+              //  break;
             }
             if (res.key != INF)
               updateRes(res, p.distance({P.coord[0], P.coord[1]}));
@@ -238,8 +241,9 @@ class KnnHeuristic {
             search_id++;
             open_list = pq();
             final_nodes = std::vector<SearchNodePtr>();
-            reached.clear();
             initRtree();
+            reached.resize(goals.size());
+            fill(reached.begin(), reached.end(), INF);
             angle_using = 0;
             nodes_generated = 0;
             nodes_pushed = 0;
@@ -292,7 +296,8 @@ class KnnHeuristic {
         void set_start_goal(Point s, std::vector<Point> gs) {
             start = s;
             goals = std::vector<Point>(gs);
-            if (rte) delete rte;
+            if (rte != nullptr)
+              delete rte;
 
             /*
             rtree.clear();

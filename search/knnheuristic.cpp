@@ -108,7 +108,7 @@ int KnnHeuristic::succ_to_node(
         }
       }
       nodes[out++] = {nullptr, root, succ.left, succ.right, left_vertex, right_vertex, next_polygon, g, g};
-      nodes[out-1].heuristic_gid = -1;
+      nodes[out-1].heuristic_gid = parent->heuristic_gid;
     };
 
     const Point& parent_root = (parent->root == -1? start: mesh->mesh_vertices[parent->root].p);
@@ -304,7 +304,8 @@ int KnnHeuristic::search() {
     }
 
     assert(node->heuristic_gid!= -1);
-    if (reached.find(node->heuristic_gid) != reached.end()) {
+    //if (reached.find(node->heuristic_gid) != reached.end()) {
+    if (fabs(reached[node->heuristic_gid] - INF) > EPSILON) {
       // reset heuristic goal
       const Point& root = node->root == -1? start: mesh->mesh_vertices[node->root].p;
       //node->heuristic_gid = get_knn(node->left, node->right);
@@ -381,9 +382,17 @@ int KnnHeuristic::search() {
       // update h value before we push
       const SearchNodePtr nxt = new (node_pool->allocate()) SearchNode(search_nodes_to_push[i]);
       const Point& nxt_root = (nxt->root == -1 ? start: mesh->mesh_vertices[nxt->root].p);
-      std::pair<int, double> nxth = get_min_hueristic(nxt_root, nxt->left, nxt->right);
-      nxt->heuristic_gid = nxth.first;
-      nxt->f = nxt->g + nxth.second;
+      assert(node->heuristic_gid != -1);
+      double geth = get_h_value(nxt_root, goals[node->heuristic_gid], nxt->left, nxt->right);
+      if (fabs(geth - (node->f - nxt->g)) <= EPSILON) { // heuristic not change
+        nxt->heuristic_gid = node->heuristic_gid;
+        nxt->f = node->f;
+      }
+      else {
+        std::pair<int, double> nxth = get_min_hueristic(nxt_root, nxt->left, nxt->right);
+        nxt->heuristic_gid = nxth.first;
+        nxt->f = nxt->g + nxth.second;
+      }
       nxt->parent = node;
       #ifndef NDEBUG
       if (verbose) {
@@ -408,9 +417,9 @@ int KnnHeuristic::search() {
 void KnnHeuristic::print_node(SearchNodePtr node, std::ostream& outfile) {
   outfile << "root=" << root_to_point(node->root) << "; left=" << node->left
           << "; right=" << node->right << "; f=" << node->f << ", g="
-          << node->g << "; heuristic_gid=" << node->heuristic_gid;
-  if (node->heuristic_gid != -1)
-    outfile << "(" << this->goals[node->heuristic_gid].x << "," << this->goals[node->heuristic_gid].y << ")";
+          << node->g;// << "; heuristic_gid=" << node->heuristic_gid;
+  //if (node->heuristic_gid != -1)
+  //  outfile << "(" << this->goals[node->heuristic_gid].x << "," << this->goals[node->heuristic_gid].y << ")";
 }
 
 void KnnHeuristic::get_path_points(std::vector<Point>& out, int k) {
@@ -461,9 +470,10 @@ void KnnHeuristic::deal_final_node(const SearchNodePtr node) {
   }();
 
   assert(node->goal_id != -1);
-  assert(reached.find(node->goal_id) == reached.end() || reached[node->goal_id] <= node->f);
+  assert(fabs(reached[node->goal_id]-INF) <= EPSILON || reached[node->goal_id] <= node->f);
 
-  if (reached.find(node->goal_id) == reached.end()) {
+  //if (reached.find(node->goal_id) == reached.end()) {
+  if (fabs(reached[node->goal_id]-INF) < EPSILON) {
     int end_polygon = node->next_polygon;
     const SearchNodePtr true_final =
       new (node_pool->allocate()) SearchNode
@@ -581,7 +591,8 @@ rs::MinHeapEntry KnnHeuristic::NearestInAreaAB(double angle0, double angle1, con
       else {
         for (const auto& it: *c.nodePtr->entries) {
           int gid = *((int*)(it->data));
-          if (reached.find(gid) != reached.end())
+          //if (reached.find(gid) != reached.end())
+          if (fabs(reached[gid] - INF) > EPSILON)
             continue;
           if (isMbrInArea(it->mbre)) {
             double d = sqrt(rs::RStarTreeUtil::minDis2(P, it->mbre));
@@ -663,7 +674,8 @@ rs::MinHeapEntry KnnHeuristic::NearestInAreaC(double angle0, double angle1, cons
       else {
         for (const auto& it: *c.nodePtr->entries) {
           int gid = *((int*)(it->data));
-          if (reached.find(gid) != reached.end())
+          //if (reached.find(gid) != reached.end())
+          if (fabs(reached[gid] - INF) > EPSILON)
             continue;
           if (isMbrInArea(it->mbre)) {
             double d = sqrt(rs::RStarTreeUtil::minDis2(P, it->mbre));
