@@ -8,7 +8,7 @@ namespace rstar {
 
 const size_t DIM = 2;
 const size_t LEAF_LEVEL = 0;
-const size_t PAGE_SIZE = 4096;
+const size_t PAGESIZE = 4096;
 
 const double SPLIT_FACTOR = 0.4;
 const double REINSERT_FACTOR = 0.3;
