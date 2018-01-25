@@ -128,10 +128,7 @@ class RStarTreeUtil
         static void rangeQuery(RStarTree* tree, Point q, double minr, double maxr, std::vector<Data_P>& outIter);
         // incremental nearest neighbor retrieval
         static MinHeapEntry iNearestNeighbour(MinHeap& heap, Point q);
-
         static bool find(RStarTree& tree, Coord point[DIM]);
-
-        // inline functions
         static bool isEnclosed(Point& point, Node_P node); // test if point is inclusive enclosed by node
         static double minDis2(const Point& point, const Mbr& mbr); // min distance from point to node
         static double maxDis2(const Point& point, const Mbr& mbr); // max distance from point to node
