@@ -308,7 +308,6 @@ int KnnHeuristic::search() {
     if (fabs(reached[node->heuristic_gid] - INF) > EPSILON) {
       // reset heuristic goal
       const Point& root = node->root == -1? start: mesh->mesh_vertices[node->root].p;
-      //node->heuristic_gid = get_knn(node->left, node->right);
       std::pair<int, double> nexth = get_min_hueristic(root, node->left, node->right);
       node->heuristic_gid = nexth.first;
       node->f = nexth.second + node->g;
@@ -482,8 +481,6 @@ void KnnHeuristic::deal_final_node(const SearchNodePtr node) {
     true_final->set_goal_id(node->goal_id);
     reached[node->goal_id] = node->f;
     final_nodes.push_back(true_final);
-    //bool flag = rtree.remove(std::make_pair(goals[node->goal_id], node->goal_id));
-    //if (!flag) assert(false);
     nodes_generated++;
 
     #ifndef NDEBUG
@@ -542,11 +539,8 @@ rs::MinHeapEntry KnnHeuristic::NearestInAreaAB(double angle0, double angle1, con
   auto isInArea = [&](const Point& v0, const Point& v1) {
     Point vec0 = v0 - a;
     Point vec1 = v1 - a;
-    angle_timer.start();
     double angleV0 = get_angle(vec0, true) - angle0;
     double angleV1 = get_angle(vec1, true) - angle0;
-    angle_timer.stop();
-    angle_using += angle_timer.elapsed_time_micro();
     if (angleV1 < angleV0 - EPSILON)
       angleV0 -= 360.0;
     if (angleV1 < -EPSILON || angleV0 > angleDiff + EPSILON) {
@@ -625,11 +619,8 @@ rs::MinHeapEntry KnnHeuristic::NearestInAreaC(double angle0, double angle1, cons
     }
     Point vec0 = v0 - p;
     Point vec1 = v1 - p;
-    angle_timer.start();
     double angleV0 = get_angle(vec0) - angle0;
     double angleV1 = get_angle(vec1) - angle0;
-    angle_timer.stop();
-    angle_using += angle_timer.elapsed_time_micro();
     if (angleV1 < angleV0 - EPSILON)
       angleV0 -= 360.0;
     if (angleV1 < - EPSILON || angleV0 > angleDiff + EPSILON) {

@@ -8,7 +8,6 @@
 #include "point.h"
 #include "cpool.h"
 #include "timer.h"
-#include "rtree.h"
 #include "RStarTree.h"
 #include "RStarTreeUtil.h"
 #include <queue>
@@ -23,7 +22,6 @@ class KnnHeuristic {
     typedef std::priority_queue<SearchNodePtr, std::vector<SearchNodePtr>,
                                 PointerComp<SearchNode> > pq;
     typedef std::pair<Point, int> value;
-    typedef bg::model::polygon<Point> polygon;
     private:
         int K = 1;
         warthog::mem::cpool* node_pool;
@@ -48,13 +46,10 @@ class KnnHeuristic {
         int search_id;
 
         warthog::timer timer;
-        warthog::timer angle_timer;
-        std::vector<value> nn;
 
         // Pre-initialised variables to use in search().
         Successor* search_successors;
         SearchNode* search_nodes_to_push;
-        //bgi::rtree<value, bgi::rstar<16> > rtree;
 
         void init() {
             verbose = false;
@@ -71,23 +66,6 @@ class KnnHeuristic {
             root_g_values.resize(num_vertices);
             root_search_ids.resize(num_vertices);
         }
-
-        /*
-        int get_knn(const Point& p, int k) {
-          nn.clear();
-          rtree.query(bgi::nearest(p, k), std::back_inserter(nn));
-          if (nn.empty()) return -1;
-          else return nn.back().second;
-        }
-
-        int get_knn(const Point& l, const Point& r, int k=1) {
-          nn.clear();
-          bg::model::segment<Point> seg(l, r);
-          rtree.query(bgi::nearest(seg, k), std::back_inserter(nn));
-          if (nn.empty()) return -1;
-          else return nn.back().second;
-        }
-        */
 
         rs::MinHeapEntry NearestInAreaAB(double angle0, double angle1, const Point& p, double curMin=INF);
         rs::MinHeapEntry NearestInAreaC(double angle0, double angle1, const Point& p, const Point& l, const Point& r, double curMin=INF);
@@ -148,11 +126,8 @@ class KnnHeuristic {
 
           pl = l - p, pl2 = l - p2;
           pr = r - p, pr2 = r - p2;
-          angle_timer.start();
           pl_angle = get_angle(pl, true); pl2_angle = get_angle(pl2, true);
           pr_angle = get_angle(pr, true); pr2_angle = get_angle(pr2, true);
-          angle_timer.stop();
-          angle_using += angle_timer.elapsed_time_micro();
 
           rs::MinHeapEntry res = NearestInAreaAB(pl_angle, pl2_angle, l);
           updateRes(res, p.distance(l));
@@ -172,52 +147,6 @@ class KnnHeuristic {
           }
           return {minArg, minV};
         }
-
-        /*
-        Boost R-tree doesn't support within(polygon) query, so this function doesn't work currently
-        std::pair<int, double> get_min_hueristic(const Point& r, const Point& a, const Point& b, int k=1) {
-            Point perp = perp_point(r, a, b);
-            Point r2 = reflect_point(r, a, b);
-            Point v = r - perp;
-            double t = 1e8;
-            Point a0 = a + t * v, b0 = b + t * v, a1 = a - t * v, b1 = b - t * v;
-            Point w = a - b;
-            Point p0 = a0 + t * w, p1 = a1 + t * w, p2 = b0 - t * w, p3 = b1 - t * w;
-            polygon A {{a0, a, b, b0, a0}};
-            polygon B {{a, a1, b1, b, a}};
-            polygon C {{p0, p1, a1, a0, p0}};
-            polygon D {{b0, b1, p3, p2, b0}};
-            int res = -1;
-            double curv = 1e18; //INF
-
-            auto is_better = [&](double& oldv, int gid) {
-              double newv = get_h_value(r, goals[gid], a, b);
-              if (oldv > newv) {
-                oldv = newv;
-                return true;
-              }
-              return false;
-            };
-
-            nn.clear();
-            rtree.query(bgi::within(A) && bgi::nearest(r2, k), nn);
-            if (!nn.empty() && is_better(curv, nn.back().second)) res = nn.back().second;
-
-            nn.clear();
-            rtree.query(bgi::within(B) && bgi::nearest(r, k), nn);
-            if (!nn.empty() && is_better(curv, nn.back().second)) res = nn.back().second;
-
-            nn.clear();
-            rtree.query(bgi::within(C) && bgi::nearest(a, k), nn);
-            if (!nn.empty() && is_better(curv, nn.back().second)) res = nn.back().second;
-
-            nn.clear();
-            rtree.query(bgi::within(D) && bgi::nearest(b, k), nn);
-            if (!nn.empty() && is_better(curv, nn.back().second)) res = nn.back().second;
-
-            return {res, curv};
-        }
-        */
 
         void initRtree() {
           rte = new rs::RStarTree();
@@ -244,7 +173,6 @@ class KnnHeuristic {
             initRtree();
             reached.resize(goals.size());
             fill(reached.begin(), reached.end(), INF);
-            angle_using = 0;
             nodes_generated = 0;
             nodes_pushed = 0;
             nodes_popped = 0;
@@ -270,7 +198,6 @@ class KnnHeuristic {
         int nodes_pruned_post_pop;  // Nodes we prune right after popping off
         int successor_calls;        // Times we call get_successors
         bool verbose;
-        double angle_using;
         rs::RStarTree* rte;
         std::vector<rs::LeafNodeEntry> rtEntries;
         std::vector<int> gids;
@@ -298,13 +225,6 @@ class KnnHeuristic {
             goals = std::vector<Point>(gs);
             if (rte != nullptr)
               delete rte;
-
-            /*
-            rtree.clear();
-            for (int i=0; i<(int)gs.size(); i++) {
-              rtree.insert(std::make_pair(gs[i], i));
-            }
-            */
         }
 
         int search();
