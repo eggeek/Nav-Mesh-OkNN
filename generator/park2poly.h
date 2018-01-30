@@ -1,3 +1,4 @@
+#pragma once
 #include "point.h"
 #include "geometry.h"
 #include "RStarTree.h"
