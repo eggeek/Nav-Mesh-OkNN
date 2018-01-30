@@ -1,5 +1,6 @@
 // various testing functions
 #include "expansion.h"
+#include "genPoints.h"
 #include "mesh.h"
 #include "RStarTree.h"
 #include "geometry.h"
@@ -8,8 +9,8 @@
 #include "knninstance.h"
 #include "knnheuristic.h"
 #include "RStarTreeUtil.h"
-#include "rtree.h"
 #include "EDBTknn.h"
+#include "park2poly.h"
 #include <stdio.h>
 #include <sstream>
 #include <iomanip>
@@ -33,6 +34,7 @@ KnnInstance* ki;
 KnnHeuristic* hi;
 vector<Scenario> scenarios;
 vector<Point> pts;
+vector<vector<Point>> polys;
 Point global_start;
 
 const int MIN_X = 0, MAX_X = 1024, MIN_Y = 0, MAX_Y = 768;
@@ -249,24 +251,38 @@ void load_points(istream& infile ) {
 }
 
 void load_data() {
-  //string mesh_path = "/Users/eggeek/project/nav-mesh-ornn/meshes/9000.mesh";
   //string scenario_path = "/Users/eggeek/project/nav-mesh-ornn/scenarios/arena.scen";
   //string obs_path = "/Users/eggeek/project/nav-mesh-ornn/polygons/9000.poly2";
+  //string polys_path = "/Users/eggeek/project/nav-mesh-ornn/polygons/9000.poly";
   //string pts_path = "/Users/eggeek/project/nav-mesh-ornn/points/polys9000_pts9000.points";
+  //string mesh_path = "/Users/eggeek/project/nav-mesh-ornn/meshes/9000.mesh";
 
-  //string mesh_path = "/Users/eggeek/project/nav-mesh-ornn/meshes/300.mesh";
   //string scenario_path = "/Users/eggeek/project/nav-mesh-ornn/scenarios/arena.scen";
-  string obs_path = "/Users/eggeek/project/nav-mesh-ornn/polygons/9000.poly2";
-  string pts_path = "/Users/eggeek/project/nav-mesh-ornn/points/polys9000_pts15.points";
+  //string obs_path = "/Users/eggeek/project/nav-mesh-ornn/polygons/300.poly2";
+  //string polys_path = "/Users/eggeek/project/nav-mesh-ornn/polygons/300.poly";
+  //string pts_path = "/Users/eggeek/project/nav-mesh-ornn/points/polys300_pts500.points";
+  //string mesh_path = "/Users/eggeek/project/nav-mesh-ornn/meshes/300.mesh";
 
-  string mesh_path = "/Users/eggeek/project/nav-mesh-ornn/meshes/9000.mesh";
-  string scenario_path = "/Users/eggeek/project/nav-mesh-ornn/scenarios/aurora.scen";
-  //string obs_path = "/Users/eggeek/project/nav-mesh-ornn/polygons/aurora.poly";
+  string scenario_path = "/Users/eggeek/project/nav-mesh-ornn/scenarios/arena.scen";
+  string obs_path = "/Users/eggeek/project/nav-mesh-ornn/polygons/3000.poly2";
+  string polys_path = "/Users/eggeek/project/nav-mesh-ornn/polygons/3000.poly";
+  string pts_path = "/Users/eggeek/project/nav-mesh-ornn/points/polys3000_pts3000.points";
+  string mesh_path = "/Users/eggeek/project/nav-mesh-ornn/meshes/3000.mesh";
+
+  //string scenario_path = "/Users/eggeek/project/nav-mesh-ornn/scenarios/arena.scen";
+  //string obs_path = "/Users/eggeek/project/nav-mesh-ornn/polygons/arena.poly2";
+  //string polys_path = "/Users/eggeek/project/nav-mesh-ornn/polygons/arena.poly";
+  //string pts_path = "/Users/eggeek/project/nav-mesh-ornn/points/arena.points";
+  //string mesh_path = "/Users/eggeek/project/nav-mesh-ornn/meshes/arena.mesh";
+
+
   ifstream scenfile(scenario_path);
   ifstream meshfile(mesh_path);
   ifstream obsfile(obs_path);
   ifstream ptsfile(pts_path);
+  ifstream polysfile(polys_path);
 
+  polys = generator::read_polys(polysfile);
   load_points(ptsfile);
   mp = new Mesh(meshfile);
   m = *mp;
@@ -336,21 +352,19 @@ void test_knn_multi_goals(int idx) {
 
 int debug_heuristic_knn(int idx, bool verbose=false) {
   //Point start = scenarios[idx].start;
+  int N = min((int)pts.size(), 5);
+  vector<Point> gs;
+  generator::gen_points_in_traversable(oMap, polys, N, gs);
   Point start = pts[idx];
-  vector<Point> gs = pts;
-  //int N = 1000;
-  //int N = min((int)scenarios.size(), 2);
-  int N = (int)pts.size();
-  //for (int i=0; i<N; i++) {
-  //  gs.push_back(scenarios[i].goal);
-  //}
+  //random_shuffle(gs.begin(), gs.end());
+  //if (N < (int)gs.size())
+  //  gs.erase(gs.begin() + N, gs.end());
   if (verbose) {
     cout << N << endl;
     for (auto i: gs)
       cout << i.x << " " << i.y << endl;
   }
-  //int top = (int)gs.size() / 2;
-  int top = 5;
+  int top = 1;
   ki->verbose = verbose;
   ki->set_K(top);
   ki->set_start_goal(start, gs);
@@ -391,9 +405,9 @@ int debug_heuristic_knn(int idx, bool verbose=false) {
     cout << setw(15) << cost_ki << ",";
     cout << setw(15) << cost_hi << ",";
     cout << setw(15) << cost_ki / cost_hi << ",";
-    cout << setw(15) << hi->angle_using << ",";
-    cout << setw(15) << cost_ki / (cost_hi-hi->angle_using) << ";";
-    cout << setw(15) << hi->angle_using / cost_hi << endl;
+    cout << setw(15) << hi->heuristic_using<< ",";
+    cout << setw(15) << cost_ki / (cost_hi-hi->heuristic_using) << ",";
+    cout << setw(15) << hi->heuristic_using/ cost_hi << endl;
 
     if (verbose) {
       get_path_knn(i, i);
@@ -507,8 +521,20 @@ int compare_edbt_polyanya(int idx, Point start, int K=1, int verbose=false) {
   return cnt;
 }
 
+void run_knnheuristic() {
+  int top = 5;
+  int N = 10;
+  Point start = pts[0];
+  vector<Point> gs = vector<Point>(pts.begin(), pts.begin() + N);
+  hi->set_K(top);
+  hi->set_start_goal(start, gs);
+  hi->search();
+}
+
 int main(int argv, char* args[]) {
   load_data();
+  //run_knnheuristic();
+  //return 0;
   if (argv == 3) {
   // example1: ./bin/test knn 3
   // example2: ./bin/test poly 3
@@ -546,9 +572,11 @@ int main(int argv, char* args[]) {
         debug_heuristic_knn(idx, true);
       else {
         printf("%3s,%3s,%3s,%15s,%15s,%15s,%15s,%15s,%15s,%15s,%15s\n",
-               "idx","order","K","dist_ki","dist_hi","cost_ki", "cost_hi", "faster", "angle_using", "faster'", "ratio");
+               "idx","order","K","dist_ki","dist_hi","cost_ki", "cost_hi", "faster", "heuristic_using", "faster'", "ratio");
         int tot = 0, cnt = 0;
-        for (int i=0; i<(int)scenarios.size(); i++) {
+        random_shuffle(pts.begin(), pts.end());
+        int N = min((int)pts.size(), 500);
+        for (int i=0; i<N; i++) {
           tot ++;
           cnt += debug_heuristic_knn(i);
         }
