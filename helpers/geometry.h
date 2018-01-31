@@ -127,6 +127,14 @@ inline bool is_collinear(const Point& a, const Point& b, const Point& c)
     return std::abs((b - a) * (c - b)) < EPSILON;
 }
 
+// return [-180, 180] / [0, 360]
+inline double get_angle(const Point& p, bool is360=false) {
+  double res = std::atan2(p.y, p.x) * 180 / PI;
+  if (is360 && res < 0)
+    res += 360.0;
+  return res;
+}
+
 inline bool is_intersect(const Point& p0, const Point& p1, const Point& q0, const Point& q1) {
   // from https://stackoverflow.com/questions/563198/whats-the-most-efficent-way-to-calculate-where-two-line-segments-intersect
   Point r = p1 - p0;

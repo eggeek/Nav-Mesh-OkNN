@@ -326,7 +326,7 @@ bool AxisSort::operator() (Entry_P entry1, Entry_P entry2)
  * RTree
  ******************************************************************************/
 
-size_t RStarTree::pageSize = PAGE_SIZE;
+size_t RStarTree::pageSize = PAGESIZE;
 size_t RStarTree::maxChild = MAX_CHILD;
 size_t RStarTree::minChild = maxChild * SPLIT_FACTOR;
 

@@ -1,6 +1,7 @@
 #include "EDBTObstacles.h"
 #include "mesh.h"
 #include "point.h"
+#include "genPoints.h"
 #include "park2poly.h"
 #include <string>
 #include <sstream>
@@ -43,39 +44,8 @@ void gen_entities_points(string polypath, string meshpath, int num) {
   polypath.pop_back();
   ifstream polysfile(polypath);
   vector<vector<pl::Point>> polys = generator::read_polys(polysfile);
-  long long min_x, max_x, min_y, max_y;
-  // ignore border
-  min_x = max_x = polys[1][0].x;
-  min_y = max_y = polys[1][0].y;
-  for (size_t i=1; i<polys.size(); i++) {
-    for (const auto& p: polys[i]) {
-      min_x = min(min_x, (long long)p.x);
-      max_x = max(max_x, (long long)p.x);
-      min_y = min(min_y, (long long)p.y);
-      max_y = max(max_y, (long long)p.y);
-    }
-  }
-  cerr << "border: " << polys[0][0] << " " << polys[0][1] << endl;
-  cerr << "x: " << min_x << " " << max_x << endl;
-  cerr << "y: " << min_y << " " << max_y << endl;
-
-  random_device rd;
-  mt19937 eng(rd());
-  uniform_int_distribution<long long> distx(min_x, max_x);
-  uniform_int_distribution<long long> disty(min_y, max_y);
-  cout << num << endl;
-  for (int i=0; i<num; i++) {
-    long long x, y;
-    do {
-      x = distx(eng);
-      y = disty(eng);
-      polyanya::Point p{(double)x, (double)y};
-      if (oMap->isCoveredByTraversable(p, p)) {
-        cout << x << " " << y << endl;
-        break;
-      }
-    } while (true);
-  }
+  vector<pl::Point> out;
+  generator::gen_points_in_traversable(oMap, polys, num, out, true);
 }
 
 int main(int argc, char* argv[]) {
