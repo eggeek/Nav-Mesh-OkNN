@@ -251,30 +251,8 @@ void load_points(istream& infile ) {
 }
 
 void load_data() {
-  //string scenario_path = "/Users/eggeek/project/nav-mesh-ornn/scenarios/arena.scen";
-  //string obs_path = "/Users/eggeek/project/nav-mesh-ornn/polygons/9000.poly2";
-  //string polys_path = "/Users/eggeek/project/nav-mesh-ornn/polygons/9000.poly";
-  //string pts_path = "/Users/eggeek/project/nav-mesh-ornn/points/polys9000_pts9000.points";
-  //string mesh_path = "/Users/eggeek/project/nav-mesh-ornn/meshes/9000.mesh";
-
-  //string scenario_path = "/Users/eggeek/project/nav-mesh-ornn/scenarios/arena.scen";
-  //string obs_path = "/Users/eggeek/project/nav-mesh-ornn/polygons/300.poly2";
-  //string polys_path = "/Users/eggeek/project/nav-mesh-ornn/polygons/300.poly";
-  //string pts_path = "/Users/eggeek/project/nav-mesh-ornn/points/polys300_pts500.points";
-  //string mesh_path = "/Users/eggeek/project/nav-mesh-ornn/meshes/300.mesh";
-
-  string scenario_path = "/Users/eggeek/project/nav-mesh-ornn/scenarios/arena.scen";
-  string obs_path = "/Users/eggeek/project/nav-mesh-ornn/polygons/3000.poly2";
-  string polys_path = "/Users/eggeek/project/nav-mesh-ornn/polygons/3000.poly";
-  string pts_path = "/Users/eggeek/project/nav-mesh-ornn/points/polys3000_pts3000.points";
-  string mesh_path = "/Users/eggeek/project/nav-mesh-ornn/meshes/3000.mesh";
-
-  //string scenario_path = "/Users/eggeek/project/nav-mesh-ornn/scenarios/arena.scen";
-  //string obs_path = "/Users/eggeek/project/nav-mesh-ornn/polygons/arena.poly2";
-  //string polys_path = "/Users/eggeek/project/nav-mesh-ornn/polygons/arena.poly";
-  //string pts_path = "/Users/eggeek/project/nav-mesh-ornn/points/arena.points";
-  //string mesh_path = "/Users/eggeek/project/nav-mesh-ornn/meshes/arena.mesh";
-
+  string scenario_path, obs_path, polys_path, pts_path, mesh_path;
+  cin >> scenario_path >> obs_path >> polys_path >> pts_path >> mesh_path;
 
   ifstream scenfile(scenario_path);
   ifstream meshfile(mesh_path);
@@ -405,9 +383,8 @@ int debug_heuristic_knn(int idx, bool verbose=false) {
     cout << setw(15) << cost_ki << ",";
     cout << setw(15) << cost_hi << ",";
     cout << setw(15) << cost_ki / cost_hi << ",";
-    cout << setw(15) << hi->heuristic_using<< ",";
-    cout << setw(15) << cost_ki / (cost_hi-hi->heuristic_using) << ",";
-    cout << setw(15) << hi->heuristic_using/ cost_hi << endl;
+    cout << setw(15) << hi->get_heuristic_micro() << ",";
+    cout << setw(15) << hi->get_angle_micro() << endl;
 
     if (verbose) {
       get_path_knn(i, i);
@@ -571,8 +548,8 @@ int main(int argv, char* args[]) {
       if (idx != -1)
         debug_heuristic_knn(idx, true);
       else {
-        printf("%3s,%3s,%3s,%15s,%15s,%15s,%15s,%15s,%15s,%15s,%15s\n",
-               "idx","order","K","dist_ki","dist_hi","cost_ki", "cost_hi", "faster", "heuristic_using", "faster'", "ratio");
+        printf("%3s,%3s,%3s,%15s,%15s,%15s,%15s,%15s,%15s,%15s\n",
+               "idx","order","K","dist_ki","dist_hi","cost_ki", "cost_hi", "faster", "heuristic_using", "angle_using");
         int tot = 0, cnt = 0;
         random_shuffle(pts.begin(), pts.end());
         int N = min((int)pts.size(), 500);
