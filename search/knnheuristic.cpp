@@ -539,8 +539,13 @@ rs::MinHeapEntry KnnHeuristic::NearestInAreaAB(double angle0, double angle1, con
   auto isInArea = [&](const Point& v0, const Point& v1) {
     Point vec0 = v0 - a;
     Point vec1 = v1 - a;
+
+    auto begint = std::chrono::steady_clock::now();
     double angleV0 = get_angle(vec0, true) - angle0;
     double angleV1 = get_angle(vec1, true) - angle0;
+    auto endt = std::chrono::steady_clock::now();
+    angle_using += std::chrono::duration_cast<std::chrono::microseconds>(endt - begint).count();
+
     if (angleV1 < angleV0 - EPSILON)
       angleV0 -= 360.0;
     if (angleV1 < -EPSILON || angleV0 > angleDiff + EPSILON) {

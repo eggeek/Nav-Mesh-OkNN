@@ -10,6 +10,7 @@
 #include "timer.h"
 #include "RStarTree.h"
 #include "RStarTreeUtil.h"
+#include <chrono>
 #include <queue>
 #include <vector>
 #include <ctime>
@@ -46,6 +47,8 @@ class KnnHeuristic {
         int search_id;
 
         warthog::timer timer;
+        double heuristic_using;
+        double angle_using;
 
         // Pre-initialised variables to use in search().
         Successor* search_successors;
@@ -86,6 +89,8 @@ class KnnHeuristic {
           double minV = INF;
           int minArg = -1;
 
+          auto begint = std::chrono::steady_clock::now();
+
           auto updateRes = [&](rs::MinHeapEntry h, double dist) {
             if (h.key + dist < minV) {
               minArg = *((int*)h.entryPtr->data);
@@ -116,6 +121,9 @@ class KnnHeuristic {
             }
             if (res.key != INF)
               updateRes(res, p.distance({P.coord[0], P.coord[1]}));
+
+            auto endt = std::chrono::steady_clock::now();
+            heuristic_using += std::chrono::duration_cast<std::chrono::microseconds>(endt - begint).count();
             return {minArg, minV};
           }
 
@@ -126,14 +134,20 @@ class KnnHeuristic {
 
           pl = l - p, pl2 = l - p2;
           pr = r - p, pr2 = r - p2;
+
+          auto begint2 = std::chrono::steady_clock::now();
           pl_angle = get_angle(pl, true); pl2_angle = get_angle(pl2, true);
           pr_angle = get_angle(pr, true); pr2_angle = get_angle(pr2, true);
+          auto endt2 = std::chrono::steady_clock::now();
+          angle_using += std::chrono::duration_cast<std::chrono::microseconds>(endt2 - begint2).count();
 
+          double p2l = p.distance(l);
           rs::MinHeapEntry res = NearestInAreaAB(pl_angle, pl2_angle, l);
-          updateRes(res, p.distance(l));
+          updateRes(res, p2l);
 
-          res = NearestInAreaAB(pr2_angle, pr_angle, r, minV);
-          updateRes(res, p.distance(r));
+          double p2r = p.distance(r);
+          res = NearestInAreaAB(pr2_angle, pr_angle, r, minV - p2r);
+          updateRes(res, p2r);
 
           res = NearestInAreaC(pr_angle, pl_angle, p, l, r, minV);
           updateRes(res, 0);
@@ -145,6 +159,8 @@ class KnnHeuristic {
             if ((int)final_nodes.size() != std::min(K, (int)goals.size()))
               assert(false);
           }
+          auto endt = std::chrono::steady_clock::now();
+          heuristic_using += std::chrono::duration_cast<std::chrono::microseconds>(endt - begint).count();
           return {minArg, minV};
         }
 
@@ -180,6 +196,8 @@ class KnnHeuristic {
             successor_calls = 0;
             set_end_polygon();
             gen_initial_nodes();
+            heuristic_using = 0;
+            angle_using = 0;
         }
         PointLocation get_point_location(Point p);
         void set_end_polygon();
@@ -239,6 +257,14 @@ class KnnHeuristic {
         double get_search_micro()
         {
             return timer.elapsed_time_micro();
+        }
+
+        double get_heuristic_micro() {
+          return heuristic_using;
+        }
+
+        double get_angle_micro() {
+          return angle_using;
         }
 
         void get_path_points(std::vector<Point>& out, int k);
