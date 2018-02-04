@@ -186,7 +186,6 @@ class KnnHeuristic {
             search_id++;
             open_list = pq();
             final_nodes = std::vector<SearchNodePtr>();
-            initRtree();
             reached.resize(goals.size());
             fill(reached.begin(), reached.end(), INF);
             nodes_generated = 0;
@@ -238,12 +237,12 @@ class KnnHeuristic {
 
         void set_K(int k) { this->K = k; }
 
-        void set_start_goal(Point s, std::vector<Point> gs) {
-            start = s;
-            goals = std::vector<Point>(gs);
-            if (rte != nullptr)
-              delete rte;
+        void set_goals(std::vector<Point> gs) {
+          goals = std::vector<Point>(gs);
+          initRtree();
         }
+
+        void set_start(Point s) { start = s; }
 
         int search();
 

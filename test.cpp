@@ -183,34 +183,6 @@ void get_path_si(int idx) {
   print_path(path, idx);
 }
 
-void test_run_scenario(int idx, Scenario scen) {
-  si->verbose = false;
-  si->set_start_goal(scen.start, scen.goal);
-  si->search();
-  //get_path_si(idx);
-  cout << "finish polyanya search, cost: " << si->get_search_micro() << "ms" << endl;
-
-  hi->verbose = false;
-  hi->set_start_goal(scen.start, {scen.goal});
-  hi->set_K(1);
-  hi->search();
-  //get_path_knn(idx);
-  cout << "finish knn search, cost: " << hi->get_search_micro() << "ms" << endl;
-  if (true) {
-    assert(abs(si->get_cost() - hi->get_cost(0)) < EPSILON);
-    printf("---------------------------------------------------------------------\n");
-    printf("%10s,%10s,%10s,%10s,%10s,%10s,%10s,%10s\n","index", "time", "succ call",
-        "node gen", "node push", "node pop", "node prune", "cost");
-    printf("%10d,%10.6lf,%10d,%10d,%10d,%10d,%10d,%10.6lf\n",
-        idx, si->get_search_micro(), si->successor_calls, si->nodes_generated,
-        si->nodes_pushed, si->nodes_popped, si->nodes_pruned_post_pop, si->get_cost());
-    printf("%10d,%10.6lf,%10d,%10d,%10d,%10d,%10d,%10.6lf\n",
-        idx, hi->get_search_micro(), hi->successor_calls, hi->nodes_generated,
-        hi->nodes_pushed, hi->nodes_popped, hi->nodes_pruned_post_pop, hi->get_cost(0));
-    printf("---------------------------------------------------------------------\n");
-  }
-}
-
 void test_polyanya(int idx,Scenario scen) {
   si->verbose = true;
   si->set_start_goal(scen.start, scen.goal);
@@ -330,22 +302,22 @@ void test_knn_multi_goals(int idx) {
 
 int debug_heuristic_knn(int idx, bool verbose=false) {
   //Point start = scenarios[idx].start;
-  int N = min((int)pts.size(), 5);
-  vector<Point> gs;
-  generator::gen_points_in_traversable(oMap, polys, N, gs);
-  Point start = pts[idx];
+  int N = (int)pts.size();
+  vector<Point> randomPts;
+  generator::gen_points_in_traversable(oMap, polys, 1, randomPts);
+  Point start = randomPts.back();
   //random_shuffle(gs.begin(), gs.end());
   //if (N < (int)gs.size())
   //  gs.erase(gs.begin() + N, gs.end());
   if (verbose) {
     cout << N << endl;
-    for (auto i: gs)
+    for (auto i: pts)
       cout << i.x << " " << i.y << endl;
   }
   int top = 1;
   ki->verbose = verbose;
   ki->set_K(top);
-  ki->set_start_goal(start, gs);
+  ki->set_start_goal(start, pts);
   int actual = ki->search();
   double cost_ki = ki->get_search_micro();
   if (verbose) {
@@ -355,7 +327,7 @@ int debug_heuristic_knn(int idx, bool verbose=false) {
 
   hi->verbose = verbose;
   hi->set_K(top);
-  hi->set_start_goal(start, gs);
+  hi->set_start(start);
   int actual2 = hi->search();
   double cost_hi = hi->get_search_micro();
 
@@ -405,7 +377,8 @@ int debug_heuristic_knn(int idx, bool verbose=false) {
 }
 
 void test_edbt(int idx, Scenario scen) {
-  edbt->set_start_goals(scen.start, {scen.goal});
+  edbt->set_goals({scen.goal});
+  edbt->set_start(scen.start);
   pair<EDBT::pPtr, double> res = edbt->OkNN(1).back();
   vector<Point> path;
   edbt->get_path(0, path);
@@ -428,21 +401,7 @@ int compare_edbt_polyanya(int idx, Point start, int K=1, int verbose=false) {
     }
   }
 
-  hi->verbose = verbose;
-  hi->set_K(K);
-  hi->set_start_goal(start, pts);
-  hi->search();
-  if (verbose) {
-    cout << "heuristic-polyanya:" << endl;
-    for (int i=0; i<K; i++) {
-      get_path_hknn(idx, i);
-      cout << setw(10) << idx << "/" << i << ",";
-      cout << setw(20) << hi->get_cost(i) << ",";
-      cout << setw(20) << hi->get_search_micro()<< endl;
-    }
-  }
-
-  edbt->set_start_goals(start, pts);
+  edbt->set_start(start);
   vector<pair<EDBT::pPtr, double>> res =  edbt->OkNN(K);
   if (verbose) {
     cout << "EDBT:" << endl;
@@ -464,9 +423,6 @@ int compare_edbt_polyanya(int idx, Point start, int K=1, int verbose=false) {
     double dist_edbt = res[i].second;
     double cost_edbt = edbt->get_search_micro();
 
-    double dist_hi = hi->get_cost(i);
-    double cost_hi = hi->get_search_micro();
-
     vector<Point> path;
     ki->get_path_points(path, i);
     int vnum_ki = (int)path.size();
@@ -477,19 +433,17 @@ int compare_edbt_polyanya(int idx, Point start, int K=1, int verbose=false) {
     cout << setw(5) << K << ",";
     cout << setw(5) << i << ",";
     cout << setw(20) << dist_ki << ",";
-    cout << setw(20) << dist_hi << ",";
     cout << setw(20) << dist_edbt << ",";
     cout << setw(20) << cost_ki << ",";
-    cout << setw(20) << cost_hi << ",";
     cout << setw(20) << cost_edbt << ",";
     cout << setw(10) << vnum_ki << ",";
     cout << setw(10) << vnum_edbt << endl;
-    if (fabs(dist_hi - dist_ki) > EPSILON) {
+    if (fabs(dist_edbt - dist_ki) > EPSILON) {
       cout << "Wrong: " << endl;
       ki->get_path_points(path, i);
       print_path(path, idx);
       path.clear();
-      hi->get_path_points(path, i);
+      edbt->get_path(i, path);
       print_path(path, idx);
       //assert(false);
     }
@@ -504,7 +458,8 @@ void run_knnheuristic() {
   Point start = pts[0];
   vector<Point> gs = vector<Point>(pts.begin(), pts.begin() + N);
   hi->set_K(top);
-  hi->set_start_goal(start, gs);
+  hi->set_goals(gs);
+  hi->set_start(start);
   hi->search();
 }
 
@@ -527,11 +482,12 @@ int main(int argv, char* args[]) {
       test_edbt(idx, scenarios[idx]);
     }
     else if (t == "cmp") {
+      edbt->set_goals(pts);
       if (idx >= 0)
         compare_edbt_polyanya(idx, pts[idx], 5, true);
       else {
-        printf("%10s,%5s,%5s,%20s,%20s,%20s,%20s,%20s,%20s,%10s,%10s\n",
-            "idx","K","order","dist_ki","dist_hi","dist_edbt","cost_ki","cost_hi","cost_edbt", "vnum_ki", "vnum_edbt");
+        printf("%10s,%5s,%5s,%20s,%20s,%20s,%20s,%10s,%10s\n",
+            "idx","K","order","dist_ki","dist_edbt","cost_ki","cost_edbt", "vnum_ki", "vnum_edbt");
         int total = 0;
         for (int K=5; K<=20; K+=5) {
           int cnt = 0;
@@ -545,14 +501,14 @@ int main(int argv, char* args[]) {
       }
     }
     else if (t == "db") {
+      hi->set_goals(pts);
       if (idx != -1)
         debug_heuristic_knn(idx, true);
       else {
         printf("%3s,%3s,%3s,%15s,%15s,%15s,%15s,%15s,%15s,%15s\n",
                "idx","order","K","dist_ki","dist_hi","cost_ki", "cost_hi", "faster", "heuristic_using", "angle_using");
         int tot = 0, cnt = 0;
-        random_shuffle(pts.begin(), pts.end());
-        int N = min((int)pts.size(), 500);
+        int N = 500;
         for (int i=0; i<N; i++) {
           tot ++;
           cnt += debug_heuristic_knn(i);
@@ -561,19 +517,5 @@ int main(int argv, char* args[]) {
       }
     }
   }
-
-  // test_containment(tp);
-  // test_point_lookup_correct();
-  // benchmark_point_lookup_average();
-  // benchmark_point_lookup_single(tp);
-  // test_projection_asserts();
-  // test_reflection_asserts();
-  // test_h_value_asserts();
-  if (edbt) delete edbt;
-  if (si) delete si;
-  if (ki) delete ki;
-  if (hi) delete hi;
-  if (mp) delete mp;
-  if (oMap) delete oMap;
   return 0;
 }

@@ -161,8 +161,7 @@ double EDBTkNN::ODC(Graph& g, pPtr p, double& curR) {
 }
 
 vector<pair<pPtr, double>> EDBTkNN::OkNN(int k) {
-  initRtree();
-  paths.clear();
+  initSearch();
   timer.start();
   vector<pair<pPtr, double>> res;
   vector<pair<pPtr, double>> ps = Euclidean_NN(k);

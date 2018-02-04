@@ -84,34 +84,33 @@ public:
     }
   }
 
-  ~EDBTkNN() {
-    if (rte) delete rte;
-  }
-
-  void set_start_goals(pPoint queryP, vector<pPoint> targets) {
-    if (rte) {
-      delete rte;
-      rte = nullptr;
-    }
+  void set_start(pPoint queryP) {
     q = queryP;
-    goals.clear();
-    for (auto it: targets) goals.push_back(it);
     g.init(O->vs, q, goals[0]);
     if (O->isVisible(g.start, g.goal)) {
       g.add_edge(g.sid(), g.tid(), g.start.distance(g.goal));
     }
     initSearch();
   }
+  void set_goals(vector<pPoint> targets) {
+    goals.clear();
+    for (auto it: targets) goals.push_back(it);
+    g.init(O->vs, q, goals[0]);
+    if (O->isVisible(g.start, g.goal)) {
+      g.add_edge(g.sid(), g.tid(), g.start.distance(g.goal));
+    }
+    initRtree();
+  }
 
   void initSearch() {
     heap.clear();
-    rtEntries.clear();
     paths.clear();
     explored.clear();
     exploredV.clear();
   }
 
   void initRtree() {
+    rtEntries.clear();
     rte = new rs::RStarTree();
     for (auto& it: goals) {
       rs::Mbr mbr(it.x, it.x, it.y, it.y);
