@@ -18,7 +18,7 @@ else
   endif
 endif
 
-TARGETS = test scenariorunner gen
+TARGETS = test scenariorunner gen experiment
 BIN_TARGETS = $(addprefix bin/,$(TARGETS))
 
 all: $(TARGETS)

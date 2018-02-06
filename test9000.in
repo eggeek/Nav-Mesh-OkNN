@@ -1,5 +1,4 @@
-./scenarios/arena.scen
-./polygons/9000.poly2
-./polygons/9000.poly
-./points/polys9000_pts9000.points
 ./meshes/9000.mesh
+./polygons/9000.poly
+./polygons/9000.poly2
+./points/polys9000_pts9000.points
