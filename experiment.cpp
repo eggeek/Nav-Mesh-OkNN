@@ -21,6 +21,8 @@ vector<pl::Point> pts;
 vector<vector<pl::Point>> polys;
 string obs_path, polys_path, pts_path, mesh_path;
 vector<pl::Point> starts;
+string globalT;
+int globalK;
 
 void load_points(istream& infile) {
   int N;
@@ -51,7 +53,9 @@ void load_data() {
 
 void dump() {
   fstream file;
-  file.open("test_dump.in");
+  string fname = "dump-" + globalT + "-poly" + to_string(polys.size())
+    + "-pts" + to_string(pts.size()) + "-k" + to_string(globalK);
+  file.open(fname + ".in");
   file << mesh_path << endl;
   file << obs_path << endl;
   file << pts_path << endl;
@@ -59,7 +63,7 @@ void dump() {
   file.close();
 
   fstream ptsfile;
-  ptsfile.open("starts_dump.points");
+  ptsfile.open(fname + ".points");
   ptsfile << starts.size() << endl;
   for (size_t i=0; i<starts.size(); i++) {
     ptsfile << starts[i].x << " " << starts[i].y << endl;
@@ -113,16 +117,20 @@ void heuristic_vs_polyanya(pl::Point start, int k, bool verbose=false) {
   int actual2 = hi->search();
 
   double dist_ki, dist_hi, cost_hi, cost_ki, h_cost;
-  int gen_ki, push_ki, pop_ki;
-  int gen_hi, push_hi, pop_hi;
+  int gen_ki, push_ki, pop_ki, prune_ki, suc_call_ki;
+  int gen_hi, push_hi, pop_hi, prune_hi, suc_call_hi;
 
   gen_ki = ki->nodes_generated;
   push_ki = ki->nodes_pushed;
   pop_ki = ki->nodes_popped;
+  prune_ki = ki->nodes_pruned_post_pop;
+  suc_call_ki = ki->successor_calls;
 
   gen_hi = hi->nodes_generated;
   push_hi = hi->nodes_pushed;
   pop_hi = hi->nodes_popped;
+  prune_hi = hi->nodes_pruned_post_pop;
+  suc_call_hi = hi->successor_calls;
 
   double density = (double) pts.size() / (double)polys.size();
 
@@ -146,8 +154,10 @@ void heuristic_vs_polyanya(pl::Point start, int k, bool verbose=false) {
     ki->get_path_points(path, i);
     int vnum = (int)path.size();
     cout << k << "," << dist_ki << "," << cost_ki << "," << cost_hi << ","
-         << h_cost << "," << vnum << "," << gen_ki << "," << push_ki << ","
-         << pop_ki << "," << gen_hi << "," << push_hi << "," << pop_hi << "," << density << endl;
+         << h_cost << "," << vnum << ","
+         << gen_ki << "," << push_ki << "," << pop_ki << "," << prune_ki << "," << suc_call_ki << ","
+         << gen_hi << "," << push_hi << "," << pop_hi << "," << prune_hi << "," << suc_call_hi << ","
+         << hi->nodes_reevaluate << "," << density << endl;
   }
 }
 
@@ -156,6 +166,8 @@ int main(int argv, char* args[]) {
   if (argv == 3) { // ./bin/test [s1/s2]
     string t = string(args[1]);
     int k = atoi(args[2]);
+    globalT = t;
+    globalK = k;
     if (t == "s1") { // edbt vs polyanya
       edbt->set_goals(pts);
 
@@ -170,7 +182,7 @@ int main(int argv, char* args[]) {
     else if (t == "s2") { // hueristic vs polyanya
       hi->set_goals(pts);
 
-      string header = "K,dist,cost_ki,cost_hi,h_cost,vnum,gen_ki,push_ki,pop_ki,gen_hi,push_hi,pop_hi,density";
+      string header = "K,dist,cost_ki,cost_hi,h_cost,vnum,gen_ki,push_ki,pop_ki,prune_ki,suc_call_ki,gen_hi,push_hi,pop_hi,prune_hi,suc_call_hi,reevaluate,density";
       cout << header << endl;
 
       int N = 200;
