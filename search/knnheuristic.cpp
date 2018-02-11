@@ -218,6 +218,7 @@ void KnnHeuristic::gen_initial_nodes() {
       #endif
       assert(nxt->heuristic_gid != -1);
       open_list.push(nxt);
+      nodes_pushed++;
 
       if (!end_polygons[nxt->next_polygon].empty()) {
         gen_final_nodes(nxt, nxt_root);
@@ -287,7 +288,6 @@ int KnnHeuristic::search() {
 
   while (!open_list.empty()) {
     SearchNodePtr node = open_list.top(); open_list.pop();
-    nodes_popped++;
 
     #ifndef NDEBUG
     if (verbose) {
@@ -297,6 +297,7 @@ int KnnHeuristic::search() {
     }
     #endif
 
+    nodes_popped++;
     if (node->reached) {
       deal_final_node(node);
       if ((int)final_nodes.size() == K) break;
@@ -311,6 +312,7 @@ int KnnHeuristic::search() {
       std::pair<int, double> nexth = get_min_hueristic(root, node->left, node->right);
       node->heuristic_gid = nexth.first;
       node->f = nexth.second + node->g;
+      nodes_reevaluate++;
       if (node->heuristic_gid == -1) {
         assert((int)final_nodes.size() == std::min(K, (int)goals.size()));
         break;
@@ -401,6 +403,7 @@ int KnnHeuristic::search() {
       }
       #endif
       open_list.push(nxt);
+      nodes_pushed++;
 
       // when nxt can be final_node
       int nxt_poly = nxt->next_polygon;

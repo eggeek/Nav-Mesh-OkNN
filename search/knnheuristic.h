@@ -193,6 +193,7 @@ class KnnHeuristic {
             nodes_popped = 0;
             nodes_pruned_post_pop = 0;
             successor_calls = 0;
+            nodes_reevaluate = 0;
             set_end_polygon();
             gen_initial_nodes();
             heuristic_using = 0;
@@ -214,6 +215,7 @@ class KnnHeuristic {
         int nodes_popped;           // Nodes popped off open
         int nodes_pruned_post_pop;  // Nodes we prune right after popping off
         int successor_calls;        // Times we call get_successors
+        int nodes_reevaluate;
         bool verbose;
         rs::RStarTree* rte;
         std::vector<rs::LeafNodeEntry> rtEntries;
