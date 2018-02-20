@@ -1,4 +1,4 @@
-for i in `seq 300 300 9000`; do
+for i in `seq 3000 300 9000`; do
   echo "gen inputs/s1/$i.in"
   mesh="./meshes/$i.mesh"
   poly="./polygons/$i.poly"
@@ -11,7 +11,7 @@ for i in `seq 300 300 9000`; do
   echo $obs >> $fname
   echo $s1pts >> $fname
 
-  for j in `seq 3 1 10`; do
+  for j in `seq 4 2 10`; do
     echo "gen inputs/s2/$i-$j.in"
     fname=inputs/s2/$i-$j.in
     s2pts="./points/s2-poly$i-pts$j.points"
