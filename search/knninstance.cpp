@@ -364,6 +364,7 @@ int KnnInstance::search() {
       #endif
       open_list.push(nxt);
       nodes_pushed++;
+      nodes_generated++;
 
       // when nxt can be final_node
       int nxt_poly = nxt->next_polygon;
