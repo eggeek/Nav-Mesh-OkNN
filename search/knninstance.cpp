@@ -214,6 +214,7 @@ void KnnInstance::gen_initial_nodes() {
       }
       #endif
       open_list.push(nxt);
+      nodes_pushed++;
 
       if (!end_polygons[nxt->next_polygon].empty()) {
         gen_final_nodes(nxt, nxt_root);
@@ -362,6 +363,8 @@ int KnnInstance::search() {
       }
       #endif
       open_list.push(nxt);
+      nodes_pushed++;
+      nodes_generated++;
 
       // when nxt can be final_node
       int nxt_poly = nxt->next_polygon;

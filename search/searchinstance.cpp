@@ -337,8 +337,8 @@ void SearchInstance::gen_initial_nodes()
 
 bool SearchInstance::search()
 {
-    timer.start();
     init_search();
+    timer.start();
     if (mesh == nullptr || end_polygon == -1)
     {
         timer.stop();

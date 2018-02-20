@@ -134,17 +134,21 @@ void fit_to_box(vector<pl::Point>& poly, double cx, double cy, double len) {
   }
   // normalize
   for (auto& p: poly) {
-    p.x = ceil(p.x / (max_x - min_x) * len);
-    p.y = ceil(p.y / (max_y - min_y) * len);
+    p.x = floor(p.x / (max_x - min_x) * len);
+    p.y = floor(p.y / (max_y - min_y) * len);
   }
   rs::Mbr mbr2 = getPolyMbr(poly);
   if (mbr2.coord[0][0] <= -EPSILON ||
       mbr2.coord[0][1] >= len + EPSILON ||
       mbr2.coord[1][0] <= -EPSILON ||
       mbr2.coord[1][1] >= len + EPSILON) {
-    cerr << "bad resize: " << mbr.coord[0][0] << " " << mbr.coord[0][1] << ",";
-    cerr << mbr.coord[1][0] << " " << mbr.coord[1][1] << endl;
+    cerr << "bad resize: " << mbr2.coord[0][0] << " " << mbr2.coord[0][1] << ","
+         << mbr2.coord[1][0] << " " << mbr2.coord[1][1] << endl;
+    cerr << "original: " << mbr.coord[0][0] << " " << mbr.coord[0][1] << ","
+         << mbr.coord[1][0] << " " << mbr.coord[1][1] << endl;
+    cerr << "len: " << len << endl;
     assert(false);
+    exit(1);
   }
   // move top-lef corner to (cx, cy)
   for (auto& p: poly) {

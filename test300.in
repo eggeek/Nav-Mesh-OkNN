@@ -1,5 +1,4 @@
-./scenarios/arena.scen
-./polygons/300.poly2
-./polygons/300.poly
-./points/polys300_pts500.points
 ./meshes/300.mesh
+./polygons/300.poly
+./polygons/300.poly2
+./points/polys300_pts100.points

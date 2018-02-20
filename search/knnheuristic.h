@@ -85,10 +85,10 @@ class KnnHeuristic {
          * C : nearest neighbour of point p
          * C': nearest neighbour of point p'
          */
-        std::pair<int, double> get_min_hueristic(const Point& p, const Point& l, const Point& r) {
-          double minV = INF;
-          int minArg = -1;
+        std::pair<int, double> get_min_hueristic(const Point& p, const Point& l, const Point& r,
+            double minV=INF, int minArg=-1) {
 
+          heuristic_call++;
           auto begint = std::chrono::steady_clock::now();
 
           auto updateRes = [&](rs::MinHeapEntry h, double dist) {
@@ -142,7 +142,7 @@ class KnnHeuristic {
           angle_using += std::chrono::duration_cast<std::chrono::microseconds>(endt2 - begint2).count();
 
           double p2l = p.distance(l);
-          rs::MinHeapEntry res = NearestInAreaAB(pl_angle, pl2_angle, l);
+          rs::MinHeapEntry res = NearestInAreaAB(pl_angle, pl2_angle, l, minV - p2l);
           updateRes(res, p2l);
 
           double p2r = p.distance(r);
@@ -193,9 +193,11 @@ class KnnHeuristic {
             nodes_popped = 0;
             nodes_pruned_post_pop = 0;
             successor_calls = 0;
+            nodes_reevaluate = 0;
             set_end_polygon();
             gen_initial_nodes();
             heuristic_using = 0;
+            heuristic_call = 0;
             angle_using = 0;
         }
         PointLocation get_point_location(Point p);
@@ -214,6 +216,8 @@ class KnnHeuristic {
         int nodes_popped;           // Nodes popped off open
         int nodes_pruned_post_pop;  // Nodes we prune right after popping off
         int successor_calls;        // Times we call get_successors
+        int heuristic_call;
+        int nodes_reevaluate;
         bool verbose;
         rs::RStarTree* rte;
         std::vector<rs::LeafNodeEntry> rtEntries;
