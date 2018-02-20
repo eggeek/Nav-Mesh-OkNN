@@ -2,6 +2,7 @@
 #include "EDBTknn.h"
 #include "knnheuristic.h"
 #include "knninstance.h"
+#include "searchinstance.h"
 #include "genPoints.h"
 #include "mesh.h"
 #include <sstream>
@@ -13,6 +14,7 @@ namespace pl = polyanya;
 namespace vg = EDBT;
 
 pl::MeshPtr mp;
+pl::SearchInstance* si;
 pl::KnnInstance* ki;
 pl::KnnHeuristic* hi;
 vg::ObstacleMap* oMap;
@@ -46,6 +48,7 @@ void load_data() {
   oMap = new vg::ObstacleMap(obsfile, mp);
   load_points(ptsfile);
 
+  si = new pl::SearchInstance(mp);
   ki = new pl::KnnInstance(mp);
   hi = new pl::KnnHeuristic(mp);
   edbt = new vg::EDBTkNN(oMap);
@@ -116,9 +119,20 @@ void heuristic_vs_polyanya(pl::Point start, int k, bool verbose=false) {
   hi->set_start(start);
   int actual2 = hi->search();
 
-  double dist_ki, dist_hi, cost_hi, cost_ki, h_cost;
+  double dist_ki, dist_hi, cost_hi, cost_ki, h_cost, cost_polyanya;
+  int gen_poly=0, push_poly=0, pop_poly=0;
   int gen_ki, push_ki, pop_ki, prune_ki, suc_call_ki;
   int gen_hi, push_hi, pop_hi, prune_hi, suc_call_hi;
+
+  cost_polyanya = 0;
+  for (pl::Point p: pts) {
+    si->set_start_goal(start, p);
+    si->search();
+    cost_polyanya += si->get_search_micro();
+    gen_poly += si->nodes_generated;
+    push_poly += si->nodes_pushed;
+    pop_poly += si->nodes_popped;
+  }
 
   gen_ki = ki->nodes_generated;
   push_ki = ki->nodes_pushed;
@@ -132,8 +146,6 @@ void heuristic_vs_polyanya(pl::Point start, int k, bool verbose=false) {
   prune_hi = hi->nodes_pruned_post_pop;
   suc_call_hi = hi->successor_calls;
 
-  double density = (double) pts.size() / (double)polys.size();
-
   if (actual != actual2) {
     dump();
     assert(false);
@@ -143,7 +155,9 @@ void heuristic_vs_polyanya(pl::Point start, int k, bool verbose=false) {
   cost_hi = hi->get_search_micro();
   h_cost = hi->get_heuristic_micro();
 
-  for (int i=0; i<actual; i++) {
+  int i = actual - 1;
+
+  if (i >= 0) {
     dist_ki= ki->get_cost(i);
     dist_hi= hi->get_cost(i);
     if (fabs(dist_ki - dist_hi) > EPSILON) {
@@ -153,11 +167,14 @@ void heuristic_vs_polyanya(pl::Point start, int k, bool verbose=false) {
     }
     ki->get_path_points(path, i);
     int vnum = (int)path.size();
-    cout << k << "," << dist_ki << "," << cost_ki << "," << cost_hi << ","
+    cout << k << "," << i+1 << "," << dist_ki << ","
+         << cost_polyanya << "," << cost_ki << "," << cost_hi << ","
          << h_cost << "," << vnum << ","
+         << gen_poly << "," << push_poly << "," << pop_poly << ","
          << gen_ki << "," << push_ki << "," << pop_ki << "," << prune_ki << "," << suc_call_ki << ","
          << gen_hi << "," << push_hi << "," << pop_hi << "," << prune_hi << "," << suc_call_hi << ","
-         << hi->nodes_reevaluate << "," << density << endl;
+         << hi->heuristic_call << "," << hi->nodes_reevaluate << ","
+         << pts.size() << "," << polys.size() << endl;
   }
 }
 
@@ -182,7 +199,7 @@ int main(int argv, char* args[]) {
     else if (t == "s2") { // hueristic vs polyanya
       hi->set_goals(pts);
 
-      string header = "K,dist,cost_ki,cost_hi,h_cost,vnum,gen_ki,push_ki,pop_ki,prune_ki,suc_call_ki,gen_hi,push_hi,pop_hi,prune_hi,suc_call_hi,reevaluate,density";
+      string header = "K,order,dist,cost_polyanya,cost_ki,cost_hi,h_cost,vnum,gen_poly,push_poly,pop_poly,gen_ki,push_ki,pop_ki,prune_ki,suc_call_ki,gen_hi,push_hi,pop_hi,prune_hi,suc_call_hi,heuristic_call,reevaluate,pts,polys";
       cout << header << endl;
 
       int N = 200;
@@ -193,5 +210,4 @@ int main(int argv, char* args[]) {
     else assert(false);
   }
   else assert(false);
-
 }
