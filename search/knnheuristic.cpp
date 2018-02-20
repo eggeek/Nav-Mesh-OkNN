@@ -390,7 +390,8 @@ int KnnHeuristic::search() {
         nxt->f = node->f;
       }
       else {
-        std::pair<int, double> nxth = get_min_hueristic(nxt_root, nxt->left, nxt->right);
+        std::pair<int, double> nxth = get_min_hueristic(nxt_root, nxt->left, nxt->right,
+            geth, node->heuristic_gid);
         nxt->heuristic_gid = nxth.first;
         nxt->f = nxt->g + nxth.second;
       }
@@ -404,6 +405,7 @@ int KnnHeuristic::search() {
       #endif
       open_list.push(nxt);
       nodes_pushed++;
+      nodes_generated++;
 
       // when nxt can be final_node
       int nxt_poly = nxt->next_polygon;
