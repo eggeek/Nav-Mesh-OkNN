@@ -207,6 +207,31 @@ int main(int argv, char* args[]) {
       for (int i=0; i<N; i++)
         heuristic_vs_polyanya(starts[i], k);
     }
+    else if (t == "blind") {
+      pl::Point start = pts.back();
+      pts.pop_back();
+      ki->verbose = true;
+      ki->set_K(k);
+      ki->set_start_goal(start, pts);
+      ki->search();
+    }
+    else if (t == "heuristic") {
+      pl::Point start = pts.back();
+      pts.pop_back();
+      hi->verbose = true;
+      hi->set_goals(pts);
+      hi->set_K(k);
+      hi->set_start(start);
+      hi->search();
+    }
+    else if (t == "polyanya") {
+      pl::Point start = pts.back();
+      pts.pop_back();
+      pl::Point goal = pts[2];
+      si->verbose = true;
+      si->set_start_goal(start, goal);
+      si->search();
+    }
     else assert(false);
   }
   else assert(false);
