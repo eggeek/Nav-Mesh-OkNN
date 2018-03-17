@@ -1,0 +1,19 @@
+generating init node: root=(26, 24); left=(18, 19); right=(19, 31); f=22.0831, g=0
+generating init node: root=(26, 24); left=(31, 19); right=(18, 19); f=17.4642, g=0
+generating init node: root=(26, 24); left=(19, 31); right=(31, 31); f=31.257, g=0
+generating init node: root=(26, 24); left=(31, 31); right=(31, 19); f=22.0711, g=0
+popped off: root=(26, 24); left=(31, 19); right=(18, 19); f=17.4642, g=0
+	intermediate: root=(26, 24); left=(31, 19); right=(19, 18); f=0, g=0
+	intermediate: root=(26, 24); left=(31, 15); right=(19, 18); f=0, g=0
+	intermediate: root=(26, 24); left=(31, 15); right=(19, 15); f=0, g=0
+	pushing: root=(26, 24); left=(26, 10); right=(19, 15); f=17.4642, g=0
+	pushing: root=(26, 24); left=(31, 15); right=(26, 10); f=19, g=0
+popped off: root=(26, 24); left=(26, 10); right=(19, 15); f=17.4642, g=0
+	intermediate: root=(26, 24); left=(23, 10); right=(19, 15); f=0, g=0
+	pushing: root=(19, 15); left=(17.6916, 13.3178); right=(15, 15); f=21.1799, g=11.4018
+	pushing: root=(26, 24); left=(23, 10); right=(17.6916, 13.3178); f=17.4642, g=0
+popped off: root=(26, 24); left=(23, 10); right=(17.6916, 13.3178); f=17.4642, g=0
+	pushing: root=(26, 24); left=(18, 3); right=(15.973, 11.1081); f=23.546, g=0
+	pushing: root=(26, 24); left=(23, 10); right=(18, 3); f=17.4642, g=0
+popped off: root=(26, 24); left=(23, 10); right=(18, 3); f=17.4642, g=0
+found end - terminating!
