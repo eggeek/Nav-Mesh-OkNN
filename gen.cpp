@@ -13,7 +13,8 @@ void gen_vg(string polypath, string meshpath) {
   ifstream meshfile(meshpath);
   ifstream polyfile(polypath);
   polyanya::Mesh* mp = new polyanya::Mesh(meshfile);
-  EDBT::ObstacleMap* oMap = new EDBT::ObstacleMap(polyfile, mp);
+  EDBT::ObstacleMap* oMap = new EDBT::ObstacleMap(polyfile, mp, false);
+  oMap->initVisObs();
   oMap->printObsMap();
 }
 
@@ -41,7 +42,9 @@ void gen_entities_points(string polypath, string meshpath, int num) {
   EDBT::ObstacleMap* oMap = new EDBT::ObstacleMap(polyfile, mp);
 
   // from *.poly2 -> *.poly
-  polypath.pop_back();
+  if (polypath.back() == '2')
+    polypath.pop_back();
+
   ifstream polysfile(polypath);
   vector<vector<pl::Point>> polys = generator::read_polys(polysfile);
   vector<pl::Point> out;

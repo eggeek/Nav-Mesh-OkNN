@@ -69,7 +69,7 @@ class ObstacleMap {
   MeshPtr mesh;
   rs::RStarTree* traversableRtree;
   vector<rs::LeafNodeEntry> traversableEntries;
-  ObstacleMap(istream& infile, MeshPtr mp): mesh(mp) {
+  ObstacleMap(istream& infile, MeshPtr mp, bool callInit=false): mesh(mp) {
     string header;
     int version;
 
@@ -164,7 +164,7 @@ class ObstacleMap {
     traversableRtree = new rs::RStarTree();
     initRtree();
     initTraversableRtree();
-    if (version != 2)
+    if (version != 2 && callInit)
       initVisObs();
   }
   ObstacleMap() { }
