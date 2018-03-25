@@ -22,7 +22,6 @@ namespace rs = rstar;
 class KnnHeuristic {
     typedef std::priority_queue<SearchNodePtr, std::vector<SearchNodePtr>,
                                 PointerComp<SearchNode> > pq;
-    typedef std::pair<Point, int> value;
     private:
         int K = 1;
         warthog::mem::cpool* node_pool;
@@ -68,6 +67,7 @@ class KnnHeuristic {
             size_t num_vertices = mesh->mesh_vertices.size();
             root_g_values.resize(num_vertices);
             root_search_ids.resize(num_vertices);
+            fill(root_search_ids.begin(), root_search_ids.end(), 0);
         }
 
         rs::MinHeapEntry NearestInAreaAB(double angle0, double angle1, const Point& p, double curMin=INF);
