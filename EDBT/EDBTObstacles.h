@@ -130,7 +130,7 @@ class ObstacleMap {
           int vid = AddVert(x, y);
           cur.push_back(vid);
           if (vid_oid.count(vid)) {
-            assert(vid_oid[vid] == obs.size());
+            //assert(vid_oid[vid] == obs.size());
           }
           vid_oid[vid] = obs.size();
       }

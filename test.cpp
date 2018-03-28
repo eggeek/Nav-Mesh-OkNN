@@ -33,6 +33,7 @@ EDBT::EDBTkNN* edbt;
 SearchInstance* si;
 KnnInstance* ki;
 KnnHeuristic* hi;
+KnnHeuristic* hi2;
 KnnMeshEdgeDam* meshDam;
 vector<Scenario> scenarios;
 vector<Point> pts;
@@ -245,6 +246,7 @@ void load_data() {
   si = new SearchInstance(mp);
   ki = new KnnInstance(mp);
   hi = new KnnHeuristic(mp);
+  hi2 = new KnnHeuristic(mp);
   //edbt = new EDBT::EDBTkNN(oMap);
   meshDam = new KnnMeshEdgeDam(mp);
   load_scenarios(scenfile, scenarios);
@@ -520,10 +522,30 @@ int main(int argv, char* args[]) {
       }
     }
     else if (t == "dam") {
-       meshDam->set_goals(pts);
       meshDam->verbose = true;
+      meshDam->set_goals(pts);
       meshDam->floodfill();
-      cout << "edges: " << meshDam->edgecnt << ", damcnt: " << meshDam->damcnt << endl;
+      Point start;
+      start.x = 22, start.y = 14;
+      hi->verbose = true;
+      hi->set_K(1);
+      hi->set_start(start);
+      hi->set_goals(pts);
+      hi->search();
+
+      hi2->verbose = true;
+      hi2->set_meshDam(meshDam);
+      hi2->set_K(1);
+      hi2->set_start(start);
+      hi2->set_goals(pts);
+      hi2->search();
+
+      double dist = hi->get_cost(0);
+      double dist2 = hi2->get_cost(0);
+      cout << "dist: " << dist << ", dist2: " << dist2 << endl;
+      assert(fabs(dist - dist2) < EPSILON);
+
+      //cout << "edges: " << meshDam->edgecnt << ", damcnt: " << meshDam->damcnt << endl;
     }
   }
   return 0;
