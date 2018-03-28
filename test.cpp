@@ -11,6 +11,7 @@
 #include "RStarTreeUtil.h"
 #include "EDBTknn.h"
 #include "park2poly.h"
+#include "knnMeshEdge.h"
 #include <stdio.h>
 #include <sstream>
 #include <iomanip>
@@ -32,6 +33,8 @@ EDBT::EDBTkNN* edbt;
 SearchInstance* si;
 KnnInstance* ki;
 KnnHeuristic* hi;
+KnnHeuristic* hi2;
+KnnMeshEdgeDam* meshDam;
 vector<Scenario> scenarios;
 vector<Point> pts;
 vector<vector<Point>> polys;
@@ -224,7 +227,7 @@ void load_points(istream& infile ) {
 
 void load_data() {
   string scenario_path, obs_path, polys_path, pts_path, mesh_path;
-  cin >> scenario_path >> obs_path >> polys_path >> pts_path >> mesh_path;
+  cin >> mesh_path >> polys_path >> obs_path >> pts_path;
 
   ifstream scenfile(scenario_path);
   ifstream meshfile(mesh_path);
@@ -236,14 +239,16 @@ void load_data() {
   load_points(ptsfile);
   mp = new Mesh(meshfile);
   m = *mp;
-  oMap = new EDBT::ObstacleMap(obsfile, &m);
+  //oMap = new EDBT::ObstacleMap(obsfile, &m);
   unix = uniform_real_distribution<double>(m.get_minx(), m.get_maxx());
   uniy = uniform_real_distribution<double>(m.get_miny(), m.get_maxy());
   meshfile.close();
   si = new SearchInstance(mp);
   ki = new KnnInstance(mp);
   hi = new KnnHeuristic(mp);
-  edbt = new EDBT::EDBTkNN(oMap);
+  hi2 = new KnnHeuristic(mp);
+  //edbt = new EDBT::EDBTkNN(oMap);
+  meshDam = new KnnMeshEdgeDam(mp);
   load_scenarios(scenfile, scenarios);
   printf("vertices: %d, polygons: %d\n", (int)m.mesh_vertices.size(), (int)m.mesh_polygons.size());
 }
@@ -515,6 +520,32 @@ int main(int argv, char* args[]) {
         }
         cout << "Total: " << tot << ", Cnt: " << cnt << endl;
       }
+    }
+    else if (t == "dam") {
+      meshDam->verbose = true;
+      meshDam->set_goals(pts);
+      meshDam->floodfill();
+      Point start;
+      start.x = 22, start.y = 14;
+      hi->verbose = true;
+      hi->set_K(1);
+      hi->set_start(start);
+      hi->set_goals(pts);
+      hi->search();
+
+      hi2->verbose = true;
+      hi2->set_meshDam(meshDam);
+      hi2->set_K(1);
+      hi2->set_start(start);
+      hi2->set_goals(pts);
+      hi2->search();
+
+      double dist = hi->get_cost(0);
+      double dist2 = hi2->get_cost(0);
+      cout << "dist: " << dist << ", dist2: " << dist2 << endl;
+      assert(fabs(dist - dist2) < EPSILON);
+
+      //cout << "edges: " << meshDam->edgecnt << ", damcnt: " << meshDam->damcnt << endl;
     }
   }
   return 0;

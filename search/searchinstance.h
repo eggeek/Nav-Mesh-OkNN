@@ -65,6 +65,7 @@ class SearchInstance
             size_t num_vertices = mesh->mesh_vertices.size();
             root_g_values.resize(num_vertices);
             root_search_ids.resize(num_vertices);
+            fill(root_search_ids.begin(), root_search_ids.end(), 0);
         }
         void init_search()
         {
