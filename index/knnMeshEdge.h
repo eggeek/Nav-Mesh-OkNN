@@ -3,6 +3,7 @@
 #include "timer.h"
 #include "searchnode.h"
 #include "cpool.h"
+#include "expansion.h"
 #include "successor.h"
 #include "point.h"
 #include <queue>
@@ -48,7 +49,8 @@ private:
   typedef priority_queue<FloodFillNode, vector<FloodFillNode>, greater<FloodFillNode> > pq;
 
   Mesh* mesh;
-  vector<vector<vector<Dam>>> dams;
+  //vector<vector<vector<Dam>>> dams;
+  map<pair<int, int>, vector<Dam>> dams;
   pq open_list;
   vector<Point> goals;
   warthog::timer timer;
@@ -93,20 +95,14 @@ public:
     int nump = m->mesh_polygons.size();
     dams.clear();
     damcnt = 0;
-    for (int i=0; i<(int)mesh->mesh_vertices.size(); i++) {
-      for (int j=0; j<(int)mesh->mesh_vertices[i].polygons.size(); j++)
-        if (mesh->mesh_vertices[i].polygons[j] != -1) edgecnt++;
+    for (int i=0; i<nump; i++) {
+      int numv = m->mesh_polygons[i].vertices.size();
+      for (int j=0; j<numv; j++) {
+        edgecnt++;
+      }
     }
     assert(edgecnt%2 == 0);
     edgecnt /= 2;
-    for (int i=0; i<nump; i++) {
-      int numv = m->mesh_polygons[i].vertices.size();
-      vector<vector<Dam>> pDam;
-      for (int j=0; j<numv; j++) {
-        pDam.push_back(vector<Dam>());
-      }
-      dams.push_back(pDam);
-    }
     init();
   }
 
@@ -137,6 +133,21 @@ public:
 
   double get_processing_micro() {
     return timer.elapsed_time_micro();
+  }
+
+  pair<int, double> get_min_heuristic_gid(const Point& root, const SearchNodePtr node) {
+    int res = -1;
+    int a = min(node->left_vertex, node->right_vertex);
+    int b = max(node->left_vertex, node->right_vertex);
+    double minH = INF;
+    for (auto& dam: dams[{a, b}]) {
+      double h = get_h_value(root, goals[dam.gid], node->left, node->right);
+      if (h < minH) {
+        minH = h;
+        res = dam.gid;
+      }
+    }
+    return {res, minH};
   }
 };
 

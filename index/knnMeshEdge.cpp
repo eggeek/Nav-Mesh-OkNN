@@ -291,22 +291,21 @@ void KnnMeshEdgeDam::floodfill() {
 }
 
 bool KnnMeshEdgeDam::pass_dam(const FloodFillNode& fnode) {
-  int pid = fnode.polyid;
-  int vid = fnode.left_vid;
-  assert((int)dams.size() > pid);
-  assert((int)dams[pid].size() > vid);
-  if (dams[pid][vid].empty()) {
+  int left_vid = fnode.snode->left_vertex;
+  int right_vid = fnode.snode->right_vertex;
+  pair<int, int> key = {min(left_vid, right_vid), max(left_vid, right_vid)};
+  if (dams[key].empty()) {
     Dam dam(fnode.lb, fnode.ub, fnode.gid);
-    dams[pid][vid].push_back(dam);
+    dams[{left_vid, right_vid}].push_back(dam);
     damcnt++;
     return true;
   }
   else {
-    assert(dams[pid][vid][0].lb <= fnode.lb);
-    if (fnode.lb <= dams[pid][vid][0].ub) {
-      dams[pid][vid][0].ub = max(fnode.ub, dams[pid][vid][0].ub);
+    assert(dams[key][0].lb <= fnode.lb);
+    if (fnode.lb <= dams[key][0].ub) {
+      dams[key][0].ub = min(fnode.ub, dams[key][0].ub);
       Dam dam(fnode.lb, fnode.ub, fnode.gid);
-      dams[pid][vid].push_back(dam);
+      dams[key].push_back(dam);
       damcnt++;
       return true;
     }
@@ -318,7 +317,8 @@ void KnnMeshEdgeDam::print_node(const FloodFillNode& fnode, ostream& outfile) {
   const Point& root = fnode.snode->root == -1? goals[fnode.gid]: mesh->mesh_vertices[fnode.snode->root].p;
   outfile << "root=" << root << "; left=" << fnode.snode->left
           << "; right=" << fnode.snode->right << "; f=" << fnode.snode->f << ", g="
-          << fnode.snode->g << ", lb=" << fnode.lb << ", ub=" << fnode.ub;
+          << fnode.snode->g << ", lb=" << fnode.lb << ", ub=" << fnode.ub
+          << ",lid=" << fnode.snode->left_vertex << ", rid=" << fnode.snode->right_vertex;
 }
 
 } // end polyanya namespace
