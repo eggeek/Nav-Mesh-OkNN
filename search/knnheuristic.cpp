@@ -201,11 +201,15 @@ void KnnHeuristic::gen_initial_nodes() {
     SearchNode* nodes = new SearchNode [num_succ];
     const int num_nodes = succ_to_node(lazy, successors, num_succ, nodes);
 
-    delete[] successors;
     for (int i = 0; i < num_nodes; i++) {
       SearchNodePtr nxt = new (node_pool->allocate()) SearchNode(nodes[i]);
       const Point& nxt_root = (nxt->root == -1? start: mesh->mesh_vertices[nxt->root].p);
-      std::pair<int, double> nxth = get_min_hueristic(nxt_root, nxt->left, nxt->right);
+      std::pair<int, double> nxth = {-1, INF};
+      if (meshDam != nullptr)
+        nxth = meshDam->get_min_heuristic_gid(nxt_root, nxt);
+      if (nxth.first == -1 || fabs(reached[nxth.first]-INF) > EPSILON) {
+        nxth = get_min_hueristic(nxt_root, nxt->left, nxt->right);
+      }
       nxt->heuristic_gid = nxth.first;
       nxt->f = nxth.second + nxt->g;
       nxt->parent = lazy;
@@ -225,6 +229,7 @@ void KnnHeuristic::gen_initial_nodes() {
       }
     }
     delete[] nodes;
+    delete[] successors;
     nodes_generated += num_nodes;
     nodes_pushed += num_nodes;
   };
@@ -390,8 +395,12 @@ int KnnHeuristic::search() {
         nxt->f = node->f;
       }
       else {
-        std::pair<int, double> nxth = get_min_hueristic(nxt_root, nxt->left, nxt->right,
-            geth, node->heuristic_gid);
+        std::pair<int, double> nxth = {-1, INF};
+        if (meshDam != nullptr)
+          nxth = meshDam->get_min_heuristic_gid(nxt_root, nxt);
+        if (nxth.first == -1 || fabs(reached[nxth.first] - INF) > EPSILON) {
+          nxth = get_min_hueristic(nxt_root, nxt->left, nxt->right, geth, node->heuristic_gid);
+        }
         nxt->heuristic_gid = nxth.first;
         nxt->f = nxt->g + nxth.second;
       }
