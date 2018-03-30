@@ -60,7 +60,7 @@ void load_data() {
 }
 
 void dump() {
-  fstream file;
+  ofstream file;
   string fname = "dump-" + globalT + "-poly" + to_string(polys.size())
     + "-pts" + to_string(pts.size()) + "-k" + to_string(globalK);
   file.open(fname + ".in");
@@ -70,7 +70,7 @@ void dump() {
   file << polys_path << endl;
   file.close();
 
-  fstream ptsfile;
+  ofstream ptsfile;
   ptsfile.open(fname + ".points");
   ptsfile << starts.size() << endl;
   for (size_t i=0; i<starts.size(); i++) {
