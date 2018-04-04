@@ -130,9 +130,8 @@ void heuristic_vs_polyanya(pl::Point start, int k, vector<string>& cols, bool ve
   hi2->verbose = verbose;
   hi2->set_K(k);
   hi2->set_start(start);
-  int actual3 = hi2->search();
 
-  double dist_ki, dist_hi, dist_hi2, cost_hi, cost_hi2, cost_ki, h_cost, h_cost2, cost_polyanya, precost;
+  double dist_si, dist_ki, dist_hi, dist_hi2, cost_hi, cost_hi2, cost_ki, h_cost, h_cost2, cost_polyanya, precost;
   int gen_poly=0, push_poly=0, pop_poly=0;
   int gen_ki, push_ki, pop_ki, prune_ki;
   int gen_hi, push_hi, pop_hi, prune_hi, hcall, reevaluate;
@@ -147,9 +146,11 @@ void heuristic_vs_polyanya(pl::Point start, int k, vector<string>& cols, bool ve
 
 
   cost_polyanya = 0;
+  dist_si = INF;
   for (pl::Point p: pts) {
     si->set_start_goal(start, p);
     si->search();
+    dist_si = min(dist_si, si->get_cost());
     cost_polyanya += si->get_search_micro();
     gen_poly += si->nodes_generated;
     push_poly += si->nodes_pushed;
@@ -175,25 +176,28 @@ void heuristic_vs_polyanya(pl::Point start, int k, vector<string>& cols, bool ve
   hcall2 = hi2->heuristic_call;
   reevaluate2 = hi2->nodes_reevaluate;
 
-  if (actual != actual2 || actual2 != actual3) {
+  if (actual != actual2) {
     dump();
     assert(false);
     exit(1);
   }
   cost_ki = ki->get_search_micro();
   cost_hi = hi->get_search_micro();
-  cost_hi2 = hi2->get_search_micro();
   h_cost = hi->get_heuristic_micro();
   h_cost2 = hi2->get_heuristic_micro();
 
   int i = actual - 1;
 
+  cost_hi2 = 0;
   if (i >= 0) {
     dist_ki= ki->get_cost(i);
     dist_hi= hi->get_cost(i);
-    dist_hi2 = hi2->get_cost(i);
+    dist_hi2 = hi2->nn_query(si, cost_hi2).second;
     if (fabs(dist_ki - dist_hi) > EPSILON ||
         fabs(dist_hi - dist_hi2) > EPSILON) {
+      ki->get_path_points(path, i);
+      cost_hi2 = 0;
+      hi2->nn_query(si, cost_hi2);
       dump();
       assert(false);
       exit(1);

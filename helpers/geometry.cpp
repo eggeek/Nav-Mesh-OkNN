@@ -59,6 +59,16 @@ Point reflect_point(const Point& p, const Point& l, const Point& r)
     #ifndef NDEBUG
     // If we're debugging, ensure that p + (numer / denom) * delta_rotated
     // lies on the line lr.
+    if (get_orientation(l, p + (numer / denom) * delta_rotated, r) !=
+           Orientation::COLLINEAR) {
+
+      Point res = p + (2.0 * numer / denom) * delta_rotated;
+      std::cerr << "P:(" << p.x << ", " << p.y << "), "
+           << "l:(" << l.x << ", " << l.y <<"), "
+           << "r:(" << r.x << ", " << r.y << "), "
+           << "P':(" << res.x << ", " << res.y << ")" << std::endl;
+      assert(false);
+    }
     assert(get_orientation(l, p + (numer / denom) * delta_rotated, r) ==
            Orientation::COLLINEAR);
     #endif

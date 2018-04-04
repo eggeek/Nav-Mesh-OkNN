@@ -522,30 +522,37 @@ int main(int argv, char* args[]) {
       }
     }
     else if (t == "dam") {
-      meshDam->verbose = true;
+      SearchInstance* si2 = new SearchInstance(mp);
+      meshDam->verbose = idx;
       meshDam->set_goals(pts);
       meshDam->floodfill();
       Point start;
-      start.x = 22, start.y = 14;
-      hi->verbose = true;
+      start.x = 410 , start.y = 604;
+      hi->verbose = idx;
       hi->set_K(1);
       hi->set_start(start);
       hi->set_goals(pts);
       hi->search();
 
-      hi2->verbose = true;
+      hi2->verbose = idx;
       hi2->set_meshDam(meshDam);
       hi2->set_K(1);
       hi2->set_start(start);
       hi2->set_goals(pts);
-      hi2->search();
+
+      si2->verbose = idx;
+      si2->set_start_goal(start, pts[1]);
+      si2->search();
+      vector<Point> path;
+      si2->get_path_points(path);
 
       double dist = hi->get_cost(0);
-      double dist2 = hi2->get_cost(0);
+      double time = 0;
+      double dist2 = hi2->nn_query(si, time).second;
       cout << "dist: " << dist << ", dist2: " << dist2 << endl;
       assert(fabs(dist - dist2) < EPSILON);
 
-      //cout << "edges: " << meshDam->edgecnt << ", damcnt: " << meshDam->damcnt << endl;
+      cout << "edges: " << meshDam->edgecnt << ", damcnt: " << meshDam->damcnt << endl;
     }
   }
   return 0;
