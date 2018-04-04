@@ -272,7 +272,7 @@ void KnnMeshEdgeDam::floodfill() {
       const Point& left = mesh->mesh_vertices[nxt->left_vertex].p;
       const Point& right = mesh->mesh_vertices[nxt->right_vertex].p;
       double lb = nxt->f;
-      double ub = nxt->g + max(nxt_root.distance(left), nxt_root.distance(right));
+      double ub = nxt->g + max(nxt_root.distance(nxt->left) + nxt->left.distance(left), nxt_root.distance(nxt->right) + nxt->right.distance(right));
       FloodFillNode nxt_fnode = FloodFillNode(nxt, lb, ub, fnode.gid,
           snode->next_polygon, search_successors[i].poly_left_ind);
 
@@ -295,8 +295,8 @@ bool KnnMeshEdgeDam::pass_dam(const FloodFillNode& fnode) {
   int right_vid = fnode.snode->right_vertex;
   pair<int, int> key = {min(left_vid, right_vid), max(left_vid, right_vid)};
   if (dams[key].empty()) {
-    Dam dam(fnode.lb, fnode.ub, fnode.gid);
-    dams[{left_vid, right_vid}].push_back(dam);
+    Dam dam(fnode.lb, fnode.ub, fnode.gid, fnode.snode);
+    dams[key].push_back(dam);
     damcnt++;
     return true;
   }
@@ -304,7 +304,7 @@ bool KnnMeshEdgeDam::pass_dam(const FloodFillNode& fnode) {
     assert(dams[key][0].lb <= fnode.lb);
     if (fnode.lb <= dams[key][0].ub) {
       dams[key][0].ub = min(fnode.ub, dams[key][0].ub);
-      Dam dam(fnode.lb, fnode.ub, fnode.gid);
+      Dam dam(fnode.lb, fnode.ub, fnode.gid, fnode.snode);
       dams[key].push_back(dam);
       damcnt++;
       return true;
@@ -318,7 +318,8 @@ void KnnMeshEdgeDam::print_node(const FloodFillNode& fnode, ostream& outfile) {
   outfile << "root=" << root << "; left=" << fnode.snode->left
           << "; right=" << fnode.snode->right << "; f=" << fnode.snode->f << ", g="
           << fnode.snode->g << ", lb=" << fnode.lb << ", ub=" << fnode.ub
-          << ",lid=" << fnode.snode->left_vertex << ", rid=" << fnode.snode->right_vertex;
+          << ", lid=" << fnode.snode->left_vertex << ", rid=" << fnode.snode->right_vertex
+          <<", gid=" << fnode.gid;
 }
 
 } // end polyanya namespace

@@ -15,7 +15,17 @@ namespace polyanya {
 struct Dam {
   double lb, ub;
   int gid;
-  Dam(double l, double r, int gid): lb(l), ub(r), gid(gid) {};
+  SearchNode s;
+  Dam(double l, double r, int gid,  SearchNodePtr sn): lb(l), ub(r), gid(gid) {
+    s.parent = nullptr;
+    s.root = sn->root;
+    s.g = sn->g;
+    s.f = sn->f;
+    s.left = sn->left;
+    s.right = sn->right;
+    s.left_vertex = sn->left_vertex;
+    s.right_vertex = sn->right_vertex;
+  };
 };
 
 
@@ -101,7 +111,7 @@ public:
         edgecnt++;
       }
     }
-    assert(edgecnt%2 == 0);
+    //assert(edgecnt%2 == 0);
     edgecnt /= 2;
     init();
   }
@@ -135,19 +145,9 @@ public:
     return timer.elapsed_time_micro();
   }
 
-  pair<int, double> get_min_heuristic_gid(const Point& root, const SearchNodePtr node) {
-    int res = -1;
-    int a = min(node->left_vertex, node->right_vertex);
-    int b = max(node->left_vertex, node->right_vertex);
-    double minH = INF;
-    for (auto& dam: dams[{a, b}]) {
-      double h = get_h_value(root, goals[dam.gid], node->left, node->right);
-      if (h < minH) {
-        minH = h;
-        res = dam.gid;
-      }
-    }
-    return {res, minH};
+  const vector<Dam>& get_dams(int left_vid, int right_vid) {
+    pair<int, int> key = {min(left_vid, right_vid), max(left_vid, right_vid)};
+    return dams[key];
   }
 };
 
