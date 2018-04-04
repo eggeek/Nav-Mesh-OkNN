@@ -210,7 +210,7 @@ class KnnHeuristic {
             SearchNodePtr parent, Successor* successors,
             int num_succ, SearchNodePtr nodes
         );
-
+        void push_lazy(SearchNodePtr lazy);
         void print_node(SearchNodePtr node, std::ostream& outfile);
 
     public:
@@ -289,6 +289,8 @@ class KnnHeuristic {
           for (int i=0; i<K; i++) if (final_nodes[i]->goal_id == gid) return i;
           return -1;
         }
+
+        std::pair<int, double> nn_query(SearchInstance* si, double& elapsed_time_micro);
 };
 
 }
