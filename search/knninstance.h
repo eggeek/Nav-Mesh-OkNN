@@ -42,6 +42,7 @@ class KnnInstance {
         // Pre-initialised variables to use in search().
         Successor* search_successors;
         SearchNode* search_nodes_to_push;
+				bool isZero = false;
 
         void init() {
             verbose = false;
@@ -135,6 +136,9 @@ class KnnInstance {
         void print_search_nodes(std::ostream& outfile, int k);
         void deal_final_node(const SearchNodePtr node);
         void gen_final_nodes(const SearchNodePtr node, const Point& rootPoint);
+				void setZero(bool flag) {
+					this->isZero = flag;
+				}
 
         double get_gid(int k) {
           if (k > (int)final_nodes.size()) return -1;
