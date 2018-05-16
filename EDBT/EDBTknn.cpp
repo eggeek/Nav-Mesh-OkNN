@@ -97,6 +97,7 @@ double Graph::Dijkstra(double r, const set<int>& exploredV) {
       res = c.first;
       int last_id = c.second;
       while (last_id != -1) {
+				this->nodes_generated++;
         path_ids.push_back(last_id);
         last_id = pre[last_id];
       }
