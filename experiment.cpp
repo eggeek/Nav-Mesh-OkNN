@@ -17,6 +17,7 @@ namespace vg = EDBT;
 pl::MeshPtr mp;
 pl::SearchInstance* si;
 pl::KnnInstance* ki;
+pl::KnnInstance* ki0;
 pl::KnnHeuristic* hi;
 pl::KnnHeuristic* hi2;
 pl::KnnMeshEdgeDam* meshDam;
@@ -53,6 +54,7 @@ void load_data() {
 
   si = new pl::SearchInstance(mp);
   ki = new pl::KnnInstance(mp);
+	ki0 = new pl::KnnInstance(mp); ki0->setZero(true);
   hi = new pl::KnnHeuristic(mp);
   hi2 = new pl::KnnHeuristic(mp);
   edbt = new vg::EDBTkNN(oMap);
@@ -79,37 +81,79 @@ void dump() {
   ptsfile.close();
 }
 
-void edbt_vs_polyanya(pl::Point start, int k, bool verbose=false) {
+void edbt_vs_polyanya(pl::Point start, int k, vector<string> cols, bool verbose=false) {
 
   vector<pl::Point> path;
+	int cnt_ki, cnt_ki0, cnt_hi;
 
   ki->verbose = verbose;
   ki->set_K(k);
   ki->set_start_goal(start, pts);
-  ki->search();
+  cnt_ki = ki->search();
+
+	ki0->verbose = verbose;
+	ki0->set_K(k);
+	ki0->set_start_goal(start, pts);
+	cnt_ki0 = ki0->search();
+
+	hi->set_start(start);
+	hi->set_goals(pts);
+	hi->set_K(k);
+	cnt_hi = hi->search();
 
   edbt->set_start(start);
   vector<pair<vg::pPtr, double>> res = edbt->OkNN(k);
 
-  double dist_ki, dist_edbt, dist_hi, dist_hi2, cost_ki, cost_edbt;
-  double density = (double) pts.size() / (double)polys.size();
+	assert(cnt_ki == cnt_ki0 && cnt_ki == cnt_hi && (int)res.size());
 
+	double dist_ki0, cost_ki0;
+	int gen_ki0;
+
+	double dist_ki, cost_ki;
+	int gen_ki;
+
+	double dist_hi, cost_hi;
+	int gen_hi;
+
+	double dist_edbt, cost_edbt;
+	int gen_edbt;
+
+	int ptsnum, polynum;
+	ptsnum = (int)pts.size(); polynum = (int)polys.size();
+
+	cost_ki0 = ki0->get_search_micro();
   cost_ki = ki->get_search_micro();
+	cost_hi = hi->get_search_micro();
   cost_edbt = edbt->get_search_micro();
-  for (int i=0; i<k; i++) {
+	int i = cnt_ki-1;
+  if (i>=0) {
     dist_ki = ki->get_cost(i);
+		cost_ki = ki->get_search_micro();
+		gen_ki = ki->nodes_generated;
+
+		dist_ki0 = ki0->get_cost(i);
+		cost_ki0 = ki0->get_search_micro();
+		gen_ki0 = ki0->nodes_generated;
+
     dist_hi = hi->get_cost(i);
-    dist_hi2 = hi2->get_cost(i);
+		cost_hi = hi->get_search_micro();
+		gen_hi = hi->nodes_generated;
+
     dist_edbt = res[i].second;
-    if (fabs(dist_ki - dist_edbt) > EPSILON || fabs(dist_hi - dist_hi2) > EPSILON ||
-        fabs(dist_ki - dist_hi) > EPSILON) {
+		cost_edbt = edbt->get_search_micro();
+		gen_edbt = edbt->g.nodes_generated;
+
+    if (fabs(dist_ki - dist_edbt) > EPSILON ||
+        fabs(dist_ki - dist_hi) > EPSILON  ||
+				fabs(dist_ki - dist_ki0 > EPSILON)) {
       dump();
       assert(false);
       exit(1);
     }
-    ki->get_path_points(path, i);
-    int vnum = (int)path.size();
-    cout << k << "," << i+1 << "," << dist_ki << "," << cost_ki << "," << cost_edbt << "," << vnum << "," << density << endl;
+		cout << k << "," << dist_ki << ","
+				 << cost_ki0 << "," << cost_ki << "," << cost_hi << "," << cost_edbt << ","
+				 << gen_ki0 << "," << gen_ki << "," << gen_hi << "," << gen_edbt << ","
+				 << ptsnum << "," << polynum << endl;
   }
 }
 
@@ -237,13 +281,21 @@ int main(int argv, char* args[]) {
     if (t == "s1") { // edbt vs polyanya
       edbt->set_goals(pts);
 
-      string header = "K,order,dist,cost_ki,cost_edbt,vnum,density";
-      cout << header << endl;
+			vector<string> cols = {
+				"k", "dist", "cost_ki0", "cost_ki", "cost_hi", "cost_edbt",
+				"gen_ki0", "gen_ki", "gen_hi", "gen_edbt", "pts", "polys" 
+			};
+			// print header
+			for (int i=0; i<(int)cols.size(); i++) {
+					cout << cols[i];
+					if (i + 1 == (int) cols.size()) cout << endl;
+					else cout << ",";
+			}
 
       int N = 200;
       generator::gen_points_in_traversable(oMap, polys, N, starts);
       for (int i=0; i<N; i++)
-        edbt_vs_polyanya(starts[i], k);
+        edbt_vs_polyanya(starts[i], k, cols);
     }
     else if (t == "s2") { // hueristic vs polyanya
       hi->set_goals(pts);
