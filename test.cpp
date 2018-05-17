@@ -1,4 +1,5 @@
-// various testing functions
+#define CATCH_CONFIG_RUNNER
+#include "catch.hpp"
 #include "expansion.h"
 #include "genPoints.h"
 #include "mesh.h"
@@ -9,7 +10,6 @@
 #include "EDBTknn.h"
 #include "park2poly.h"
 #include "knnMeshEdge.h"
-
 using namespace std;
 using namespace polyanya;
 
@@ -27,6 +27,7 @@ KnnMeshEdgeDam* meshDam;
 vector<Scenario> scenarios;
 vector<Point> pts;
 vector<vector<Point>> polys;
+Point start;
 
 void load_points(istream& infile ) {
   int N;
@@ -63,39 +64,50 @@ void load_data() {
   printf("vertices: %d, polygons: %d\n", (int)m.mesh_vertices.size(), (int)m.mesh_polygons.size());
 }
 
-void test_knn(Point start, int k, bool verbose=false) {
-	ki->set_K(k);
+TEST_CASE("Test polyanya zero heuristic") {
+	ki->set_K(pts.size());
 	ki->set_start_goal(start, pts);
-	ki->verbose = verbose;
-	ki0->set_K(k);
+
+	ki0->set_K(pts.size());
 	ki0->set_start_goal(start, pts);
-	ki0->verbose = verbose;
-	int res0, res;
-	res0 = ki0->search();
-	res = ki->search();
-	assert(res0 == res);
-	cout << "cost_ki,cost_ki0,dist,len" << endl;
-	vector<Point> path;
+
+	int res0 = ki0->search();
+	int res = ki->search();
+	REQUIRE(res0 == res);
 	for (int i=0; i<res0; i++) {
-		assert(fabs(ki->get_cost(i) - ki0->get_cost(i)) < EPSILON);
-		double cost_ki = ki->get_search_micro();
-		double cost_ki0 = ki0->get_search_micro();
-		double dist = ki->get_cost(i);
-		ki->get_path_points(path, i);
-		cout << cost_ki << "," << cost_ki0 << "," << dist << "," << path.size() << endl;
+		double d0, d;
+		d0 = ki0->get_cost(i);
+		d = ki->get_cost(i);
+		REQUIRE(fabs(d0 - d) < EPSILON);
+	}
+}
+
+TEST_CASE("Test target heuristic") {
+	hi->set_K(pts.size());
+	hi->set_start(start);
+	hi->set_goals(pts);
+
+	ki->set_K(pts.size());
+	ki->set_start_goal(start, pts);
+
+	int reshi = hi->search();
+	int reski = ki->search();
+	REQUIRE(reski == reshi);
+	for (int i=0; i<reshi; i++) {
+		double dhi, dki;
+		dhi = hi->get_cost(i);
+		dki = ki->get_cost(i);
+		REQUIRE(fabs(dhi - dki) < EPSILON);
 	}
 }
 
 int main(int argv, char* args[]) {
+	cout << "Loading data..." << endl;
   load_data();
-	if (argv == 3) {
-		string t = string(args[1]);
-		if (t == "knn") {
-			int k = std::atoi(args[2]);
-			Point start = pts.back();
-			pts.pop_back();
-			test_knn(start, k);
-		}
-	}
-  return 0;
+	start = pts.back(); pts.pop_back();
+
+	cout << "Running test cases..." << endl;
+	Catch::Session session;
+	int res = session.run(argv, args);
+  return res;
 }
