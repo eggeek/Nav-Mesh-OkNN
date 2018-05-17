@@ -17,6 +17,8 @@ typedef ObstacleMap::Vertex Vertex;
 typedef const pPoint* pPtr;
 
 class Graph {
+typedef 
+  priority_queue<pair<double, int>, vector<pair<double, int>>, greater<pair<double, int>>> pq;
 public:
   vector<map<int, double>> es;
   vector<pPoint> vs;
@@ -27,6 +29,7 @@ public:
   // start id: vertNum, target id: vertNum+1;
   pPoint start;
   pPoint goal;
+	pq open_list;
 	int nodes_generated;
 
   void add_edge(int from, int to, double w) {

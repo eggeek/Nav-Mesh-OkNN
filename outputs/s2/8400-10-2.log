@@ -1,2 +1,0 @@
-k,order,dist,cost_polyanya,cost_ki,cost_hi,cost_hi2,h_cost,h_cost2,vnum,gen_poly,push_poly,gen_ki,push_ki,prune_ki,gen_hi,push_hi,prune_hi,hcall,reevaluate,gen_hi2,push_hi2,prune_hi2,hcall2,reevaluate2,precost,gen_pre,edgecnt,damcnt,pts,polys
-2,2,15280.6,39222.9,11921.5,22295.1,8422.12,20654,6895,19,71740,69770,21217,20729,1745,1411,1496,10,1314,0,1409,1493,10,422,129,453902,410447,176271,374189,10,7819

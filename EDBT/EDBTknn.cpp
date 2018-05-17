@@ -87,11 +87,12 @@ double Graph::Dijkstra(double r, const set<int>& exploredV) {
   pre[tid()] = -1;
   path_ids.clear();
   // <dist, vid>
-  priority_queue<pair<double, int>, vector<pair<double, int>>, greater<pair<double, int>>> q;
-  q.push({0, sid()});
+	open_list = pq();
+	this->nodes_generated++;
+  open_list.push({0, sid()});
   double res = INF;
-  while (!q.empty()) {
-    pair<double, int> c = q.top(); q.pop();
+  while (!open_list.empty()) {
+    pair<double, int> c = open_list.top(); open_list.pop();
     if (c.first - EPSILON > dist[c.second]) continue;
     if (c.second == tid()) {
       res = c.first;
@@ -118,11 +119,12 @@ double Graph::Dijkstra(double r, const set<int>& exploredV) {
       if (nxtd < dist[it.first]) {
         dist[it.first] = nxtd;
         pre[it.first] = c.second;
-        q.push({nxtd, it.first});
+				this->nodes_generated++;
+        open_list.push({nxtd, it.first});
       }
     }
   }
-  while(!q.empty()) q.pop();
+	while (!open_list.empty()) open_list.pop();
   return res;
 }
 
