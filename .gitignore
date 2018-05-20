@@ -8,3 +8,5 @@ utils/.vscode/tags
 tags
 .ycm_extra_conf.py
 *.DS_Store
+dump/*
+*/.ipynb_checkpoints/*

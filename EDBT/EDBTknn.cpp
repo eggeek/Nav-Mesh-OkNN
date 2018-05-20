@@ -87,11 +87,12 @@ double Graph::Dijkstra(double r, const set<int>& exploredV) {
   pre[tid()] = -1;
   path_ids.clear();
   // <dist, vid>
-  priority_queue<pair<double, int>, vector<pair<double, int>>, greater<pair<double, int>>> q;
-  q.push({0, sid()});
+	open_list = pq();
+	this->nodes_generated++;
+  open_list.push({0, sid()});
   double res = INF;
-  while (!q.empty()) {
-    pair<double, int> c = q.top(); q.pop();
+  while (!open_list.empty()) {
+    pair<double, int> c = open_list.top(); open_list.pop();
     if (c.first - EPSILON > dist[c.second]) continue;
     if (c.second == tid()) {
       res = c.first;
@@ -117,11 +118,12 @@ double Graph::Dijkstra(double r, const set<int>& exploredV) {
       if (nxtd < dist[it.first]) {
         dist[it.first] = nxtd;
         pre[it.first] = c.second;
-        q.push({nxtd, it.first});
+				this->nodes_generated++;
+        open_list.push({nxtd, it.first});
       }
     }
   }
-  while(!q.empty()) q.pop();
+	while (!open_list.empty()) open_list.pop();
   return res;
 }
 
@@ -184,7 +186,10 @@ vector<pair<pPtr, double>> EDBTkNN::OkNN(int k) {
   };
   sort(ps.begin(), ps.end(), cmp);
   dmax = ps.back().second;
-  for (auto& it: ps) que.push({it.second, it.first});
+  for (auto& it: ps) {
+		que.push({it.second, it.first});
+		this->g.nodes_generated++;
+	}
   do {
     pair<pPtr, double> nxt = next_Euclidean_NN();
     if(nxt.first == nullptr) break;
@@ -192,6 +197,7 @@ vector<pair<pPtr, double>> EDBTkNN::OkNN(int k) {
     if (d_o < que.top().first) {
       que.pop();
       que.push({d_o, nxt.first});
+			this->g.nodes_generated++;
       dmax = que.top().first;
       path_to_goals[nxt.first] = vector<int>(g.path_ids);
     }
