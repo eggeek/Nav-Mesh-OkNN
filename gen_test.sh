@@ -1,25 +1,26 @@
-for i in `seq 3000 300 9000`; do
-  echo "gen inputs/s1/$i.in"
-  mesh="./meshes/$i.mesh"
-  poly="./polygons/$i.poly"
-  obs="./polygons/$i.poly2"
-  s1pts="./points/s1-poly$i-pts$i.points"
-  fname=inputs/s1/$i.in
-  touch $fname
-  echo $mesh > $fname
-  echo $poly >> $fname
-  echo $obs >> $fname
-  echo $s1pts >> $fname
+# gen dense
+o=9000
+echo "gen inputs/s1/$o.in"
+mesh="./meshes/$o.mesh"
+poly="./polygons/$o.poly"
+obs="./polygons/$o.poly2"
+s1pts="./points/s1-poly$o-pts$o.points"
+fname=inputs/s1/$o.in
+touch $fname
+echo $mesh > $fname
+echo $poly >> $fname
+echo $obs >> $fname
+echo $s1pts >> $fname
 
-  for j in `seq 4 2 10`; do
-    echo "gen inputs/s2/$i-$j.in"
-    fname=inputs/s2/$i-$j.in
-    s2pts="./points/s2-poly$i-pts$j.points"
-    touch $fname
-    echo $mesh > $fname
-    echo $poly >> $fname
-    echo $obs >> $fname
-    echo $s2pts >> $fname
-  done
-
+# gen sparse
+o=9000
+for t in `seq 1 1 15`; do
+	echo "gen inputs/s2/$o-$t.in"
+	fname=inputs/s2/$o-$t.in
+	s2pts="./points/s2-poly$o-pts$t.points"
+	touch $fname
+	echo $mesh > $fname
+	echo $poly >> $fname
+	echo $obs >> $fname
+	echo $s2pts >> $fname
 done
