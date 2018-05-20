@@ -98,7 +98,6 @@ double Graph::Dijkstra(double r, const set<int>& exploredV) {
       res = c.first;
       int last_id = c.second;
       while (last_id != -1) {
-				this->nodes_generated++;
         path_ids.push_back(last_id);
         last_id = pre[last_id];
       }
@@ -187,7 +186,10 @@ vector<pair<pPtr, double>> EDBTkNN::OkNN(int k) {
   };
   sort(ps.begin(), ps.end(), cmp);
   dmax = ps.back().second;
-  for (auto& it: ps) que.push({it.second, it.first});
+  for (auto& it: ps) {
+		que.push({it.second, it.first});
+		this->g.nodes_generated++;
+	}
   do {
     pair<pPtr, double> nxt = next_Euclidean_NN();
     if(nxt.first == nullptr) break;
@@ -195,6 +197,7 @@ vector<pair<pPtr, double>> EDBTkNN::OkNN(int k) {
     if (d_o < que.top().first) {
       que.pop();
       que.push({d_o, nxt.first});
+			this->g.nodes_generated++;
       dmax = que.top().first;
       path_to_goals[nxt.first] = vector<int>(g.path_ids);
     }
