@@ -10,3 +10,4 @@ tags
 *.DS_Store
 dump/*
 */.ipynb_checkpoints/*
+analysis/figs/*
