@@ -86,6 +86,24 @@ void edbt_vs_polyanya(pl::Point start, int k, bool verbose=false) {
   vector<pl::Point> path;
 	int cnt_ki, cnt_ki0, cnt_hi;
 
+	double dist_ki0, cost_ki0;
+	int gen_ki0;
+
+	double dist_ki, cost_ki;
+	int gen_ki;
+
+	double dist_hi, cost_hi;
+	int gen_hi;
+
+	double dist_edbt, cost_edbt;
+	int gen_edbt;
+
+  double cost_poly, gen_poly;
+  vector<double> odists;
+
+	int ptsnum, polynum;
+	ptsnum = (int)pts.size(); polynum = (int)polys.size();
+
   ki->verbose = verbose;
   ki->set_K(k);
   ki->set_start_goal(start, pts);
@@ -104,22 +122,10 @@ void edbt_vs_polyanya(pl::Point start, int k, bool verbose=false) {
   edbt->set_start(start);
   vector<pair<vg::pPtr, double>> res = edbt->OkNN(k);
 
+  cost_poly = gen_poly = 0;
+  odists = si->brute_force(start, pts, k, cost_poly, gen_poly);
+
 	assert(cnt_ki == cnt_ki0 && cnt_ki == cnt_hi && (int)res.size());
-
-	double dist_ki0, cost_ki0;
-	int gen_ki0;
-
-	double dist_ki, cost_ki;
-	int gen_ki;
-
-	double dist_hi, cost_hi;
-	int gen_hi;
-
-	double dist_edbt, cost_edbt;
-	int gen_edbt;
-
-	int ptsnum, polynum;
-	ptsnum = (int)pts.size(); polynum = (int)polys.size();
 
 	cost_ki0 = ki0->get_search_micro();
   cost_ki = ki->get_search_micro();
@@ -153,6 +159,7 @@ void edbt_vs_polyanya(pl::Point start, int k, bool verbose=false) {
 		cout << k << "," << dist_ki << ","
 				 << cost_ki0 << "," << cost_ki << "," << cost_hi << "," << cost_edbt << ","
 				 << gen_ki0 << "," << gen_ki << "," << gen_hi << "," << gen_edbt << ","
+         << gen_poly << "," << cost_poly << ","
 				 << ptsnum << "," << polynum << endl;
   }
 }
@@ -195,12 +202,8 @@ void heuristic_vs_polyanya(pl::Point start, int k, vector<string>& cols, bool ve
 
   cost_poly = 0;
 	gen_poly = 0;
-  for (pl::Point p: pts) {
-    si->set_start_goal(start, p);
-    si->search();
-    cost_poly += si->get_search_micro();
-    gen_poly += (double)si->nodes_generated;
-  }
+  vector<double> odists = si->brute_force(start, pts, k, cost_poly, gen_poly);
+
 	row["cost_poly"] = cost_poly;
 	row["gen_poly"] = gen_poly;
 
@@ -234,9 +237,10 @@ void heuristic_vs_polyanya(pl::Point start, int k, vector<string>& cols, bool ve
 	for (int i=0; i<actual; i++) {
 		dist_hi = ki->get_cost(i);
     dist_ki= ki->get_cost(i);
-		dist_ki0 = ki->get_cost(i);
+		dist_ki0 = ki0->get_cost(i);
     if (fabs(dist_ki - dist_hi) > EPSILON ||
-				fabs(dist_ki - dist_ki0) > EPSILON) {
+				fabs(dist_ki - dist_ki0) > EPSILON ||
+        fabs(dist_ki - odists[i]) > EPSILON) {
       dump();
       assert(false);
       exit(1);
@@ -271,7 +275,7 @@ int main(int argv, char* args[]) {
 
 			vector<string> cols = {
 				"k", "dist", "cost_ki0", "cost_ki", "cost_hi", "cost_edbt",
-				"gen_ki0", "gen_ki", "gen_hi", "gen_edbt", "pts", "polys" 
+				"gen_ki0", "gen_ki", "gen_hi", "gen_edbt", "gen_poly", "cost_poly", "pts", "polys" 
 			};
 			// print header
 			for (int i=0; i<(int)cols.size(); i++) {
