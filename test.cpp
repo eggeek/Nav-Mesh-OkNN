@@ -5,7 +5,7 @@
 #include "mesh.h"
 #include "geometry.h"
 #include "searchinstance.h"
-#include "knninstance.h"
+#include "intervaHeuristic.h"
 #include "knnheuristic.h"
 #include "EDBTknn.h"
 #include "park2poly.h"
@@ -19,8 +19,8 @@ Point tp;
 EDBT::ObstacleMap* oMap;
 EDBT::EDBTkNN* edbt;
 SearchInstance* si;
-KnnInstance* ki;
-KnnInstance* ki0;
+OkNNIntervalHeuristic* ki;
+OkNNIntervalHeuristic* ki0;
 KnnHeuristic* hi;
 KnnHeuristic* hi2;
 KnnMeshEdgeDam* meshDam;
@@ -55,8 +55,8 @@ void load_data() {
   //oMap = new EDBT::ObstacleMap(obsfile, &m);
   meshfile.close();
   si = new SearchInstance(mp);
-  ki = new KnnInstance(mp);
-	ki0 = new KnnInstance(mp); ki0->setZero(true);
+  ki = new OkNNIntervalHeuristic(mp);
+	ki0 = new OkNNIntervalHeuristic(mp); ki0->setZero(true);
   hi = new KnnHeuristic(mp);
   hi2 = new KnnHeuristic(mp);
   //edbt = new EDBT::EDBTkNN(oMap);

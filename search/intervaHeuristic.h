@@ -12,7 +12,7 @@
 
 namespace polyanya {
 
-class KnnInstance {
+class OkNNIntervalHeuristic {
     typedef std::priority_queue<SearchNodePtr, std::vector<SearchNodePtr>,
                                 PointerComp<SearchNode> > pq;
     private:
@@ -94,13 +94,13 @@ class KnnInstance {
         int successor_calls;        // Times we call get_successors
         bool verbose;
 
-        KnnInstance() { }
-        KnnInstance(MeshPtr m) : mesh(m) { init(); }
-        KnnInstance(int k, MeshPtr m, Point s, std::vector<Point> gs) :
+        OkNNIntervalHeuristic() { }
+        OkNNIntervalHeuristic(MeshPtr m) : mesh(m) { init(); }
+        OkNNIntervalHeuristic(int k, MeshPtr m, Point s, std::vector<Point> gs) :
             K(k), mesh(m), start(s), goals(gs) { init(); }
-        KnnInstance(KnnInstance const &) = delete;
-        void operator=(KnnInstance const &x) = delete;
-        ~KnnInstance() {
+        OkNNIntervalHeuristic(OkNNIntervalHeuristic const &) = delete;
+        void operator=(OkNNIntervalHeuristic const &x) = delete;
+        ~OkNNIntervalHeuristic() {
             if (node_pool) {
                 delete node_pool;
             }
