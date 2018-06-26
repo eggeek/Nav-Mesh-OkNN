@@ -20,7 +20,7 @@ namespace polyanya {
 
 namespace rs = rstar;
 
-class KnnHeuristic {
+class TargetHeuristic {
     typedef std::priority_queue<SearchNodePtr, std::vector<SearchNodePtr>,
                                 PointerComp<SearchNode> > pq;
     private:
@@ -226,13 +226,13 @@ class KnnHeuristic {
         std::vector<rs::LeafNodeEntry> rtEntries;
         std::vector<int> gids;
 
-        KnnHeuristic() { }
-        KnnHeuristic(MeshPtr m) : mesh(m) { init(); }
-        KnnHeuristic(int k, MeshPtr m, Point s, std::vector<Point> gs) :
+        TargetHeuristic() { }
+        TargetHeuristic(MeshPtr m) : mesh(m) { init(); }
+        TargetHeuristic(int k, MeshPtr m, Point s, std::vector<Point> gs) :
             K(k), mesh(m), start(s), goals(gs) { init(); }
-        KnnHeuristic(KnnHeuristic const &) = delete;
-        void operator=(KnnHeuristic const &x) = delete;
-        ~KnnHeuristic() {
+        TargetHeuristic(TargetHeuristic const &) = delete;
+        void operator=(TargetHeuristic const &x) = delete;
+        ~TargetHeuristic() {
             if (node_pool) {
                 delete node_pool;
             }

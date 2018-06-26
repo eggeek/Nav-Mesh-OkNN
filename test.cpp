@@ -6,7 +6,7 @@
 #include "geometry.h"
 #include "searchinstance.h"
 #include "intervaHeuristic.h"
-#include "knnheuristic.h"
+#include "targetHeuristic.h"
 #include "EDBTknn.h"
 #include "park2poly.h"
 #include "knnMeshEdge.h"
@@ -21,8 +21,8 @@ EDBT::EDBTkNN* edbt;
 SearchInstance* si;
 OkNNIntervalHeuristic* ki;
 OkNNIntervalHeuristic* ki0;
-KnnHeuristic* hi;
-KnnHeuristic* hi2;
+TargetHeuristic* hi;
+TargetHeuristic* hi2;
 KnnMeshEdgeDam* meshDam;
 vector<Scenario> scenarios;
 vector<Point> pts;
@@ -57,8 +57,8 @@ void load_data() {
   si = new SearchInstance(mp);
   ki = new OkNNIntervalHeuristic(mp);
 	ki0 = new OkNNIntervalHeuristic(mp); ki0->setZero(true);
-  hi = new KnnHeuristic(mp);
-  hi2 = new KnnHeuristic(mp);
+  hi = new TargetHeuristic(mp);
+  hi2 = new TargetHeuristic(mp);
   //edbt = new EDBT::EDBTkNN(oMap);
   meshDam = new KnnMeshEdgeDam(mp);
   printf("vertices: %d, polygons: %d\n", (int)m.mesh_vertices.size(), (int)m.mesh_polygons.size());

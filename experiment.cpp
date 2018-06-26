@@ -1,6 +1,6 @@
 #include "park2poly.h"
 #include "EDBTknn.h"
-#include "knnheuristic.h"
+#include "targetHeuristic.h"
 #include "intervaHeuristic.h"
 #include "searchinstance.h"
 #include "genPoints.h"
@@ -18,8 +18,8 @@ pl::MeshPtr mp;
 pl::SearchInstance* si;
 pl::OkNNIntervalHeuristic* ki;
 pl::OkNNIntervalHeuristic* ki0;
-pl::KnnHeuristic* hi;
-pl::KnnHeuristic* hi2;
+pl::TargetHeuristic* hi;
+pl::TargetHeuristic* hi2;
 pl::KnnMeshEdgeDam* meshDam;
 vg::ObstacleMap* oMap;
 vg::EDBTkNN* edbt;
@@ -55,8 +55,8 @@ void load_data() {
   si = new pl::SearchInstance(mp);
   ki = new pl::OkNNIntervalHeuristic(mp);
 	ki0 = new pl::OkNNIntervalHeuristic(mp); ki0->setZero(true);
-  hi = new pl::KnnHeuristic(mp);
-  hi2 = new pl::KnnHeuristic(mp);
+  hi = new pl::TargetHeuristic(mp);
+  hi2 = new pl::TargetHeuristic(mp);
   edbt = new vg::EDBTkNN(oMap);
   meshDam = new pl::KnnMeshEdgeDam(mp);
 }
