@@ -1,4 +1,4 @@
-#include "knnheuristic.h"
+#include "targetHeuristic.h"
 #include "expansion.h"
 #include "geometry.h"
 #include "searchnode.h"
@@ -16,7 +16,7 @@
 
 namespace polyanya {
 
-PointLocation KnnHeuristic::get_point_location(Point p)
+PointLocation TargetHeuristic::get_point_location(Point p)
 {
     assert(mesh != nullptr);
     PointLocation out = mesh->get_point_location(p);
@@ -73,7 +73,7 @@ PointLocation KnnHeuristic::get_point_location(Point p)
     return out;
 }
 
-int KnnHeuristic::succ_to_node(
+int TargetHeuristic::succ_to_node(
     SearchNodePtr parent, Successor* successors, int num_succ,
     SearchNodePtr nodes) {
   // copy from searchinstance.cpp
@@ -138,7 +138,7 @@ int KnnHeuristic::succ_to_node(
   return out;
 }
 
-void KnnHeuristic::set_end_polygon() {
+void TargetHeuristic::set_end_polygon() {
   end_polygons.resize(mesh->mesh_polygons.size());
   for (int i=0; i<(int)mesh->mesh_polygons.size(); i++) end_polygons[i].clear();
   for (int i=0; i<(int)goals.size(); i++) {
@@ -149,7 +149,7 @@ void KnnHeuristic::set_end_polygon() {
   }
 }
 
-void KnnHeuristic::push_lazy(SearchNodePtr lazy) {
+void TargetHeuristic::push_lazy(SearchNodePtr lazy) {
   #define get_lazy(next, left, right) new (node_pool->allocate()) SearchNode \
     {nullptr, -1, start, start, left, right, next, 0, 0}
   #define v(vertex) mesh->mesh_vertices[vertex]
@@ -227,7 +227,7 @@ void KnnHeuristic::push_lazy(SearchNodePtr lazy) {
   #undef get_lazy
 }
 
-void KnnHeuristic::gen_initial_nodes() {
+void TargetHeuristic::gen_initial_nodes() {
   // revised from SearchInstance::gen_initial_nodes
   // modify:
   // 1. h value for get_lazy() is 0
@@ -287,7 +287,7 @@ void KnnHeuristic::gen_initial_nodes() {
 
 #define root_to_point(root) ((root) == -1 ? start : mesh->mesh_vertices[root].p)
 
-int KnnHeuristic::search() {
+int TargetHeuristic::search() {
   init_search();
   timer.start();
   if (mesh == nullptr) {
@@ -429,7 +429,7 @@ int KnnHeuristic::search() {
   return (int)final_nodes.size();
 }
 
-void KnnHeuristic::print_node(SearchNodePtr node, std::ostream& outfile) {
+void TargetHeuristic::print_node(SearchNodePtr node, std::ostream& outfile) {
   outfile << "root=" << root_to_point(node->root) << "; left=" << node->left
           << "; right=" << node->right << "; f=" << node->f << ", g="
           << node->g;// << "; heuristic_gid=" << node->heuristic_gid;
@@ -437,7 +437,7 @@ void KnnHeuristic::print_node(SearchNodePtr node, std::ostream& outfile) {
   //  outfile << "(" << this->goals[node->heuristic_gid].x << "," << this->goals[node->heuristic_gid].y << ")";
 }
 
-void KnnHeuristic::get_path_points(std::vector<Point>& out, int k) {
+void TargetHeuristic::get_path_points(std::vector<Point>& out, int k) {
   if (k >= (int)goals.size()) return;
   assert((int)final_nodes.size() <= K);
   assert(final_nodes[k]->goal_id != -1);
@@ -453,7 +453,7 @@ void KnnHeuristic::get_path_points(std::vector<Point>& out, int k) {
   std::reverse(out.begin(), out.end());
 }
 
-void KnnHeuristic::print_search_nodes(std::ostream& outfile, int k) {
+void TargetHeuristic::print_search_nodes(std::ostream& outfile, int k) {
   if (k > (int)final_nodes.size()) return;
   SearchNodePtr cur = final_nodes[k];
   while (cur != nullptr) {
@@ -465,7 +465,7 @@ void KnnHeuristic::print_search_nodes(std::ostream& outfile, int k) {
   }
 }
 
-void KnnHeuristic::deal_final_node(const SearchNodePtr node) {
+void TargetHeuristic::deal_final_node(const SearchNodePtr node) {
 
   const Point& goal = goals[node->goal_id];
   const int final_root = [&]() {
@@ -513,7 +513,7 @@ void KnnHeuristic::deal_final_node(const SearchNodePtr node) {
   }
 }
 
-void KnnHeuristic::gen_final_nodes(const SearchNodePtr node, const Point& rootPoint) {
+void TargetHeuristic::gen_final_nodes(const SearchNodePtr node, const Point& rootPoint) {
     for (int gid: end_polygons[node->next_polygon]) {
       const Point& goal = goals[gid];
       SearchNodePtr final_node = new (node_pool->allocate()) SearchNode(*node);
@@ -546,7 +546,7 @@ void KnnHeuristic::gen_final_nodes(const SearchNodePtr node, const Point& rootPo
  * C': nearest neighbour of point p'
  */
 
-rs::MinHeapEntry KnnHeuristic::NearestInAreaAB(double angle0, double angle1, const Point& a, double curMin) {
+rs::MinHeapEntry TargetHeuristic::NearestInAreaAB(double angle0, double angle1, const Point& a, double curMin) {
 
   double angleDiff = angle1 - angle0;
   if (angleDiff <= -EPSILON)
@@ -626,7 +626,7 @@ rs::MinHeapEntry KnnHeuristic::NearestInAreaAB(double angle0, double angle1, con
   return res;
 }
 
-rs::MinHeapEntry KnnHeuristic::NearestInAreaC(double angle0, double angle1, const Point& p, const Point& l, const Point& r, double curMin) {
+rs::MinHeapEntry TargetHeuristic::NearestInAreaC(double angle0, double angle1, const Point& p, const Point& l, const Point& r, double curMin) {
 
   double angleDiff = angle1 - angle0;
   if (angleDiff <= -EPSILON)
@@ -706,11 +706,11 @@ rs::MinHeapEntry KnnHeuristic::NearestInAreaC(double angle0, double angle1, cons
   return res;
 }
 
-std::pair<int, double> KnnHeuristic::nn_query(SearchInstance* si, double& elapsed_time_micro) {
+std::pair<int, double> TargetHeuristic::nn_query(SearchInstance* si, double& elapsed_time_micro) {
   // only support nearest neighbour query
   // return {target_id, dist}
   std::pair<int, double> res = {-1, INF};
-  assert(meshDam != nullptr);
+  assert(meshFence != nullptr);
   init_search();
   this->K = 1;
   while (!open_list.empty()) {
@@ -724,8 +724,8 @@ std::pair<int, double> KnnHeuristic::nn_query(SearchInstance* si, double& elapse
       continue;
     }
     assert(node->root == -1);
-    std::vector<Dam> dams = meshDam->get_dams(node->left_vertex, node->right_vertex);
-    for (const auto& it: dams) {
+    std::vector<Fence> fences = meshFence->get_fences(node->left_vertex, node->right_vertex);
+    for (const auto& it: fences) {
       Point goal = it.s.root == -1? goals[it.gid]: mesh->mesh_vertices[it.s.root].p;
       //Point goal = goals[it.gid];
       si->verbose=false;

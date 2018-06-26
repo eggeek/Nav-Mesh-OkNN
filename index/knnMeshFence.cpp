@@ -1,4 +1,4 @@
-#include "knnMeshEdge.h"
+#include "knnMeshFence.h"
 #include "expansion.h"
 #include "point.h"
 
@@ -6,7 +6,7 @@ using namespace std;
 
 namespace polyanya {
 
-PointLocation KnnMeshEdgeDam::get_point_location(Point p) {
+PointLocation KnnMeshEdgeFence::get_point_location(Point p) {
   assert(mesh != nullptr);
   PointLocation out = mesh->get_point_location(p);
   if (out.type == PointLocation::ON_CORNER_VERTEX_AMBIG)
@@ -62,7 +62,7 @@ PointLocation KnnMeshEdgeDam::get_point_location(Point p) {
   return out;
 }
 
-int KnnMeshEdgeDam::succ_to_node(SearchNodePtr parent, Successor* successors, int num_succ, SearchNodePtr nodes, int gid) {
+int KnnMeshEdgeFence::succ_to_node(SearchNodePtr parent, Successor* successors, int num_succ, SearchNodePtr nodes, int gid) {
 
   assert(mesh != nullptr);
   const Polygon& polygon = mesh->mesh_polygons[parent->next_polygon];
@@ -124,7 +124,7 @@ int KnnMeshEdgeDam::succ_to_node(SearchNodePtr parent, Successor* successors, in
   return out;
 }
 
-void KnnMeshEdgeDam::gen_initial_nodes() {
+void KnnMeshEdgeFence::gen_initial_nodes() {
   #define get_lazy(next, left, right, gid) new (node_pool->allocate()) SearchNode \
   {nullptr, -1, goals[gid], goals[gid], left, right, next, 0, 0}
   #define v(vertex) mesh->mesh_vertices[vertex]
@@ -224,7 +224,7 @@ void KnnMeshEdgeDam::gen_initial_nodes() {
   }
 }
 
-void KnnMeshEdgeDam::floodfill() {
+void KnnMeshEdgeFence::floodfill() {
   assert(mesh != nullptr);
   init_floodfill();
   timer.start();
@@ -233,7 +233,7 @@ void KnnMeshEdgeDam::floodfill() {
     FloodFillNode fnode = open_list.top(); open_list.pop();
     SearchNodePtr snode = fnode.snode;
 
-    if (!pass_dam(fnode))
+    if (!pass_fence(fnode))
       continue;
 
     Point start = goals[fnode.gid];
@@ -290,30 +290,30 @@ void KnnMeshEdgeDam::floodfill() {
   timer.stop();
 }
 
-bool KnnMeshEdgeDam::pass_dam(const FloodFillNode& fnode) {
+bool KnnMeshEdgeFence::pass_fence(const FloodFillNode& fnode) {
   int left_vid = fnode.snode->left_vertex;
   int right_vid = fnode.snode->right_vertex;
   pair<int, int> key = {min(left_vid, right_vid), max(left_vid, right_vid)};
-  if (dams[key].empty()) {
-    Dam dam(fnode.lb, fnode.ub, fnode.gid, fnode.snode);
-    dams[key].push_back(dam);
-    damcnt++;
+  if (fences[key].empty()) {
+    Fence fence(fnode.lb, fnode.ub, fnode.gid, fnode.snode);
+    fences[key].push_back(fence);
+    fenceCnt++;
     return true;
   }
   else {
-    assert(dams[key][0].lb <= fnode.lb);
-    if (fnode.lb <= dams[key][0].ub) {
-      dams[key][0].ub = min(fnode.ub, dams[key][0].ub);
-      Dam dam(fnode.lb, fnode.ub, fnode.gid, fnode.snode);
-      dams[key].push_back(dam);
-      damcnt++;
+    assert(fences[key][0].lb <= fnode.lb);
+    if (fnode.lb <= fences[key][0].ub) {
+      fences[key][0].ub = min(fnode.ub, fences[key][0].ub);
+      Fence fence(fnode.lb, fnode.ub, fnode.gid, fnode.snode);
+      fences[key].push_back(fence);
+      fenceCnt++;
       return true;
     }
   }
   return false;
 }
 
-void KnnMeshEdgeDam::print_node(const FloodFillNode& fnode, ostream& outfile) {
+void KnnMeshEdgeFence::print_node(const FloodFillNode& fnode, ostream& outfile) {
   const Point& root = fnode.snode->root == -1? goals[fnode.gid]: mesh->mesh_vertices[fnode.snode->root].p;
   outfile << "root=" << root << "; left=" << fnode.snode->left
           << "; right=" << fnode.snode->right << "; f=" << fnode.snode->f << ", g="

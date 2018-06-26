@@ -10,7 +10,7 @@
 #include "timer.h"
 #include "RStarTree.h"
 #include "RStarTreeUtil.h"
-#include "knnMeshEdge.h"
+#include "knnMeshFence.h"
 #include <chrono>
 #include <queue>
 #include <vector>
@@ -20,7 +20,7 @@ namespace polyanya {
 
 namespace rs = rstar;
 
-class KnnHeuristic {
+class TargetHeuristic {
     typedef std::priority_queue<SearchNodePtr, std::vector<SearchNodePtr>,
                                 PointerComp<SearchNode> > pq;
     private:
@@ -29,7 +29,7 @@ class KnnHeuristic {
         MeshPtr mesh;
         Point start;
         std::vector<Point> goals;
-        KnnMeshEdgeDam* meshDam;
+        KnnMeshEdgeFence* meshFence;
 
         // kNN has k final node
         std::vector<SearchNodePtr> final_nodes;
@@ -56,7 +56,7 @@ class KnnHeuristic {
         SearchNode* search_nodes_to_push;
 
         void init() {
-            meshDam = nullptr;
+            meshFence= nullptr;
             verbose = false;
             search_successors = new Successor [mesh->max_poly_sides + 2];
             search_nodes_to_push = new SearchNode [mesh->max_poly_sides + 2];
@@ -226,13 +226,13 @@ class KnnHeuristic {
         std::vector<rs::LeafNodeEntry> rtEntries;
         std::vector<int> gids;
 
-        KnnHeuristic() { }
-        KnnHeuristic(MeshPtr m) : mesh(m) { init(); }
-        KnnHeuristic(int k, MeshPtr m, Point s, std::vector<Point> gs) :
+        TargetHeuristic() { }
+        TargetHeuristic(MeshPtr m) : mesh(m) { init(); }
+        TargetHeuristic(int k, MeshPtr m, Point s, std::vector<Point> gs) :
             K(k), mesh(m), start(s), goals(gs) { init(); }
-        KnnHeuristic(KnnHeuristic const &) = delete;
-        void operator=(KnnHeuristic const &x) = delete;
-        ~KnnHeuristic() {
+        TargetHeuristic(TargetHeuristic const &) = delete;
+        void operator=(TargetHeuristic const &x) = delete;
+        ~TargetHeuristic() {
             if (node_pool) {
                 delete node_pool;
             }
@@ -251,7 +251,7 @@ class KnnHeuristic {
 
         void set_start(Point s) { start = s; }
 
-        void set_meshDam(KnnMeshEdgeDam* meshDam) { this->meshDam = meshDam; }
+        void set_meshFence(KnnMeshEdgeFence* meshFence) { this->meshFence= meshFence; }
 
         int search();
 

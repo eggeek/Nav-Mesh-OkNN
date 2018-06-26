@@ -5,11 +5,11 @@
 #include "mesh.h"
 #include "geometry.h"
 #include "searchinstance.h"
-#include "knninstance.h"
-#include "knnheuristic.h"
+#include "intervaHeuristic.h"
+#include "targetHeuristic.h"
 #include "EDBTknn.h"
 #include "park2poly.h"
-#include "knnMeshEdge.h"
+#include "knnMeshFence.h"
 using namespace std;
 using namespace polyanya;
 
@@ -19,11 +19,11 @@ Point tp;
 EDBT::ObstacleMap* oMap;
 EDBT::EDBTkNN* edbt;
 SearchInstance* si;
-KnnInstance* ki;
-KnnInstance* ki0;
-KnnHeuristic* hi;
-KnnHeuristic* hi2;
-KnnMeshEdgeDam* meshDam;
+OkNNIntervalHeuristic* ki;
+OkNNIntervalHeuristic* ki0;
+TargetHeuristic* hi;
+TargetHeuristic* hi2;
+KnnMeshEdgeFence * meshFence;
 vector<Scenario> scenarios;
 vector<Point> pts;
 vector<vector<Point>> polys;
@@ -55,12 +55,12 @@ void load_data() {
   //oMap = new EDBT::ObstacleMap(obsfile, &m);
   meshfile.close();
   si = new SearchInstance(mp);
-  ki = new KnnInstance(mp);
-	ki0 = new KnnInstance(mp); ki0->setZero(true);
-  hi = new KnnHeuristic(mp);
-  hi2 = new KnnHeuristic(mp);
+  ki = new OkNNIntervalHeuristic(mp);
+	ki0 = new OkNNIntervalHeuristic(mp); ki0->setZero(true);
+  hi = new TargetHeuristic(mp);
+  hi2 = new TargetHeuristic(mp);
   //edbt = new EDBT::EDBTkNN(oMap);
-  meshDam = new KnnMeshEdgeDam(mp);
+  meshFence= new KnnMeshEdgeFence(mp);
   printf("vertices: %d, polygons: %d\n", (int)m.mesh_vertices.size(), (int)m.mesh_polygons.size());
 }
 

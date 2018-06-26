@@ -12,11 +12,11 @@ using namespace std;
 
 namespace polyanya {
 
-struct Dam {
+struct Fence {
   double lb, ub;
   int gid;
   SearchNode s;
-  Dam(double l, double r, int gid,  SearchNodePtr sn): lb(l), ub(r), gid(gid) {
+  Fence(double l, double r, int gid,  SearchNodePtr sn): lb(l), ub(r), gid(gid) {
     s.parent = nullptr;
     s.root = sn->root;
     s.g = sn->g;
@@ -53,14 +53,13 @@ public:
   }
 };
 
-class KnnMeshEdgeDam{
+class KnnMeshEdgeFence{
 
 private:
   typedef priority_queue<FloodFillNode, vector<FloodFillNode>, greater<FloodFillNode> > pq;
 
   Mesh* mesh;
-  //vector<vector<vector<Dam>>> dams;
-  map<pair<int, int>, vector<Dam>> dams;
+  map<pair<int, int>, vector<Fence>> fences;
   pq open_list;
   vector<Point> goals;
   warthog::timer timer;
@@ -88,7 +87,7 @@ private:
   }
 
   void gen_initial_nodes();
-  bool pass_dam(const FloodFillNode& fnode);
+  bool pass_fence(const FloodFillNode& fnode);
   int succ_to_node(
     SearchNodePtr parent, Successor* successors, int num_succ, SearchNodePtr nodes, int gid
   );
@@ -98,13 +97,13 @@ public:
   int nodes_pushed;
   int nodes_popped;
   int nodes_pruned;
-  int damcnt;
+  int fenceCnt;
   int edgecnt;
   bool verbose;
-  KnnMeshEdgeDam(Mesh* m): mesh(m) {
+  KnnMeshEdgeFence(Mesh* m): mesh(m) {
     int nump = m->mesh_polygons.size();
-    dams.clear();
-    damcnt = 0;
+    fences.clear();
+    fenceCnt = 0;
     for (int i=0; i<nump; i++) {
       int numv = m->mesh_polygons[i].vertices.size();
       for (int j=0; j<numv; j++) {
@@ -145,9 +144,9 @@ public:
     return timer.elapsed_time_micro();
   }
 
-  const vector<Dam>& get_dams(int left_vid, int right_vid) {
+  const vector<Fence>& get_fences(int left_vid, int right_vid) {
     pair<int, int> key = {min(left_vid, right_vid), max(left_vid, right_vid)};
-    return dams[key];
+    return fences[key];
   }
 };
 

@@ -1,4 +1,4 @@
-#include "knninstance.h"
+#include "intervaHeuristic.h"
 #include "expansion.h"
 #include "geometry.h"
 #include "searchnode.h"
@@ -16,7 +16,7 @@
 
 namespace polyanya {
 
-PointLocation KnnInstance::get_point_location(Point p)
+PointLocation OkNNIntervalHeuristic::get_point_location(Point p)
 {
     assert(mesh != nullptr);
     PointLocation out = mesh->get_point_location(p);
@@ -73,7 +73,7 @@ PointLocation KnnInstance::get_point_location(Point p)
     return out;
 }
 
-int KnnInstance::succ_to_node(
+int OkNNIntervalHeuristic::succ_to_node(
     SearchNodePtr parent, Successor* successors, int num_succ,
     SearchNodePtr nodes) {
   // copy from searchinstance.cpp
@@ -137,7 +137,7 @@ int KnnInstance::succ_to_node(
   return out;
 }
 
-void KnnInstance::set_end_polygon() {
+void OkNNIntervalHeuristic::set_end_polygon() {
   end_polygons.resize(mesh->mesh_polygons.size());
   for (int i=0; i<(int)mesh->mesh_polygons.size(); i++) end_polygons[i].clear();
   for (int i=0; i<(int)goals.size(); i++) {
@@ -148,7 +148,7 @@ void KnnInstance::set_end_polygon() {
   }
 }
 
-void KnnInstance::gen_initial_nodes() {
+void OkNNIntervalHeuristic::gen_initial_nodes() {
   // revised from SearchInstance::gen_initial_nodes
   // modify:
   // 1. h value for get_lazy() is 0
@@ -275,7 +275,7 @@ void KnnInstance::gen_initial_nodes() {
 
 #define root_to_point(root) ((root) == -1 ? start : mesh->mesh_vertices[root].p)
 
-int KnnInstance::search() {
+int OkNNIntervalHeuristic::search() {
   init_search();
   timer.start();
   if (mesh == nullptr) {
@@ -379,13 +379,13 @@ int KnnInstance::search() {
   return (int)final_nodes.size();
 }
 
-void KnnInstance::print_node(SearchNodePtr node, std::ostream& outfile) {
+void OkNNIntervalHeuristic::print_node(SearchNodePtr node, std::ostream& outfile) {
   outfile << "root=" << root_to_point(node->root) << "; left=" << node->left
           << "; right=" << node->right << "; f=" << node->f << ", g="
           << node->g;
 }
 
-void KnnInstance::get_path_points(std::vector<Point>& out, int k) {
+void OkNNIntervalHeuristic::get_path_points(std::vector<Point>& out, int k) {
   if (k >= (int)goals.size()) return;
   assert((int)final_nodes.size() <= K);
   assert(final_nodes[k]->goal_id != -1);
@@ -401,7 +401,7 @@ void KnnInstance::get_path_points(std::vector<Point>& out, int k) {
   std::reverse(out.begin(), out.end());
 }
 
-void KnnInstance::print_search_nodes(std::ostream& outfile, int k) {
+void OkNNIntervalHeuristic::print_search_nodes(std::ostream& outfile, int k) {
   if (k > (int)final_nodes.size()) return;
   SearchNodePtr cur = final_nodes[k];
   while (cur != nullptr) {
@@ -413,7 +413,7 @@ void KnnInstance::print_search_nodes(std::ostream& outfile, int k) {
   }
 }
 
-void KnnInstance::deal_final_node(const SearchNodePtr node) {
+void OkNNIntervalHeuristic::deal_final_node(const SearchNodePtr node) {
 
   const Point& goal = goals[node->goal_id];
   const int final_root = [&]() {
@@ -448,7 +448,7 @@ void KnnInstance::deal_final_node(const SearchNodePtr node) {
   }
 }
 
-void KnnInstance::gen_final_nodes(const SearchNodePtr node, const Point& rootPoint) {
+void OkNNIntervalHeuristic::gen_final_nodes(const SearchNodePtr node, const Point& rootPoint) {
     assert(node->next_polygon != -1);
     for (int gid: end_polygons[node->next_polygon]) {
       const Point& goal = goals[gid];
