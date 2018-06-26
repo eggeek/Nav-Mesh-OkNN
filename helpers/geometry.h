@@ -1,5 +1,7 @@
 #pragma once
 #include "point.h"
+#include <vector>
+#include <algorithm>
 
 namespace polyanya
 {
@@ -25,6 +27,13 @@ enum struct ZeroOnePos
     IN_RANGE, // 0 < n < 1
     EQ_ONE,   // n = 1
     GT_ONE,   // n > 1
+};
+
+enum struct SegIntPos // segment intersect position
+{
+  DISJOINT,
+  INTERSECT,
+  OVERLAP
 };
 
 // Returns where num / denom is in the range [0, 1].
@@ -117,5 +126,30 @@ inline bool is_collinear(const Point& a, const Point& b, const Point& c)
 {
     return std::abs((b - a) * (c - b)) < EPSILON;
 }
+
+// return [-180, 180] / [0, 360]
+inline double get_angle(const Point& p, bool is360=false) {
+  double res = std::atan2(p.y, p.x) * 180 / PI;
+  if (is360 && res < 0)
+    res += 360.0;
+  return res;
+}
+
+inline bool is_intersect(const Point& p0, const Point& p1, const Point& q0, const Point& q1) {
+  // from https://stackoverflow.com/questions/563198/whats-the-most-efficent-way-to-calculate-where-two-line-segments-intersect
+  Point r = p1 - p0;
+  Point s = q1 - q0;
+  if (fabs(r*s) < EPSILON && fabs((q0-p0)*r) > EPSILON) return false;
+  if (fabs(r*s) >= EPSILON) {
+    double t = (q0-p0)*s / (r*s);
+    double u = (p0-q0)*r / (s*r);
+    if (0<=t && t<=1 && 0<=u && u<=1) return true;
+    return false;
+  }
+  return false;
+}
+
+int inSegment(const Point& p, const Point& s1, const Point& s2);
+SegIntPos intersect2D_2Segments(const Point& p0, const Point& p1, const Point& q0, const Point& q1, Point& I0, Point& I1);
 
 }

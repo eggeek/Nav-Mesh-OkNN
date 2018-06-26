@@ -1,16 +1,15 @@
-// Copyright (C) Geom Software e.U, Bernhard Kornberger, Graz/Austria
+// (c) 2010 Geom e.U. Bernhard Kornberger, Graz/Austria. All rights reserved.
 //
-// This file is part of the Fade2D library. The student license is free
-// of charge and covers personal non-commercial research. Licensees
-// holding a commercial license may use this file in accordance with
-// the Commercial License Agreement.
+// This file is part of the Fade2D library. You can use it for your personal
+// non-commercial research. Licensees holding a commercial license may use this
+// file in accordance with the Commercial License Agreement provided
+// with the Software.
 //
-// This software is provided AS IS with NO WARRANTY OF ANY KIND,
-// INCLUDING THE WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS
-// FOR A PARTICULAR PURPOSE.
+// This software is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING
+// THE WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 //
-// Please contact the author if any conditions of this licensing are
-// not clear to you.
+// Please contact the author if any conditions of this licensing are not clear
+// to you.
 //
 // Author: Bernhard Kornberger, bkorn (at) geom.at
 // http://www.geom.at
@@ -28,7 +27,7 @@
 	#error GEOM_PSEUDO3D is not defined
 #endif
 
-class CLASS_DECLSPEC Vector2;
+class Vector2;
 
 /** \brief Vector
 *
@@ -42,121 +41,192 @@ public:
 /** \brief Constructor
 *
 */
-
-	Vector2(const double x_,const double y_,const double z_);
-
+	CLASS_DECLSPEC
+	Vector2(const double x_,const double y_,const double z_):
+		valX(x_),
+		valY(y_),
+		valZ(z_)
+	{
+	}
 /** \brief Default constructor
 *
 * The vector is initialized to (0,0,0)
 */
-
-	Vector2();
-
+	CLASS_DECLSPEC
+	Vector2():valX(0),valY(0),valZ(0)
+	{
+	}
 /** \brief Copy constructor
 *
 * Create a copy of vector v_
 */
-
-	Vector2(const Vector2& v_);
+	CLASS_DECLSPEC
+	Vector2(const Vector2& v_):
+		valX(v_.x()),
+		valY(v_.y()),
+		valZ(v_.z())
+	{
+	}
 
 #else
 
 /** \brief Constructor
 *
 */
-
-	Vector2(const double x_,const double y_);
+	CLASS_DECLSPEC
+	Vector2(const double x_,const double y_):
+		valX(x_),
+		valY(y_)
+	{
+	}
 /** \brief Default constructor
 *
 * The vector is initialized to (0,0)
 */
-
-	Vector2();
+	CLASS_DECLSPEC
+	Vector2():valX(0),valY(0)
+	{
+	}
 /** \brief Copy constructor
 *
 * Create a copy of vector v_
 */
-
-	Vector2(const Vector2& v_);
+	CLASS_DECLSPEC
+	Vector2(const Vector2& v_):
+		valX(v_.x()),
+		valY(v_.y())
+	{
+	}
 #endif
 
+	CLASS_DECLSPEC
+	~Vector2()
+	{
+	}
 
+/** \brief Get the x-value
+*/
+	CLASS_DECLSPEC
+	double x() const
+	{
+		return valX;
+	}
+/** \brief Get the y-value
+*/
+	CLASS_DECLSPEC
+	double y() const
+	{
+		return valY;
+	}
 
 #if GEOM_PSEUDO3D==GEOM_TRUE
-	/** \brief Get an orthogonal vector (CCW direction)
-	 *
-	 * @note: Only (x,y) coordinates are computed, z=0
-	 */
+/** \brief Get the z-value.
+*/
+	CLASS_DECLSPEC
+	double z() const
+	{
+		return valZ;
+	}
+#endif
+
+#if GEOM_PSEUDO3D==GEOM_TRUE
+/** \brief Set the values
+*/
+	void set(const double x_,const double y_,const double z_)
+	{
+		valX=x_;
+		valY=y_;
+		valZ=z_;
+	}
 #else
-	/** \brief Get an orthogonal vector (CCW direction)
-	 */
-#endif
-
-	Vector2 orthogonalVector() const;
-
-	/** \brief Get the x-value
-	*/
-
-	double x() const;
-
-	/** \brief Get the y-value
-	*/
-
-	double y() const;
-
-#if GEOM_PSEUDO3D==GEOM_TRUE
-	/** \brief Get the z-value.
-	*/
-
-	double z() const;
-#endif
-
-#if GEOM_PSEUDO3D==GEOM_TRUE
-	/** \brief Set the values
-	*/
-	void set(const double x_,const double y_,const double z_);
-
-#else
-	/** \brief Set the values
-	*/
-	void set(const double x_,const double y_);
+/** \brief Set the values
+*/
+	void set(const double x_,const double y_)
+	{
+		valX=x_;
+		valY=y_;
+	}
 #endif
 
 
 /** \brief Get the length of the vector
 */
-
-	double length() const;
-
-/** \brief Scalar product
-*/
+CLASS_DECLSPEC
+double length() const
+{
 #if GEOM_PSEUDO3D==GEOM_TRUE
+	double x2(x()*x());
+	double y2(y()*y());
+	double z2(z()*z());
+	return sqrt(x2+y2+z2);
 
-	double operator*(const Vector2& other) const;
 #else
+	double x2(x()*x());
+	double y2(y()*y());
+	return sqrt(x2+y2);
+#endif
+}
 
-	double operator*(const Vector2& other) const;
+/** \brief Multiply two vectors
+*/
+
+#if GEOM_PSEUDO3D==GEOM_TRUE
+CLASS_DECLSPEC
+double operator*(const Vector2& other) const
+{
+	return x()*other.x()+y()*other.y()+z()*other.z();
+}
+#else
+CLASS_DECLSPEC
+double operator*(const Vector2& other) const
+{
+	return x()*other.x()+y()*other.y();
+}
 #endif
 
 
 /** \brief Multiply by a scalar value
 */
 #if GEOM_PSEUDO3D==GEOM_TRUE
-
-	Vector2 operator*(double val) const;
+CLASS_DECLSPEC
+Vector2 operator*(double val) const
+{
+	double prodX(x()*val);
+	double prodY(y()*val);
+	double prodZ(z()*val);
+	return Vector2(prodX,prodY,prodZ);
+}
 #else
+CLASS_DECLSPEC
+Vector2 operator*(double val) const
+{
+	double prodX(x()*val);
+	double prodY(y()*val);
+	return Vector2(prodX,prodY);
 
-	Vector2 operator*(double val) const;
+}
 #endif
 
 /** \brief Divide by a scalar value
 */
 #if GEOM_PSEUDO3D==GEOM_TRUE
-
-	Vector2 operator/(double val) const;
+CLASS_DECLSPEC
+Vector2 operator/(double val) const
+{
+	double qX(x()/val);
+	double qY(y()/val);
+	double qZ(z()/val);
+	return Vector2(qX,qY,qZ);
+}
 #else
+CLASS_DECLSPEC
+Vector2 operator/(double val) const
+{
+	double qX(x()/val);
+	double qY(y()/val);
+	return Vector2(qX,qY);
 
-	Vector2 operator/(double val) const;
+}
 #endif
 
 
@@ -167,11 +237,6 @@ protected:
 	double valZ;
 #endif
 };
-
-
-
-
-// Free functions
 
 CLASS_DECLSPEC
 inline std::ostream &operator<<(std::ostream &stream, const Vector2& vec)
@@ -198,9 +263,6 @@ inline Vector2 crossProduct(const Vector2& vec0,const Vector2& vec1)
 }
 #endif
 
-
-
-
 /** \brief Normalize the vector
 */
 CLASS_DECLSPEC
@@ -214,7 +276,7 @@ inline Vector2 normalize(const Vector2& other)
 	}
 	else
 	{
-		std::cout<<"warning: normalize(const Vector2& other), Null length vector!"<<std::endl;// COUTOK
+		std::cout<<"warning: normalize(const Vector2& other), Null length vector!"<<std::endl;
 		return Vector2(0,0,0);
 	}
 #else
@@ -225,31 +287,12 @@ inline Vector2 normalize(const Vector2& other)
 	}
 	else
 	{
-		std::cout<<"warning: normalize(const Vector2& other), Null length vector!"<<std::endl;// COUTOK
+		std::cout<<"warning: normalize(const Vector2& other), Null length vector!"<<std::endl;
 		return Vector2(0,0);
 	}
 #endif
 }
 
-CLASS_DECLSPEC
-inline Vector2 operator-(const Vector2& in)
-{
-#if GEOM_PSEUDO3D==GEOM_TRUE
-	return Vector2(-in.x(),-in.y(),-in.z());
-#else
-	return Vector2(-in.x(),-in.y());
-#endif
-}
-
-CLASS_DECLSPEC
-inline Vector2 operator*(double d,const Vector2& vec)
-{
-#if GEOM_PSEUDO3D==GEOM_TRUE
-	return Vector2(d*vec.x(),d*vec.y(),d*vec.z());
-#else
-	return Vector2(d*vec.x(),d*vec.y());
-#endif
-}
 
 
 } // (namespace)

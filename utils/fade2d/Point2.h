@@ -1,19 +1,19 @@
-// Copyright (C) Geom Software e.U, Bernhard Kornberger, Graz/Austria
+// (c) 2010 Geom e.U. Bernhard Kornberger, Graz/Austria. All rights reserved.
 //
-// This file is part of the Fade2D library. The student license is free
-// of charge and covers personal non-commercial research. Licensees
-// holding a commercial license may use this file in accordance with
-// the Commercial License Agreement.
+// This file is part of the Fade2D library. You can use it for your personal
+// non-commercial research. Licensees holding a commercial license may use this
+// file in accordance with the Commercial License Agreement provided
+// with the Software.
 //
-// This software is provided AS IS with NO WARRANTY OF ANY KIND,
-// INCLUDING THE WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS
-// FOR A PARTICULAR PURPOSE.
+// This software is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING
+// THE WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 //
-// Please contact the author if any conditions of this licensing are
-// not clear to you.
+// Please contact the author if any conditions of this licensing are not clear
+// to you.
 //
 // Author: Bernhard Kornberger, bkorn (at) geom.at
 // http://www.geom.at
+
 
 #pragma once
 
@@ -60,9 +60,10 @@ public:
 	}
 /** \brief Default constructor
 *
+* The coordinates are initialized to -999.
 */
 	CLASS_DECLSPEC
-	Point2():coordX(-DBL_MAX),coordY(-DBL_MAX),coordZ(-DBL_MAX),pAssociatedTriangle(NULL),customIndex(-1)
+	Point2():coordX(-DBL_MAX),coordY(-DBL_MAX),coordZ(-DBL_MAX),pAssociatedTriangle(NULL)
 	{
 
 	}
@@ -80,24 +81,6 @@ public:
 	{
 
 	}
-
-
-/** \brief Print
- *
- * Internal, prints the coordinates to stdout
- */
-#if GEOM_PSEUDO3D==GEOM_TRUE
-	void print()
-	{
-		std::cout<<coordX<<" "<<coordY<<" "<<coordZ<<std::endl;
-	}
-#else
-	void print()
-	{
-		std::cout<<coordX<<" "<<coordY<<std::endl;
-	}
-#endif
-
 
 /** \brief Deprecated, use setHeight() instead. Kept for backward compatibility
 *
@@ -230,25 +213,6 @@ public:
 #endif
 
 
-
-
-/** \brief Get max(abs(x),abs(y))
-*
-*/
-	CLASS_DECLSPEC
-	double getMaxAbs() const
-	{
-		double x(fabs(coordX));
-		double y(fabs(coordY));
-		bool b(x>=y);
-		return b*x+(!b)*y;
-	}
-
-
-
-
-
-
 /** \brief Less than operator
 *
 * Compares the x and y coordinates
@@ -315,38 +279,31 @@ public:
 #if GEOM_PSEUDO3D==GEOM_TRUE
 /** \brief Set the coordinates
 *
-* Internal method
-*
 * @param x_ x-coordinate
 * @param y_ y-coordinate
 * @param z_ z-coordinate
-* @param customIndex_ Arbitrary index, use -1 if not required
+*
 *
 */
 
-	void set(const double x_,const double y_,const double z_,int customIndex_)
+	void set(const double x_,const double y_,const double z_)
 	{
 		coordX=x_;
 		coordY=y_;
 		coordZ=z_;
 		pAssociatedTriangle=NULL;
-		customIndex=customIndex_;
 	}
 #else
-/** \brief Set the coordinates and customIndex
-*
-* Internal method
+/** \brief Set the coordinates
 *
 * @param x_ x-coordinate
 * @param y_ y-coordinate
-* @param customIndex_ Arbitrary index, use -1 if not required
 */
-	void set(const double x_,const double y_,int customIndex_)
+	void set(const double x_,const double y_)
 	{
 		coordX=x_;
 		coordY=y_;
 		pAssociatedTriangle=NULL;
-		customIndex=customIndex_;
 	}
 	void change(const double x_,const double y_)
 	{
@@ -377,9 +334,6 @@ public:
 		this->customIndex=pnt.customIndex;
 	}
 #endif
-
-
-
 /** \brief Set a custom index
 *
 * An arbitrary index can be assigned.
@@ -444,17 +398,7 @@ Point2 operator+(const Vector2& vec) const
 #else
 	return Point2(x()+vec.x(),y()+vec.y());
 #endif
-}
 
-/** \brief Subtract vector from point
- */
-Point2 operator-(const Vector2& vec) const
-{
-#if GEOM_PSEUDO3D==GEOM_TRUE
-	return Point2(x()-vec.x(),y()-vec.y(),z()-vec.z());
-#else
-	return Point2(x()-vec.x(),y()-vec.y());
-#endif
 }
 
 

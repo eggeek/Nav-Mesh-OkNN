@@ -65,6 +65,7 @@ class SearchInstance
             size_t num_vertices = mesh->mesh_vertices.size();
             root_g_values.resize(num_vertices);
             root_search_ids.resize(num_vertices);
+            fill(root_search_ids.begin(), root_search_ids.end(), 0);
         }
         void init_search()
         {
@@ -139,7 +140,45 @@ class SearchInstance
 
         void get_path_points(std::vector<Point>& out);
         void print_search_nodes(std::ostream& outfile);
-
+        std::vector<double> brute_force(Point s, std::vector<Point> pts, int k, double& cost, double& gen) {
+          std::priority_queue<double, std::vector<double>> maxh; 
+          std::vector<std::pair<double, Point>> edists;
+          std::vector<double> odists;
+          this->timer.start();
+          for (auto i: pts) {
+            edists.push_back({s.distance(i), i});
+          }
+          auto cmp = [&](std::pair<double, Point> a,
+                         std::pair<double, Point> b) {
+            return a.first < b.first;
+          };
+          sort(edists.begin(), edists.end(), cmp);
+          this->timer.stop();
+          cost += timer.elapsed_time_micro(); 
+          for (auto i: edists) {
+            double de = i.first;
+            if ((int)maxh.size() == k && maxh.top() <= de)
+              break;
+            Point p = i.second;
+            this->set_start_goal(s, p);
+            this->search();       
+            cost += this->get_search_micro();
+            gen += (double)this->nodes_generated;
+            double d_o = this->get_cost();
+            if ((int)maxh.size() < k) {
+              maxh.push(d_o);
+            } else if (d_o < maxh.top()) {
+              maxh.pop();
+              maxh.push(d_o);
+            } 
+          }
+          while (!maxh.empty()) {
+            odists.push_back(maxh.top());
+            maxh.pop();
+          }
+          sort(odists.begin(), odists.end());
+          return odists;
+        } 
 };
 
 }

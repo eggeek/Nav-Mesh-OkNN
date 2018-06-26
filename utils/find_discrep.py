@@ -13,13 +13,21 @@ def main():
         print("usage:", sys.argv[0], "result1 result2")
         return
 
+    one = {}
+    two = {}
     with open(sys.argv[1]) as r1:
         with open(sys.argv[2]) as r2:
             csv1 = csv.DictReader(r1, delimiter=";")
             csv2 = csv.DictReader(r2, delimiter=";")
-            for line1, line2 in zip(csv1, csv2):
-                if abs(get_time(line1) - get_time(line2)) > 1e-8:
-                    print(line1["index"])
+            for line in csv1:
+                one[line["index"]] = get_time(line)
+            for line in csv2:
+                two[line["index"]] = get_time(line)
+    for ind in one:
+        if ind not in two:
+            continue
+        if abs(one[ind] - two[ind]) > 1e-8:
+            print(ind)
 
 if __name__ == "__main__":
     main()

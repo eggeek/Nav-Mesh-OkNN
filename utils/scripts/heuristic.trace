@@ -1,0 +1,39 @@
+generating init node: root=(20, 28); left=(19, 31); right=(31, 19); f=7.2111, g=0
+	pushing: root=(20, 28); left=(19, 31); right=(31, 19); f=7.2111, g=0
+generating init node: root=(20, 28); left=(18, 19); right=(19, 31); f=9.46864, g=0
+generating init node: root=(20, 28); left=(31, 19); right=(18, 19); f=15.2315, g=0
+popped off: root=(20, 28); left=(19, 31); right=(31, 19); f=7.2111, g=0
+	pushing: root=(20, 28); left=(31, 31); right=(31, 19); f=16.4924, g=0
+	pushing: root=(20, 28); left=(19, 31); right=(31, 31); f=11.6619, g=0
+popped off: root=(20, 28); left=(19, 31); right=(31, 19); f=7.2111, g=0
+path 0; (20, 28) (26, 24)
+popped off: root=(20, 28); left=(18, 19); right=(19, 31); f=9.46864, g=0
+	pushing: root=(20, 28); left=(18, 19); right=(19, 31); f=17.3851, g=0
+popped off: root=(20, 28); left=(19, 31); right=(31, 31); f=11.6619, g=0
+	pushing: root=(20, 28); left=(19, 31); right=(31, 31); f=23, g=0
+popped off: root=(20, 28); left=(31, 19); right=(18, 19); f=15.2315, g=0
+	pushing: root=(20, 28); left=(31, 19); right=(18, 19); f=17, g=0
+popped off: root=(20, 28); left=(31, 31); right=(31, 19); f=16.4924, g=0
+	pushing: root=(20, 28); left=(31, 31); right=(31, 19); f=24.2625, g=0
+popped off: root=(20, 28); left=(31, 19); right=(18, 19); f=17, g=0
+	intermediate: root=(20, 28); left=(31, 19); right=(19, 18); f=0, g=0
+	intermediate: root=(20, 28); left=(31, 15); right=(19, 18); f=0, g=0
+	intermediate: root=(20, 28); left=(31, 15); right=(19, 15); f=0, g=0
+	pushing: root=(20, 28); left=(26, 10); right=(19, 15); f=17, g=0
+	pushing: root=(20, 28); left=(31, 15); right=(26, 10); f=22.4722, g=0
+popped off: root=(20, 28); left=(26, 10); right=(19, 15); f=17, g=0
+	intermediate: root=(20, 28); left=(23, 10); right=(19, 15); f=0, g=0
+	pushing: root=(19, 15); left=(18.8165, 12.6147); right=(15, 15); f=17.4327, g=13.0384
+	pushing: root=(19, 15); left=(18.8165, 12.6147); right=(15, 15); f=20.3185, g=13.0384
+	pushing: root=(19, 15); left=(18.8165, 12.6147); right=(15, 15); f=17.4327, g=13.0384
+	pushing: root=(20, 28); left=(23, 10); right=(18.8165, 12.6147); f=17, g=0
+	pushing: root=(20, 28); left=(23, 10); right=(18.8165, 12.6147); f=20.3901, g=0
+	pushing: root=(20, 28); left=(23, 10); right=(18.8165, 12.6147); f=17, g=0
+popped off: root=(20, 28); left=(23, 10); right=(18.8165, 12.6147); f=17, g=0
+	pushing: root=(20, 28); left=(23, 10); right=(18.0862, 3.12069); f=21.095, g=0
+	intermediate: root=(20, 28); left=(23, 10); right=(18.0862, 3.12069); f=0, g=0
+	intermediate: root=(20, 28); left=(23, 8); right=(18.0833, 3.08333); f=0, g=0
+	pushing: root=(20, 28); left=(20, 2); right=(18.0741, 2.96296); f=30.2613, g=0
+	pushing: root=(20, 28); left=(23, 8); right=(20, 2); f=21.5824, g=0
+popped off: root=(20, 28); left=(23, 10); right=(18.8165, 12.6147); f=17, g=0
+path 1; (20, 28) (20, 11)

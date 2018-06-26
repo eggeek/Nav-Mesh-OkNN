@@ -8,31 +8,36 @@
 #include "point.h"
 #include "cpool.h"
 #include "timer.h"
-#include "rtree.h"
+#include "RStarTree.h"
+#include "RStarTreeUtil.h"
+#include "knnMeshEdge.h"
+#include <chrono>
 #include <queue>
 #include <vector>
 #include <ctime>
 
 namespace polyanya {
 
+namespace rs = rstar;
+
 class KnnHeuristic {
     typedef std::priority_queue<SearchNodePtr, std::vector<SearchNodePtr>,
                                 PointerComp<SearchNode> > pq;
-    typedef std::pair<Point, int> value;
-    typedef bg::model::polygon<Point> polygon;
     private:
         int K = 1;
         warthog::mem::cpool* node_pool;
         MeshPtr mesh;
         Point start;
         std::vector<Point> goals;
+        KnnMeshEdgeDam* meshDam;
 
         // kNN has k final node
         std::vector<SearchNodePtr> final_nodes;
         // poly_id: goal1, goal2, ...
         std::vector<std::vector<int>> end_polygons;
         // <i, v>: reached ith goal with cost v
-        std::map<int, double> reached;
+        //std::map<int, double> reached;
+        std::vector<double> reached;
         pq open_list;
 
         // Best g value for a specific vertex.
@@ -43,14 +48,15 @@ class KnnHeuristic {
         int search_id;
 
         warthog::timer timer;
-        std::vector<value> nn;
+        double heuristic_using;
+        double angle_using;
 
         // Pre-initialised variables to use in search().
         Successor* search_successors;
         SearchNode* search_nodes_to_push;
-        bgi::rtree<value, bgi::rstar<16> > rtree;
 
         void init() {
+            meshDam = nullptr;
             verbose = false;
             search_successors = new Successor [mesh->max_poly_sides + 2];
             search_nodes_to_push = new SearchNode [mesh->max_poly_sides + 2];
@@ -64,68 +70,118 @@ class KnnHeuristic {
             size_t num_vertices = mesh->mesh_vertices.size();
             root_g_values.resize(num_vertices);
             root_search_ids.resize(num_vertices);
+            fill(root_search_ids.begin(), root_search_ids.end(), 0);
         }
 
-        int get_knn(const Point& p, int k) {
-          nn.clear();
-          rtree.query(bgi::nearest(p, k), std::back_inserter(nn));
-          if (nn.empty()) return -1;
-          else return nn.back().second;
-        }
-
-        int get_knn(const Point& l, const Point& r, int k=1) {
-          nn.clear();
-          bg::model::segment<Point> seg(l, r);
-          rtree.query(bgi::nearest(seg, k), std::back_inserter(nn));
-          if (nn.empty()) return -1;
-          else return nn.back().second;
-        }
+        rs::MinHeapEntry NearestInAreaAB(double angle0, double angle1, const Point& p, double curMin=INF);
+        rs::MinHeapEntry NearestInAreaC(double angle0, double angle1, const Point& p, const Point& l, const Point& r, double curMin=INF);
 
         /*
-        Boost R-tree doesn't support within(polygon) query, so this function doesn't work currently
-        std::pair<int, double> get_min_hueristic(const Point& r, const Point& a, const Point& b, int k=1) {
-            Point perp = perp_point(r, a, b);
-            Point r2 = reflect_point(r, a, b);
-            Point v = r - perp;
-            double t = 1e8;
-            Point a0 = a + t * v, b0 = b + t * v, a1 = a - t * v, b1 = b - t * v;
-            Point w = a - b;
-            Point p0 = a0 + t * w, p1 = a1 + t * w, p2 = b0 - t * w, p3 = b1 - t * w;
-            polygon A {{a0, a, b, b0, a0}};
-            polygon B {{a, a1, b1, b, a}};
-            polygon C {{p0, p1, a1, a0, p0}};
-            polygon D {{b0, b1, p3, p2, b0}};
-            int res = -1;
-            double curv = 1e18; //INF
+         *   .........\.......p'......../...........
+         *   ..........\....area:C...../............
+         *   area:A     l-------------r.....area:B
+         *   ........../....area:C'...\.............
+         *   ........./.......p........\............
+         *
+         * A : nearest neighbour of point l
+         * B : nearest neigbhour of point r
+         * C : nearest neighbour of point p
+         * C': nearest neighbour of point p'
+         */
+        std::pair<int, double> get_min_hueristic(const Point& p, const Point& l, const Point& r,
+            double minV=INF, int minArg=-1) {
 
-            auto is_better = [&](double& oldv, int gid) {
-              double newv = get_h_value(r, goals[gid], a, b);
-              if (oldv > newv) {
-                oldv = newv;
-                return true;
-              }
-              return false;
-            };
+          heuristic_call++;
+          auto begint = std::chrono::steady_clock::now();
 
-            nn.clear();
-            rtree.query(bgi::within(A) && bgi::nearest(r2, k), nn);
-            if (!nn.empty() && is_better(curv, nn.back().second)) res = nn.back().second;
+          auto updateRes = [&](rs::MinHeapEntry h, double dist) {
+            if (h.key + dist < minV) {
+              minArg = *((int*)h.entryPtr->data);
+              minV = h.key + dist;
+            }
+          };
 
-            nn.clear();
-            rtree.query(bgi::within(B) && bgi::nearest(r, k), nn);
-            if (!nn.empty() && is_better(curv, nn.back().second)) res = nn.back().second;
+          if (is_collinear(p, l, r)) {
+            rs::MinHeap heap;
+            rs::Point P;
+            if (p.distance(l) < p.distance(r))
+              P = rs::Point(l.x, l.y);
+            else
+              P = rs::Point(r.x, r.y);
+            double D = sqrt(rs::RStarTreeUtil::minDis2(P, rte->root->mbrn));
+            heap.push(rs::MinHeapEntry(D, rte->root));
 
-            nn.clear();
-            rtree.query(bgi::within(C) && bgi::nearest(a, k), nn);
-            if (!nn.empty() && is_better(curv, nn.back().second)) res = nn.back().second;
+            rs::MinHeapEntry res(INF, (rs::Entry_P)nullptr);
+            while (true) {
+              res = rs::RStarTreeUtil::iNearestNeighbour(heap, P);
+              if (res.key == INF) // not found
+                break;
+              int gid = *((int*)res.entryPtr->data);
+              if (fabs(reached[gid] - INF) <= EPSILON)
+                break;
+              //if (reached.find(gid) == reached.end())
+              //  break;
+            }
+            if (res.key != INF)
+              updateRes(res, p.distance({P.coord[0], P.coord[1]}));
 
-            nn.clear();
-            rtree.query(bgi::within(D) && bgi::nearest(b, k), nn);
-            if (!nn.empty() && is_better(curv, nn.back().second)) res = nn.back().second;
+            auto endt = std::chrono::steady_clock::now();
+            heuristic_using += std::chrono::duration_cast<std::chrono::microseconds>(endt - begint).count();
+            return {minArg, minV};
+          }
 
-            return {res, curv};
+          Point p2, pl, pl2, pr, pr2;
+          double pl_angle, pl2_angle, pr_angle, pr2_angle;
+
+          p2 = reflect_point(p, l, r);
+
+          pl = l - p, pl2 = l - p2;
+          pr = r - p, pr2 = r - p2;
+
+          auto begint2 = std::chrono::steady_clock::now();
+          pl_angle = get_angle(pl, true); pl2_angle = get_angle(pl2, true);
+          pr_angle = get_angle(pr, true); pr2_angle = get_angle(pr2, true);
+          auto endt2 = std::chrono::steady_clock::now();
+          angle_using += std::chrono::duration_cast<std::chrono::microseconds>(endt2 - begint2).count();
+
+          double p2l = p.distance(l);
+          rs::MinHeapEntry res = NearestInAreaAB(pl_angle, pl2_angle, l, minV - p2l);
+          updateRes(res, p2l);
+
+          double p2r = p.distance(r);
+          res = NearestInAreaAB(pr2_angle, pr_angle, r, minV - p2r);
+          updateRes(res, p2r);
+
+          res = NearestInAreaC(pr_angle, pl_angle, p, l, r, minV);
+          updateRes(res, 0);
+
+          res = NearestInAreaC(pl2_angle, pr2_angle, p2, r, l, minV);
+          updateRes(res, 0);
+
+          if (minArg == -1) {
+            if ((int)final_nodes.size() != std::min(K, (int)goals.size()))
+              assert(false);
+          }
+          auto endt = std::chrono::steady_clock::now();
+          heuristic_using += std::chrono::duration_cast<std::chrono::microseconds>(endt - begint).count();
+          return {minArg, minV};
         }
-        */
+
+        void initRtree() {
+          rte = new rs::RStarTree();
+          rtEntries.clear();
+          gids.clear();
+          for (int i=0; i<(int)goals.size(); i++) gids.push_back(i);
+          for (int& i: gids) {
+            const Point& it = goals[i];
+            rs::Mbr mbr(it.x, it.x, it.y, it.y);
+            rs::LeafNodeEntry leaf(mbr, (rs::Data_P)(&i));
+            rtEntries.push_back(leaf);
+          }
+
+          for (auto& it: rtEntries)
+            rte->insertData(&it);
+        }
 
         void init_search() {
             assert(node_pool);
@@ -133,14 +189,19 @@ class KnnHeuristic {
             search_id++;
             open_list = pq();
             final_nodes = std::vector<SearchNodePtr>();
-            reached.clear();
+            reached.resize(goals.size());
+            fill(reached.begin(), reached.end(), INF);
             nodes_generated = 0;
             nodes_pushed = 0;
             nodes_popped = 0;
             nodes_pruned_post_pop = 0;
             successor_calls = 0;
+            nodes_reevaluate = 0;
             set_end_polygon();
             gen_initial_nodes();
+            heuristic_using = 0;
+            heuristic_call = 0;
+            angle_using = 0;
         }
         PointLocation get_point_location(Point p);
         void set_end_polygon();
@@ -149,7 +210,7 @@ class KnnHeuristic {
             SearchNodePtr parent, Successor* successors,
             int num_succ, SearchNodePtr nodes
         );
-
+        void push_lazy(SearchNodePtr lazy);
         void print_node(SearchNodePtr node, std::ostream& outfile);
 
     public:
@@ -158,7 +219,12 @@ class KnnHeuristic {
         int nodes_popped;           // Nodes popped off open
         int nodes_pruned_post_pop;  // Nodes we prune right after popping off
         int successor_calls;        // Times we call get_successors
+        int heuristic_call;
+        int nodes_reevaluate;
         bool verbose;
+        rs::RStarTree* rte;
+        std::vector<rs::LeafNodeEntry> rtEntries;
+        std::vector<int> gids;
 
         KnnHeuristic() { }
         KnnHeuristic(MeshPtr m) : mesh(m) { init(); }
@@ -172,19 +238,20 @@ class KnnHeuristic {
             }
             delete[] search_successors;
             delete[] search_nodes_to_push;
+            if (rte)
+              delete rte;
         }
 
         void set_K(int k) { this->K = k; }
 
-        void set_start_goal(Point s, std::vector<Point> gs) {
-            start = s;
-            goals = std::vector<Point>(gs);
-            rtree.clear();
-            final_nodes = std::vector<SearchNodePtr>();
-            for (int i=0; i<(int)gs.size(); i++) {
-              rtree.insert(std::make_pair(gs[i], i));
-            }
+        void set_goals(std::vector<Point> gs) {
+          goals = std::vector<Point>(gs);
+          initRtree();
         }
+
+        void set_start(Point s) { start = s; }
+
+        void set_meshDam(KnnMeshEdgeDam* meshDam) { this->meshDam = meshDam; }
 
         int search();
 
@@ -198,6 +265,14 @@ class KnnHeuristic {
         double get_search_micro()
         {
             return timer.elapsed_time_micro();
+        }
+
+        double get_heuristic_micro() {
+          return heuristic_using;
+        }
+
+        double get_angle_micro() {
+          return angle_using;
         }
 
         void get_path_points(std::vector<Point>& out, int k);
@@ -214,6 +289,8 @@ class KnnHeuristic {
           for (int i=0; i<K; i++) if (final_nodes[i]->goal_id == gid) return i;
           return -1;
         }
+
+        std::pair<int, double> nn_query(SearchInstance* si, double& elapsed_time_micro);
 };
 
 }

@@ -204,7 +204,8 @@ void KnnInstance::gen_initial_nodes() {
     for (int i = 0; i < num_nodes; i++) {
       SearchNodePtr nxt = new (node_pool->allocate()) SearchNode(nodes[i]);
       const Point& nxt_root = (nxt->root == -1? start: mesh->mesh_vertices[nxt->root].p);
-      nxt->f += get_knn_h_value(nxt_root, nxt->left, nxt->right);
+			if (!this->isZero)
+				nxt->f += get_knn_h_value(nxt_root, nxt->left, nxt->right);
       nxt->parent = lazy;
       #ifndef NDEBUG
       if (verbose) {
@@ -214,6 +215,7 @@ void KnnInstance::gen_initial_nodes() {
       }
       #endif
       open_list.push(nxt);
+      nodes_pushed++;
 
       if (!end_polygons[nxt->next_polygon].empty()) {
         gen_final_nodes(nxt, nxt_root);
@@ -274,8 +276,8 @@ void KnnInstance::gen_initial_nodes() {
 #define root_to_point(root) ((root) == -1 ? start : mesh->mesh_vertices[root].p)
 
 int KnnInstance::search() {
-  timer.start();
   init_search();
+  timer.start();
   if (mesh == nullptr) {
     timer.stop();
     return 0;
@@ -352,7 +354,8 @@ int KnnInstance::search() {
       // update h value before we push
       const SearchNodePtr nxt = new (node_pool->allocate()) SearchNode(search_nodes_to_push[i]);
       const Point& nxt_root = (nxt->root == -1 ? start: mesh->mesh_vertices[nxt->root].p);
-      nxt->f += get_knn_h_value(nxt_root, nxt->left, nxt->right);
+			if (!this->isZero)
+				nxt->f += get_knn_h_value(nxt_root, nxt->left, nxt->right);
       nxt->parent = node;
       #ifndef NDEBUG
       if (verbose) {
@@ -362,6 +365,8 @@ int KnnInstance::search() {
       }
       #endif
       open_list.push(nxt);
+      nodes_pushed++;
+      nodes_generated++;
 
       // when nxt can be final_node
       int nxt_poly = nxt->next_polygon;
