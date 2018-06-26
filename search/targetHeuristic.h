@@ -10,7 +10,7 @@
 #include "timer.h"
 #include "RStarTree.h"
 #include "RStarTreeUtil.h"
-#include "knnMeshEdge.h"
+#include "knnMeshFence.h"
 #include <chrono>
 #include <queue>
 #include <vector>
@@ -29,7 +29,7 @@ class TargetHeuristic {
         MeshPtr mesh;
         Point start;
         std::vector<Point> goals;
-        KnnMeshEdgeDam* meshDam;
+        KnnMeshEdgeFence* meshFence;
 
         // kNN has k final node
         std::vector<SearchNodePtr> final_nodes;
@@ -56,7 +56,7 @@ class TargetHeuristic {
         SearchNode* search_nodes_to_push;
 
         void init() {
-            meshDam = nullptr;
+            meshFence= nullptr;
             verbose = false;
             search_successors = new Successor [mesh->max_poly_sides + 2];
             search_nodes_to_push = new SearchNode [mesh->max_poly_sides + 2];
@@ -251,7 +251,7 @@ class TargetHeuristic {
 
         void set_start(Point s) { start = s; }
 
-        void set_meshDam(KnnMeshEdgeDam* meshDam) { this->meshDam = meshDam; }
+        void set_meshFence(KnnMeshEdgeFence* meshFence) { this->meshFence= meshFence; }
 
         int search();
 

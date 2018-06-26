@@ -4,7 +4,7 @@
 #include "intervaHeuristic.h"
 #include "searchinstance.h"
 #include "genPoints.h"
-#include "knnMeshEdge.h"
+#include "knnMeshFence.h"
 #include "mesh.h"
 #include <sstream>
 #include <stdio.h>
@@ -20,7 +20,7 @@ pl::OkNNIntervalHeuristic* ki;
 pl::OkNNIntervalHeuristic* ki0;
 pl::TargetHeuristic* hi;
 pl::TargetHeuristic* hi2;
-pl::KnnMeshEdgeDam* meshDam;
+pl::KnnMeshEdgeFence* meshFence;
 vg::ObstacleMap* oMap;
 vg::EDBTkNN* edbt;
 vector<pl::Point> pts;
@@ -58,7 +58,7 @@ void load_data() {
   hi = new pl::TargetHeuristic(mp);
   hi2 = new pl::TargetHeuristic(mp);
   edbt = new vg::EDBTkNN(oMap);
-  meshDam = new pl::KnnMeshEdgeDam(mp);
+  meshFence= new pl::KnnMeshEdgeFence(mp);
 }
 
 void dump() {
@@ -188,16 +188,16 @@ void heuristic_vs_polyanya(pl::Point start, int k, vector<string>& cols, bool ve
 	double dist_ki, cost_ki, gen_ki;
 	double dist_ki0, cost_ki0, gen_ki0;
 	double dist_hi, cost_hi, gen_hi, hcost, hcall, reevaluate;
-	double gen_pre, cost_pre, edgecnt, damcnt;
+	double gen_pre, cost_pre, edgecnt, fenceCnt;
   map<string, double> row;
 
-  cost_pre = meshDam->get_processing_micro();
-  edgecnt = (double)meshDam->edgecnt;
-  damcnt = (double)meshDam->damcnt;
-  gen_pre = (double)meshDam->nodes_generated;
+  cost_pre = meshFence->get_processing_micro();
+  edgecnt = (double)meshFence->edgecnt;
+  fenceCnt = (double)meshFence->fenceCnt;
+  gen_pre = (double)meshFence->nodes_generated;
 	row["cost_pre"] = cost_pre;
 	row["edgecnt"] = edgecnt;
-	row["damcnt"] = damcnt;
+	row["fenceCnt"] = fenceCnt;
 	row["gen_pre"] = gen_pre;
 
   cost_poly = 0;
@@ -263,8 +263,8 @@ void heuristic_vs_polyanya(pl::Point start, int k, vector<string>& cols, bool ve
 
 int main(int argv, char* args[]) {
   load_data();
-  meshDam->set_goals(pts);
-  meshDam->floodfill();
+  meshFence->set_goals(pts);
+  meshFence->floodfill();
   if (argv == 3) { // ./bin/test [s1/s2]
     string t = string(args[1]);
     int k = atoi(args[2]);
@@ -292,7 +292,7 @@ int main(int argv, char* args[]) {
     else if (t == "s2") { // hueristic vs polyanya
       hi->set_goals(pts);
       hi2->set_goals(pts);
-      hi2->set_meshDam(meshDam);
+      hi2->set_meshFence(meshFence);
 
       vector<string> cols = {
 				"k", "dist",
@@ -300,7 +300,7 @@ int main(int argv, char* args[]) {
 				"cost_hi", "gen_hi", "hcost", "hcall", "reevaluate",
 				"cost_ki", "gen_ki",
 				"cost_ki0", "gen_ki0",
-				"cost_pre", "gen_pre", "edgecnt", "damcnt",
+				"cost_pre", "gen_pre", "edgecnt", "fenceCnt",
 				"pts", "polys"
 			};
       for (int i=0; i<(int)cols.size(); i++) {

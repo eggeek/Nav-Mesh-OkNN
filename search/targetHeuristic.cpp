@@ -710,7 +710,7 @@ std::pair<int, double> TargetHeuristic::nn_query(SearchInstance* si, double& ela
   // only support nearest neighbour query
   // return {target_id, dist}
   std::pair<int, double> res = {-1, INF};
-  assert(meshDam != nullptr);
+  assert(meshFence != nullptr);
   init_search();
   this->K = 1;
   while (!open_list.empty()) {
@@ -724,8 +724,8 @@ std::pair<int, double> TargetHeuristic::nn_query(SearchInstance* si, double& ela
       continue;
     }
     assert(node->root == -1);
-    std::vector<Dam> dams = meshDam->get_dams(node->left_vertex, node->right_vertex);
-    for (const auto& it: dams) {
+    std::vector<Fence> fences = meshFence->get_fences(node->left_vertex, node->right_vertex);
+    for (const auto& it: fences) {
       Point goal = it.s.root == -1? goals[it.gid]: mesh->mesh_vertices[it.s.root].p;
       //Point goal = goals[it.gid];
       si->verbose=false;

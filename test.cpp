@@ -9,7 +9,7 @@
 #include "targetHeuristic.h"
 #include "EDBTknn.h"
 #include "park2poly.h"
-#include "knnMeshEdge.h"
+#include "knnMeshFence.h"
 using namespace std;
 using namespace polyanya;
 
@@ -23,7 +23,7 @@ OkNNIntervalHeuristic* ki;
 OkNNIntervalHeuristic* ki0;
 TargetHeuristic* hi;
 TargetHeuristic* hi2;
-KnnMeshEdgeDam* meshDam;
+KnnMeshEdgeFence * meshFence;
 vector<Scenario> scenarios;
 vector<Point> pts;
 vector<vector<Point>> polys;
@@ -60,7 +60,7 @@ void load_data() {
   hi = new TargetHeuristic(mp);
   hi2 = new TargetHeuristic(mp);
   //edbt = new EDBT::EDBTkNN(oMap);
-  meshDam = new KnnMeshEdgeDam(mp);
+  meshFence= new KnnMeshEdgeFence(mp);
   printf("vertices: %d, polygons: %d\n", (int)m.mesh_vertices.size(), (int)m.mesh_polygons.size());
 }
 
