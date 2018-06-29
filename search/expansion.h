@@ -19,4 +19,6 @@ double get_interval_heuristic(const Point& root, const Point& l, const Point& r)
 // vector. Returns number of successors generated.
 int get_successors(SearchNode& node, const Point& start, const Mesh& mesh,
                    Successor* successors);
+
+PointLocation get_point_location_in_search(Point& p, Mesh* mesh, bool verbose);
 }

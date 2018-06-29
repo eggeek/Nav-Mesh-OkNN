@@ -76,7 +76,6 @@ class OkNNIntervalHeuristic {
             set_end_polygon();
             gen_initial_nodes();
         }
-        PointLocation get_point_location(Point p);
         void set_end_polygon();
         void gen_initial_nodes();
         int succ_to_node(

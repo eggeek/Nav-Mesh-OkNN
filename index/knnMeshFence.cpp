@@ -6,62 +6,6 @@ using namespace std;
 
 namespace polyanya {
 
-PointLocation KnnMeshEdgeFence::get_point_location(Point p) {
-  assert(mesh != nullptr);
-  PointLocation out = mesh->get_point_location(p);
-  if (out.type == PointLocation::ON_CORNER_VERTEX_AMBIG)
-  {
-      // Add a few EPSILONS to the point and try again.
-      static const Point CORRECTOR = {EPSILON * 10, EPSILON * 10};
-      Point corrected = p + CORRECTOR;
-      PointLocation corrected_loc = mesh->get_point_location(corrected);
-
-      #ifndef NDEBUG
-      if (verbose)
-      {
-          std::cerr << p << " " << corrected_loc << std::endl;
-      }
-      #endif
-
-      switch (corrected_loc.type)
-      {
-          case PointLocation::ON_CORNER_VERTEX_AMBIG:
-          case PointLocation::ON_CORNER_VERTEX_UNAMBIG:
-          case PointLocation::ON_NON_CORNER_VERTEX:
-              #ifndef NDEBUG
-              if (verbose)
-              {
-                  std::cerr << "Warning: corrected " << p << " lies on vertex"
-                            << std::endl;
-              }
-              #endif
-          case PointLocation::NOT_ON_MESH:
-              #ifndef NDEBUG
-              if (verbose)
-              {
-                  std::cerr << "Warning: completely ambiguous point at " << p
-                            << std::endl;
-              }
-              #endif
-              break;
-
-          case PointLocation::IN_POLYGON:
-          case PointLocation::ON_MESH_BORDER:
-          // Note that ON_EDGE should be fine: any polygon works and there's
-          // no need to special case successor generation.
-          case PointLocation::ON_EDGE:
-              out.poly1 = corrected_loc.poly1;
-              break;
-
-          default:
-              // Should be impossible to reach.
-              assert(false);
-              break;
-      }
-  }
-  return out;
-}
-
 int KnnMeshEdgeFence::succ_to_node(SearchNodePtr parent, Successor* successors, int num_succ, SearchNodePtr nodes, int gid) {
 
   assert(mesh != nullptr);
@@ -176,7 +120,7 @@ void KnnMeshEdgeFence::gen_initial_nodes() {
     nodes_pushed += num_nodes;
   };
   for (int i=0; i<(int)goals.size(); i++) {
-    const PointLocation pl = get_point_location(goals[i]);
+    const PointLocation pl = get_point_location_in_search(goals[i], mesh, verbose);
     switch(pl.type) {
       case PointLocation::NOT_ON_MESH:
         break;
