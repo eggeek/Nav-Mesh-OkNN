@@ -205,7 +205,7 @@ void OkNNIntervalHeuristic::gen_initial_nodes() {
       SearchNodePtr nxt = new (node_pool->allocate()) SearchNode(nodes[i]);
       const Point& nxt_root = (nxt->root == -1? start: mesh->mesh_vertices[nxt->root].p);
 			if (!this->isZero)
-				nxt->f += get_knn_h_value(nxt_root, nxt->left, nxt->right);
+				nxt->f += get_interval_heuristic(nxt_root, nxt->left, nxt->right);
       nxt->parent = lazy;
       #ifndef NDEBUG
       if (verbose) {
@@ -355,7 +355,7 @@ int OkNNIntervalHeuristic::search() {
       const SearchNodePtr nxt = new (node_pool->allocate()) SearchNode(search_nodes_to_push[i]);
       const Point& nxt_root = (nxt->root == -1 ? start: mesh->mesh_vertices[nxt->root].p);
 			if (!this->isZero)
-				nxt->f += get_knn_h_value(nxt_root, nxt->left, nxt->right);
+				nxt->f += get_interval_heuristic(nxt_root, nxt->left, nxt->right);
       nxt->parent = node;
       #ifndef NDEBUG
       if (verbose) {

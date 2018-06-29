@@ -153,7 +153,7 @@ void KnnMeshEdgeFence::gen_initial_nodes() {
     for (int i = 0; i < num_nodes; i++) {
       SearchNodePtr nxt = new (node_pool->allocate()) SearchNode(nodes[i]);
       const Point& nxt_root = nxt->root == -1? start: mesh->mesh_vertices[nxt->root].p;
-      nxt->f += get_knn_h_value(nxt_root, nxt->left, nxt->right);
+      nxt->f += get_interval_heuristic(nxt_root, nxt->left, nxt->right);
       nxt->parent = lazy;
       const Point& left = mesh->mesh_vertices[nxt->left_vertex].p;
       const Point& right = mesh->mesh_vertices[nxt->right_vertex].p;
@@ -267,7 +267,7 @@ void KnnMeshEdgeFence::floodfill() {
     for (int i=0; i<num_nodes; i++) {
       const SearchNodePtr nxt = new (node_pool->allocate()) SearchNode(search_nodes_to_push[i]);
       const Point& nxt_root = (nxt->root == -1? start: mesh->mesh_vertices[nxt->root].p);
-      nxt->f += get_knn_h_value(nxt_root, nxt->left, nxt->right);
+      nxt->f += get_interval_heuristic(nxt_root, nxt->left, nxt->right);
       nxt->parent = snode;
       const Point& left = mesh->mesh_vertices[nxt->left_vertex].p;
       const Point& right = mesh->mesh_vertices[nxt->right_vertex].p;
