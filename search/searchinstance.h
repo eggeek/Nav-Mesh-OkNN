@@ -160,10 +160,11 @@ class SearchInstance
               break;
             Point p = i.second;
             this->set_start_goal(s, p);
-            this->search();       
+            bool found = this->search();       
             cost += this->get_search_micro();
             gen += (double)this->nodes_generated;
             double d_o = this->get_cost();
+            if (! found) continue;
             if ((int)maxh.size() < k) {
               maxh.push(d_o);
             } else if (d_o < maxh.top()) {
