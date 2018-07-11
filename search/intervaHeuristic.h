@@ -12,7 +12,7 @@
 
 namespace polyanya {
 
-class OkNNIntervalHeuristic {
+class IntervalHeuristic{
     typedef std::priority_queue<SearchNodePtr, std::vector<SearchNodePtr>,
                                 PointerComp<SearchNode> > pq;
     private:
@@ -93,13 +93,13 @@ class OkNNIntervalHeuristic {
         int successor_calls;        // Times we call get_successors
         bool verbose;
 
-        OkNNIntervalHeuristic() { }
-        OkNNIntervalHeuristic(MeshPtr m) : mesh(m) { init(); }
-        OkNNIntervalHeuristic(int k, MeshPtr m, Point s, std::vector<Point> gs) :
+        IntervalHeuristic() { }
+        IntervalHeuristic(MeshPtr m) : mesh(m) { init(); }
+        IntervalHeuristic(int k, MeshPtr m, Point s, std::vector<Point> gs) :
             K(k), mesh(m), start(s), goals(gs) { init(); }
-        OkNNIntervalHeuristic(OkNNIntervalHeuristic const &) = delete;
-        void operator=(OkNNIntervalHeuristic const &x) = delete;
-        ~OkNNIntervalHeuristic() {
+        IntervalHeuristic(IntervalHeuristic const &) = delete;
+        void operator=(IntervalHeuristic const &x) = delete;
+        ~IntervalHeuristic() {
             if (node_pool) {
                 delete node_pool;
             }

@@ -16,7 +16,7 @@
 
 namespace polyanya {
 
-int OkNNIntervalHeuristic::succ_to_node(
+int IntervalHeuristic::succ_to_node(
     SearchNodePtr parent, Successor* successors, int num_succ,
     SearchNodePtr nodes) {
   // copy from searchinstance.cpp
@@ -80,7 +80,7 @@ int OkNNIntervalHeuristic::succ_to_node(
   return out;
 }
 
-void OkNNIntervalHeuristic::set_end_polygon() {
+void IntervalHeuristic::set_end_polygon() {
   end_polygons.resize(mesh->mesh_polygons.size());
   for (int i=0; i<(int)mesh->mesh_polygons.size(); i++) end_polygons[i].clear();
   for (int i=0; i<(int)goals.size(); i++) {
@@ -91,7 +91,7 @@ void OkNNIntervalHeuristic::set_end_polygon() {
   }
 }
 
-void OkNNIntervalHeuristic::gen_initial_nodes() {
+void IntervalHeuristic::gen_initial_nodes() {
   // revised from SearchInstance::gen_initial_nodes
   // modify:
   // 1. h value for get_lazy() is 0
@@ -218,7 +218,7 @@ void OkNNIntervalHeuristic::gen_initial_nodes() {
 
 #define root_to_point(root) ((root) == -1 ? start : mesh->mesh_vertices[root].p)
 
-int OkNNIntervalHeuristic::search() {
+int IntervalHeuristic::search() {
   init_search();
   timer.start();
   if (mesh == nullptr) {
@@ -322,13 +322,13 @@ int OkNNIntervalHeuristic::search() {
   return (int)final_nodes.size();
 }
 
-void OkNNIntervalHeuristic::print_node(SearchNodePtr node, std::ostream& outfile) {
+void IntervalHeuristic::print_node(SearchNodePtr node, std::ostream& outfile) {
   outfile << "root=" << root_to_point(node->root) << "; left=" << node->left
           << "; right=" << node->right << "; f=" << node->f << ", g="
           << node->g;
 }
 
-void OkNNIntervalHeuristic::get_path_points(std::vector<Point>& out, int k) {
+void IntervalHeuristic::get_path_points(std::vector<Point>& out, int k) {
   if (k >= (int)goals.size()) return;
   assert((int)final_nodes.size() <= K);
   assert(final_nodes[k]->goal_id != -1);
@@ -344,7 +344,7 @@ void OkNNIntervalHeuristic::get_path_points(std::vector<Point>& out, int k) {
   std::reverse(out.begin(), out.end());
 }
 
-void OkNNIntervalHeuristic::print_search_nodes(std::ostream& outfile, int k) {
+void IntervalHeuristic::print_search_nodes(std::ostream& outfile, int k) {
   if (k > (int)final_nodes.size()) return;
   SearchNodePtr cur = final_nodes[k];
   while (cur != nullptr) {
@@ -356,7 +356,7 @@ void OkNNIntervalHeuristic::print_search_nodes(std::ostream& outfile, int k) {
   }
 }
 
-void OkNNIntervalHeuristic::deal_final_node(const SearchNodePtr node) {
+void IntervalHeuristic::deal_final_node(const SearchNodePtr node) {
 
   const Point& goal = goals[node->goal_id];
   const int final_root = [&]() {
@@ -391,7 +391,7 @@ void OkNNIntervalHeuristic::deal_final_node(const SearchNodePtr node) {
   }
 }
 
-void OkNNIntervalHeuristic::gen_final_nodes(const SearchNodePtr node, const Point& rootPoint) {
+void IntervalHeuristic::gen_final_nodes(const SearchNodePtr node, const Point& rootPoint) {
     assert(node->next_polygon != -1);
     for (int gid: end_polygons[node->next_polygon]) {
       const Point& goal = goals[gid];

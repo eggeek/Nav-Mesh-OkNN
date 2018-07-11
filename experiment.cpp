@@ -17,8 +17,8 @@ namespace vg = EDBT;
 
 pl::MeshPtr mp;
 pl::SearchInstance* si;
-pl::OkNNIntervalHeuristic* ki;
-pl::OkNNIntervalHeuristic* ki0;
+pl::IntervalHeuristic* ki;
+pl::IntervalHeuristic* ki0;
 pl::TargetHeuristic* hi;
 pl::FenceHeuristic* fi;
 pl::KnnMeshEdgeFence* meshFence;
@@ -55,8 +55,8 @@ void load_data() {
 
   meshFence= new pl::KnnMeshEdgeFence(mp);
   si = new pl::SearchInstance(mp);
-  ki = new pl::OkNNIntervalHeuristic(mp);
-	ki0 = new pl::OkNNIntervalHeuristic(mp); ki0->setZero(true);
+  ki = new pl::IntervalHeuristic(mp);
+	ki0 = new pl::IntervalHeuristic(mp); ki0->setZero(true);
   hi = new pl::TargetHeuristic(mp);
   fi = new pl::FenceHeuristic(mp);
   fi->set_meshFence(meshFence);
