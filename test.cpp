@@ -152,6 +152,7 @@ TEST_CASE("Test fence heuristic") {
 
     int resthi = hi->search();
     int restfi = fi->search();
+    REQUIRE(resthi == restfi);
     for (int i=0; i<resthi; i++) {
       double dhi = hi->get_cost(i);
       double dfi = fi->get_cost(i);
