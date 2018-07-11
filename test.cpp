@@ -7,6 +7,7 @@
 #include "searchinstance.h"
 #include "intervaHeuristic.h"
 #include "targetHeuristic.h"
+#include "fenceHeuristic.h"
 #include "EDBTknn.h"
 #include "park2poly.h"
 #include "knnMeshFence.h"
@@ -22,7 +23,8 @@ OkNNIntervalHeuristic* ki;
 OkNNIntervalHeuristic* ki0;
 TargetHeuristic* hi;
 TargetHeuristic* hi2;
-KnnMeshEdgeFence * meshFence;
+FenceHeuristic* fi;
+KnnMeshEdgeFence* meshFence;
 vector<Scenario> scenarios;
 vector<Point> pts;
 vector<vector<Point>> polys;
@@ -57,8 +59,12 @@ void load_data() {
 	ki0 = new OkNNIntervalHeuristic(mp); ki0->setZero(true);
   hi = new TargetHeuristic(mp);
   hi2 = new TargetHeuristic(mp);
+  fi = new FenceHeuristic(mp);
+  meshFence = new KnnMeshEdgeFence(mp);
+  meshFence->set_goals(pts);
+  meshFence->floodfill();
+  fi->set_meshFence(meshFence);
   //edbt = new EDBT::EDBTkNN(oMap);
-  meshFence= new KnnMeshEdgeFence(mp);
   printf("vertices: %d, polygons: %d\n", (int)m.mesh_vertices.size(), (int)m.mesh_polygons.size());
 }
 
@@ -126,6 +132,30 @@ TEST_CASE("Test brute force polyanya") {
     for (int i=0; i<reski; i++) {
       double dki = ki->get_cost(i);
       REQUIRE(fabs(dki - dists[i]) < EPSILON);
+    }
+  }
+}
+
+TEST_CASE("Test fence heuristic") {
+  int N = 10;
+  vector<Point> starts;
+  generator::gen_points_in_traversable(oMap, polys, N, starts);
+  for (Point& start: starts) {
+    int k = min(5, (int)pts.size());
+    hi->set_K(k);
+    hi->set_start(start);
+    hi->set_goals(pts);
+
+    fi->set_K(k);
+    fi->set_start(start);
+    fi->set_goals(pts);
+
+    int resthi = hi->search();
+    int restfi = fi->search();
+    for (int i=0; i<resthi; i++) {
+      double dhi = hi->get_cost(i);
+      double dfi = fi->get_cost(i);
+      REQUIRE(fabs(dhi - dfi) < EPSILON);
     }
   }
 }
