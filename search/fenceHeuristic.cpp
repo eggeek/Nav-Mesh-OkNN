@@ -1,4 +1,4 @@
-#include "intervaHeuristic.h"
+#include "fenceHeuristic.h"
 #include "expansion.h"
 #include "geometry.h"
 #include "searchnode.h"
@@ -16,7 +16,7 @@
 
 namespace polyanya {
 
-int OkNNIntervalHeuristic::succ_to_node(
+int FenceHeuristic::succ_to_node(
     SearchNodePtr parent, Successor* successors, int num_succ,
     SearchNodePtr nodes) {
   // copy from searchinstance.cpp
@@ -51,6 +51,7 @@ int OkNNIntervalHeuristic::succ_to_node(
         }
       }
       nodes[out++] = {nullptr, root, succ.left, succ.right, left_vertex, right_vertex, next_polygon, g, g};
+      nodes[out-1].heuristic_gid = parent->heuristic_gid;
     };
 
     const Point& parent_root = (parent->root == -1? start: mesh->mesh_vertices[parent->root].p);
@@ -80,7 +81,7 @@ int OkNNIntervalHeuristic::succ_to_node(
   return out;
 }
 
-void OkNNIntervalHeuristic::set_end_polygon() {
+void FenceHeuristic::set_end_polygon() {
   end_polygons.resize(mesh->mesh_polygons.size());
   for (int i=0; i<(int)mesh->mesh_polygons.size(); i++) end_polygons[i].clear();
   for (int i=0; i<(int)goals.size(); i++) {
@@ -91,7 +92,83 @@ void OkNNIntervalHeuristic::set_end_polygon() {
   }
 }
 
-void OkNNIntervalHeuristic::gen_initial_nodes() {
+void FenceHeuristic::push_lazy(SearchNodePtr lazy) {
+  #define get_lazy(next, left, right) new (node_pool->allocate()) SearchNode \
+    {nullptr, -1, start, start, left, right, next, 0, 0}
+  #define v(vertex) mesh->mesh_vertices[vertex]
+  const int poly = lazy->next_polygon;
+  if (poly == -1) return;
+
+  if (!end_polygons[poly].empty()) {
+    for (int gid: end_polygons[poly]) {
+      const Point& goal = goals[gid];
+      SearchNodePtr final_node = get_lazy(lazy->next_polygon, lazy->left_vertex, lazy->right_vertex);
+      final_node->f += start.distance(goal);
+      final_node->set_reached();
+      final_node->set_goal_id(gid);
+
+      #ifndef NDEBUG
+      if (verbose) {
+        std::cerr << "generating init node: ";
+        print_node(final_node, std::cerr);
+        std::cerr << std::endl;
+      }
+      #endif
+      open_list.push(final_node);
+      nodes_generated++;
+      nodes_pushed++;
+    }
+  }
+
+  const std::vector<int>& vertices = mesh->mesh_polygons[poly].vertices;
+  Successor* successors = new Successor [vertices.size()];
+  int last_vertex = vertices.back();
+  int num_succ = 0;
+  for (int i = 0; i < (int) vertices.size(); i++) {
+    const int vertex = vertices[i];
+    if (vertex == lazy->right_vertex ||
+        last_vertex == lazy->left_vertex) {
+      last_vertex = vertex;
+      continue;
+    }
+    successors[num_succ++] = {Successor::OBSERVABLE, v(vertex).p, v(last_vertex).p, i};
+    last_vertex = vertex;
+  }
+  SearchNode* nodes = new SearchNode [num_succ];
+  const int num_nodes = succ_to_node(lazy, successors, num_succ, nodes);
+
+  for (int i = 0; i < num_nodes; i++) {
+    SearchNodePtr nxt = new (node_pool->allocate()) SearchNode(nodes[i]);
+    const Point& nxt_root = (nxt->root == -1? start: mesh->mesh_vertices[nxt->root].p);
+    pair<int, double> fence_h = get_fence_heuristic(nxt);
+    if (fence_h.first == -1) continue;
+    nxt->heuristic_gid = fence_h.first;
+    nxt->f = nxt->g + fence_h.second + get_interval_heuristic(nxt_root, nxt->left, nxt->right);
+    nxt->parent = lazy;
+    #ifndef NDEBUG
+    if (verbose) {
+      std::cerr << "generating init node: ";
+      print_node(nxt, std::cerr);
+      std::cerr << std::endl;
+    }
+    #endif
+    assert(nxt->heuristic_gid != -1);
+    open_list.push(nxt);
+    nodes_pushed++;
+
+    if (!end_polygons[nxt->next_polygon].empty()) {
+      gen_final_nodes(nxt, nxt_root);
+    }
+  }
+  delete[] nodes;
+  delete[] successors;
+  nodes_generated += num_nodes;
+  nodes_pushed += num_nodes;
+  #undef v
+  #undef get_lazy
+}
+
+void FenceHeuristic::gen_initial_nodes() {
   // revised from SearchInstance::gen_initial_nodes
   // modify:
   // 1. h value for get_lazy() is 0
@@ -101,73 +178,6 @@ void OkNNIntervalHeuristic::gen_initial_nodes() {
     {nullptr, -1, start, start, left, right, next, 0, 0}
   #define v(vertex) mesh->mesh_vertices[vertex]
 
-  const auto push_lazy = [&](SearchNodePtr lazy) {
-    const int poly = lazy->next_polygon;
-    if (poly == -1) return;
-
-    if (!end_polygons[poly].empty()) {
-      for (int gid: end_polygons[poly]) {
-        const Point& goal = goals[gid];
-        SearchNodePtr final_node = get_lazy(lazy->next_polygon, lazy->left_vertex, lazy->right_vertex);
-        final_node->f += start.distance(goal);
-        final_node->set_reached();
-        final_node->set_goal_id(gid);
-
-        #ifndef NDEBUG
-        if (verbose) {
-          std::cerr << "generating init node: ";
-          print_node(final_node, std::cerr);
-          std::cerr << std::endl;
-        }
-        #endif
-        open_list.push(final_node);
-        nodes_generated++;
-        nodes_pushed++;
-      }
-    }
-
-    const std::vector<int>& vertices = mesh->mesh_polygons[poly].vertices;
-    Successor* successors = new Successor [vertices.size()];
-    int last_vertex = vertices.back();
-    int num_succ = 0;
-    for (int i = 0; i < (int) vertices.size(); i++) {
-      const int vertex = vertices[i];
-      if (vertex == lazy->right_vertex ||
-          last_vertex == lazy->left_vertex) {
-        last_vertex = vertex;
-        continue;
-      }
-      successors[num_succ++] = {Successor::OBSERVABLE, v(vertex).p, v(last_vertex).p, i};
-      last_vertex = vertex;
-    }
-    SearchNode* nodes = new SearchNode [num_succ];
-    const int num_nodes = succ_to_node(lazy, successors, num_succ, nodes);
-
-    delete[] successors;
-    for (int i = 0; i < num_nodes; i++) {
-      SearchNodePtr nxt = new (node_pool->allocate()) SearchNode(nodes[i]);
-      const Point& nxt_root = (nxt->root == -1? start: mesh->mesh_vertices[nxt->root].p);
-			if (!this->isZero)
-				nxt->f += get_interval_heuristic(nxt_root, nxt->left, nxt->right);
-      nxt->parent = lazy;
-      #ifndef NDEBUG
-      if (verbose) {
-        std::cerr << "generating init node: ";
-        print_node(nxt, std::cerr);
-        std::cerr << std::endl;
-      }
-      #endif
-      open_list.push(nxt);
-      nodes_pushed++;
-
-      if (!end_polygons[nxt->next_polygon].empty()) {
-        gen_final_nodes(nxt, nxt_root);
-      }
-    }
-    delete[] nodes;
-    nodes_generated += num_nodes;
-    nodes_pushed += num_nodes;
-  };
   switch (pl.type) {
     case PointLocation::NOT_ON_MESH:
       break;
@@ -216,9 +226,7 @@ void OkNNIntervalHeuristic::gen_initial_nodes() {
   #undef get_lazy
 }
 
-#define root_to_point(root) ((root) == -1 ? start : mesh->mesh_vertices[root].p)
-
-int OkNNIntervalHeuristic::search() {
+int FenceHeuristic::search() {
   init_search();
   timer.start();
   if (mesh == nullptr) {
@@ -243,6 +251,8 @@ int OkNNIntervalHeuristic::search() {
       if ((int)final_nodes.size() == K) break;
       continue;
     }
+
+    assert(node->heuristic_gid!= -1);
     const int root = node->root;
     if (root != -1) {
       assert(root < (int) root_g_values.size());
@@ -297,8 +307,9 @@ int OkNNIntervalHeuristic::search() {
       // update h value before we push
       const SearchNodePtr nxt = new (node_pool->allocate()) SearchNode(search_nodes_to_push[i]);
       const Point& nxt_root = (nxt->root == -1 ? start: mesh->mesh_vertices[nxt->root].p);
-			if (!this->isZero)
-				nxt->f += get_interval_heuristic(nxt_root, nxt->left, nxt->right);
+      pair<int, double> fence_h = get_fence_heuristic(nxt);
+      if (fence_h.first == -1) continue;
+      nxt->f = fence_h.second + nxt->g + get_interval_heuristic(nxt_root, nxt->left, nxt->right);
       nxt->parent = node;
       #ifndef NDEBUG
       if (verbose) {
@@ -322,13 +333,15 @@ int OkNNIntervalHeuristic::search() {
   return (int)final_nodes.size();
 }
 
-void OkNNIntervalHeuristic::print_node(SearchNodePtr node, std::ostream& outfile) {
+void FenceHeuristic::print_node(SearchNodePtr node, std::ostream& outfile) {
   outfile << "root=" << root_to_point(node->root) << "; left=" << node->left
           << "; right=" << node->right << "; f=" << node->f << ", g="
-          << node->g;
+          << node->g;// << "; heuristic_gid=" << node->heuristic_gid;
+  //if (node->heuristic_gid != -1)
+  //  outfile << "(" << this->goals[node->heuristic_gid].x << "," << this->goals[node->heuristic_gid].y << ")";
 }
 
-void OkNNIntervalHeuristic::get_path_points(std::vector<Point>& out, int k) {
+void FenceHeuristic::get_path_points(std::vector<Point>& out, int k) {
   if (k >= (int)goals.size()) return;
   assert((int)final_nodes.size() <= K);
   assert(final_nodes[k]->goal_id != -1);
@@ -344,7 +357,7 @@ void OkNNIntervalHeuristic::get_path_points(std::vector<Point>& out, int k) {
   std::reverse(out.begin(), out.end());
 }
 
-void OkNNIntervalHeuristic::print_search_nodes(std::ostream& outfile, int k) {
+void FenceHeuristic::print_search_nodes(std::ostream& outfile, int k) {
   if (k > (int)final_nodes.size()) return;
   SearchNodePtr cur = final_nodes[k];
   while (cur != nullptr) {
@@ -356,7 +369,7 @@ void OkNNIntervalHeuristic::print_search_nodes(std::ostream& outfile, int k) {
   }
 }
 
-void OkNNIntervalHeuristic::deal_final_node(const SearchNodePtr node) {
+void FenceHeuristic::deal_final_node(const SearchNodePtr node) {
 
   const Point& goal = goals[node->goal_id];
   const int final_root = [&]() {
@@ -376,9 +389,10 @@ void OkNNIntervalHeuristic::deal_final_node(const SearchNodePtr node) {
   }();
 
   assert(node->goal_id != -1);
-  assert(reached.find(node->goal_id) == reached.end() || reached[node->goal_id] < node->f + EPSILON);
+  assert(fabs(reached[node->goal_id]-INF) <= EPSILON || reached[node->goal_id] <= node->f);
 
-  if (reached.find(node->goal_id) == reached.end()) {
+  //if (reached.find(node->goal_id) == reached.end()) {
+  if (fabs(reached[node->goal_id]-INF) < EPSILON) {
     int end_polygon = node->next_polygon;
     const SearchNodePtr true_final =
       new (node_pool->allocate()) SearchNode
@@ -388,30 +402,94 @@ void OkNNIntervalHeuristic::deal_final_node(const SearchNodePtr node) {
     reached[node->goal_id] = node->f;
     final_nodes.push_back(true_final);
     nodes_generated++;
+
+    #ifndef NDEBUG
+    if (verbose) {
+      std::vector<Point> out;
+      get_path_points(out, final_nodes.size() - 1);
+      std::cout << "path " << final_nodes.size() - 1 << ";";
+      for (size_t i=0; i<out.size(); i++) {
+        std::cout << " (" << out[i].x << ", " << out[i].y << ")";
+      }
+      std::cout << std::endl;
+    }
+    #endif
   }
 }
 
-void OkNNIntervalHeuristic::gen_final_nodes(const SearchNodePtr node, const Point& rootPoint) {
-    assert(node->next_polygon != -1);
+void FenceHeuristic::gen_final_nodes(const SearchNodePtr node, const Point& rootPoint) {
     for (int gid: end_polygons[node->next_polygon]) {
       const Point& goal = goals[gid];
       SearchNodePtr final_node = new (node_pool->allocate()) SearchNode(*node);
       final_node->set_reached();
       final_node->set_goal_id(gid);
       final_node->f = final_node->g + get_h_value(rootPoint, goal, node->left, node->right);
-      #ifndef NDEBUG
-      if (verbose) {
-        std::cerr << "\tpushing: ";
-        print_node(final_node, std::cerr);
-        std::cerr << std::endl;
+      if (fabs(reached[gid] - INF) < EPSILON) {
+        #ifndef NDEBUG
+        if (verbose) {
+          std::cerr << "\tpushing: ";
+          print_node(final_node, std::cerr);
+          std::cerr << std::endl;
+        }
+        #endif
+        open_list.push(final_node);
+        nodes_generated++;
+        nodes_pushed++;
       }
-      #endif
-      open_list.push(final_node);
-      nodes_generated++;
-      nodes_pushed++;
+      else assert(reached[gid] <= final_node->f + EPSILON);
     }
 }
 
-#undef root_to_point
+std::pair<int, double> FenceHeuristic::nn_query(SearchInstance* si, double& elapsed_time_micro) {
+  // only support nearest neighbour query
+  // return {target_id, dist}
+  std::pair<int, double> res = {-1, INF};
+  assert(meshFence != nullptr);
+  init_search();
+  this->K = 1;
+  while (!open_list.empty()) {
+    SearchNodePtr node = open_list.top(); open_list.pop();
+    nodes_popped++;
+    if (node->reached) {
+      if (node->f < res.second) {
+        res.second = node->f;
+        res.first = node->goal_id;
+      }
+      continue;
+    }
+    assert(node->root == -1);
+    std::vector<Fence> fences = meshFence->get_fences(node->left_vertex, node->right_vertex);
+    for (const auto& it: fences) {
+      Point goal = it.s.root == -1? goals[it.gid]: mesh->mesh_vertices[it.s.root].p;
+      //Point goal = goals[it.gid];
+      si->verbose=false;
+      si->set_start_goal(start, goal);
+      si->search();
+      elapsed_time_micro += si->get_search_micro();
+      nodes_generated += si->nodes_generated;
+      nodes_popped += si->nodes_popped;
+      nodes_pushed += si->nodes_pushed;
+      double start_to_root = si->get_cost();
+      double dist = it.s.g + start_to_root;
+      //double dist = si->get_cost();
+      if (dist < res.second) {
+        res.second = dist;
+        res.first = it.gid;
+      }
+    }
+  }
+  return res;
+}
+
+pair<int, double> FenceHeuristic::get_fence_heuristic(SearchNode* node) {
+  vector<Fence> fences = meshFence->get_fences(node->left_vertex, node->right_vertex);
+  int heuristic_gid = -1;
+  double lb = INF;
+  for (auto& it: fences) if (it.lb < lb) {
+    lb = it.lb;
+    heuristic_gid = it.gid;
+  }
+  return {heuristic_gid, lb};
+}
 
 }

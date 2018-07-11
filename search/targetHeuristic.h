@@ -203,7 +203,6 @@ class TargetHeuristic {
             heuristic_call = 0;
             angle_using = 0;
         }
-        PointLocation get_point_location(Point p);
         void set_end_polygon();
         void gen_initial_nodes();
         int succ_to_node(

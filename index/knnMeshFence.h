@@ -72,8 +72,6 @@ private:
   Successor* search_successors;
   SearchNode* search_nodes_to_push;
 
-  PointLocation get_point_location(Point p);
-
   void init_floodfill() {
     assert(node_pool);
     node_pool->reclaim();

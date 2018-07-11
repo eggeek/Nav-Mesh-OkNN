@@ -1,18 +1,26 @@
 #pragma once
 #include "searchnode.h"
+#include "geometry.h"
 #include "searchinstance.h"
+#include "expansion.h"
 #include "successor.h"
 #include "mesh.h"
 #include "point.h"
 #include "cpool.h"
 #include "timer.h"
+#include "RStarTree.h"
+#include "RStarTreeUtil.h"
+#include "knnMeshFence.h"
+#include <chrono>
 #include <queue>
 #include <vector>
 #include <ctime>
 
 namespace polyanya {
 
-class OkNNIntervalHeuristic {
+namespace rs = rstar;
+
+class FenceHeuristic {
     typedef std::priority_queue<SearchNodePtr, std::vector<SearchNodePtr>,
                                 PointerComp<SearchNode> > pq;
     private:
@@ -21,13 +29,15 @@ class OkNNIntervalHeuristic {
         MeshPtr mesh;
         Point start;
         std::vector<Point> goals;
+        KnnMeshEdgeFence* meshFence;
 
         // kNN has k final node
         std::vector<SearchNodePtr> final_nodes;
         // poly_id: goal1, goal2, ...
         std::vector<std::vector<int>> end_polygons;
         // <i, v>: reached ith goal with cost v
-        std::map<int, double> reached;
+        //std::map<int, double> reached;
+        std::vector<double> reached;
         pq open_list;
 
         // Best g value for a specific vertex.
@@ -38,13 +48,15 @@ class OkNNIntervalHeuristic {
         int search_id;
 
         warthog::timer timer;
+        double heuristic_using;
+        double angle_using;
 
         // Pre-initialised variables to use in search().
         Successor* search_successors;
         SearchNode* search_nodes_to_push;
-				bool isZero = false;
 
         void init() {
+            meshFence= nullptr;
             verbose = false;
             search_successors = new Successor [mesh->max_poly_sides + 2];
             search_nodes_to_push = new SearchNode [mesh->max_poly_sides + 2];
@@ -67,14 +79,19 @@ class OkNNIntervalHeuristic {
             search_id++;
             open_list = pq();
             final_nodes = std::vector<SearchNodePtr>();
-            reached.clear();
+            reached.resize(goals.size());
+            fill(reached.begin(), reached.end(), INF);
             nodes_generated = 0;
             nodes_pushed = 0;
             nodes_popped = 0;
             nodes_pruned_post_pop = 0;
             successor_calls = 0;
+            nodes_reevaluate = 0;
             set_end_polygon();
             gen_initial_nodes();
+            heuristic_using = 0;
+            heuristic_call = 0;
+            angle_using = 0;
         }
         void set_end_polygon();
         void gen_initial_nodes();
@@ -82,8 +99,11 @@ class OkNNIntervalHeuristic {
             SearchNodePtr parent, Successor* successors,
             int num_succ, SearchNodePtr nodes
         );
-
+        void push_lazy(SearchNodePtr lazy);
         void print_node(SearchNodePtr node, std::ostream& outfile);
+        inline Point root_to_point(int root_id) {
+          return root_id == -1? start: mesh->mesh_vertices[root_id].p;
+        }
 
     public:
         int nodes_generated;        // Nodes stored in memory
@@ -91,15 +111,18 @@ class OkNNIntervalHeuristic {
         int nodes_popped;           // Nodes popped off open
         int nodes_pruned_post_pop;  // Nodes we prune right after popping off
         int successor_calls;        // Times we call get_successors
+        int heuristic_call;
+        int nodes_reevaluate;
         bool verbose;
+        std::vector<int> gids;
 
-        OkNNIntervalHeuristic() { }
-        OkNNIntervalHeuristic(MeshPtr m) : mesh(m) { init(); }
-        OkNNIntervalHeuristic(int k, MeshPtr m, Point s, std::vector<Point> gs) :
+        FenceHeuristic() { }
+        FenceHeuristic(MeshPtr m) : mesh(m) { init(); }
+        FenceHeuristic(int k, MeshPtr m, Point s, std::vector<Point> gs) :
             K(k), mesh(m), start(s), goals(gs) { init(); }
-        OkNNIntervalHeuristic(OkNNIntervalHeuristic const &) = delete;
-        void operator=(OkNNIntervalHeuristic const &x) = delete;
-        ~OkNNIntervalHeuristic() {
+        FenceHeuristic(FenceHeuristic const &) = delete;
+        void operator=(FenceHeuristic const &x) = delete;
+        ~FenceHeuristic() {
             if (node_pool) {
                 delete node_pool;
             }
@@ -109,13 +132,13 @@ class OkNNIntervalHeuristic {
 
         void set_K(int k) { this->K = k; }
 
-        void set_start_goal(Point s, std::vector<Point> gs) {
-            start = s;
-            goals.clear();
-            for (const auto it: gs)
-              goals.push_back(it);
-            final_nodes.clear();
+        void set_goals(std::vector<Point> gs) {
+          goals = std::vector<Point>(gs);
         }
+
+        void set_start(Point s) { start = s; }
+
+        void set_meshFence(KnnMeshEdgeFence* meshFence) { this->meshFence= meshFence; }
 
         int search();
 
@@ -131,13 +154,18 @@ class OkNNIntervalHeuristic {
             return timer.elapsed_time_micro();
         }
 
+        double get_heuristic_micro() {
+          return heuristic_using;
+        }
+
+        double get_angle_micro() {
+          return angle_using;
+        }
+        pair<int, double> get_fence_heuristic(SearchNode* node);
         void get_path_points(std::vector<Point>& out, int k);
         void print_search_nodes(std::ostream& outfile, int k);
         void deal_final_node(const SearchNodePtr node);
         void gen_final_nodes(const SearchNodePtr node, const Point& rootPoint);
-				void setZero(bool flag) {
-					this->isZero = flag;
-				}
 
         double get_gid(int k) {
           if (k > (int)final_nodes.size()) return -1;
@@ -148,6 +176,8 @@ class OkNNIntervalHeuristic {
           for (int i=0; i<K; i++) if (final_nodes[i]->goal_id == gid) return i;
           return -1;
         }
+
+        std::pair<int, double> nn_query(SearchInstance* si, double& elapsed_time_micro);
 };
 
 }
