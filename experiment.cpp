@@ -247,7 +247,7 @@ void sparse_experiment(pl::Point start, int k, vector<string>& cols, bool verbos
   gen_pre = (double)meshFence->nodes_generated;
 	row["cost_pre"] = cost_pre;
 	row["edgecnt"] = edgecnt;
-	row["fenceCnt"] = fenceCnt;
+	row["fencecnt"] = fenceCnt;
 	row["gen_pre"] = gen_pre;
   row["cost_fi"] = fi->get_search_micro();
   row["gen_fi"] = fi->nodes_generated;
