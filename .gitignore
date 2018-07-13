@@ -11,3 +11,4 @@ tags
 dump/*
 */.ipynb_checkpoints/*
 analysis/figs/*
+analysis/__pycache__/*
