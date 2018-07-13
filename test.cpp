@@ -61,11 +61,17 @@ void load_data() {
   hi2 = new TargetHeuristic(mp);
   fi = new FenceHeuristic(mp);
   meshFence = new KnnMeshEdgeFence(mp);
-  meshFence->set_goals(pts);
-  meshFence->floodfill();
   fi->set_meshFence(meshFence);
   //edbt = new EDBT::EDBTkNN(oMap);
   printf("vertices: %d, polygons: %d\n", (int)m.mesh_vertices.size(), (int)m.mesh_polygons.size());
+}
+
+void print_path(const vector<Point>& path) {
+  for (int i=0; i<(int)path.size(); i++) {
+    cout << "(" << path[i].x << "," << path[i].y << ")";
+    if (i == (int)path.size()-1) cout << endl;
+    else cout << ",";
+  }
 }
 
 TEST_CASE("Test polyanya zero heuristic") {
@@ -116,6 +122,7 @@ TEST_CASE("Test target heuristic") {
   }
 }
 
+
 TEST_CASE("Test brute force polyanya") {
   int N = 10;
   vector<Point> starts;
@@ -136,10 +143,91 @@ TEST_CASE("Test brute force polyanya") {
   }
 }
 
+TEST_CASE("FENCE") {
+//  Point start = {438, 415};
+//  pts.clear();
+//  pts.push_back({486, 383}); // missing
+//  pts.push_back({477, 278}); // down
+//  pts.push_back({470, 443}); // nearest
+  int N = 1;
+  Point start = {16, 7};
+  //vector<Point> starts;
+  //generator::gen_points_in_traversable(oMap, polys, N, starts);
+  //Point start = starts.back();
+  meshFence->verbose = true;
+  meshFence->set_goals(pts);
+  meshFence->floodfill();
+  int k = min(5, (int)pts.size());
+  hi->set_K(k);
+  hi->set_start(start);
+  hi->set_goals(pts);
+  int resthi = hi->search();
+  for (int i=0; i<k; i++) {
+    cout << hi->get_cost(i) << endl;
+    vector<Point> path;
+    hi->get_path_points(path, i);
+    print_path(path);
+  }
+
+  fi->verbose = true;
+  fi->set_K(k);
+  fi->set_start(start);
+  fi->set_goals(pts);
+
+  int restfi = fi->search();
+  REQUIRE(resthi == restfi);
+  for (int i=0; i<resthi; i++) {
+    double dhi = hi->get_cost(i);
+    double dfi = fi->get_cost(i);
+    if (fabs(dhi-dfi) > EPSILON) {
+      vector<Point> path;
+      hi->get_path_points(path, i);
+      print_path(path);
+      Point goal_hi = path.back();
+      fi->get_path_points(path, i);
+      print_path(path);
+      Point goal_fi = path.back();
+      cout << "Start: " << start.x << " " << start.y << endl;
+      cout << "k: " << i << endl;
+      cout << "Goal hi: " << goal_hi.x << " " << goal_hi.y << endl;
+      cout << "Goal fi: " << goal_fi.x << " " << goal_fi.y << endl;
+      cout << "dist hi: " << dhi << ", dist fi: " << dfi << endl;
+    }
+    REQUIRE(fabs(dhi - dfi) < EPSILON);
+  }
+}
+
+TEST_CASE("FenceNN") {
+  int N = 1000;
+  vector<Point> starts;
+  generator::gen_points_in_traversable(oMap, polys, N, starts);
+  meshFence->set_goals(pts);
+  meshFence->floodfill();
+  hi->set_K(1);
+  hi->set_goals(pts);
+  fi->set_goals(pts);
+  for (Point& start: starts) {
+    fi->set_start(start);
+    hi->set_start(start);
+    double nn_cost = 0.0;
+    pair<int, double> res = fi->nn_query(si, nn_cost); 
+    int rest_hi = hi->search();
+    if (rest_hi) {
+      double dist_hi = hi->get_cost(0);
+      REQUIRE(fabs(res.second - dist_hi) <= EPSILON);
+    } else {
+      REQUIRE(res.first == -1);
+    }
+  }
+}
+
 TEST_CASE("Test fence heuristic") {
   int N = 10;
   vector<Point> starts;
   generator::gen_points_in_traversable(oMap, polys, N, starts);
+
+  meshFence->set_goals(pts);
+  meshFence->floodfill();
   for (Point& start: starts) {
     int k = min(5, (int)pts.size());
     hi->set_K(k);
@@ -156,6 +244,19 @@ TEST_CASE("Test fence heuristic") {
     for (int i=0; i<resthi; i++) {
       double dhi = hi->get_cost(i);
       double dfi = fi->get_cost(i);
+      if (fabs(dhi-dfi) > EPSILON) {
+        vector<Point> path;
+        hi->get_path_points(path, i);
+        print_path(path);
+        Point goal_hi = path.back();
+        fi->get_path_points(path, i);
+        print_path(path);
+        Point goal_fi = path.back();
+        cout << "Start: " << start.x << " " << start.y << endl;
+        cout << "k: " << i << endl;
+        cout << "Goal hi: " << goal_hi.x << " " << goal_hi.y << endl;
+        cout << "Goal fi: " << goal_fi.x << " " << goal_fi.y << endl;
+      }
       REQUIRE(fabs(dhi - dfi) < EPSILON);
     }
   }
