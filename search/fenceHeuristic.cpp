@@ -143,7 +143,7 @@ void FenceHeuristic::push_lazy(SearchNodePtr lazy) {
     pair<int, double> fence_h = get_fence_heuristic(nxt);
     if (fence_h.first == -1) continue;
     nxt->heuristic_gid = fence_h.first;
-    nxt->f = nxt->g + fence_h.second + get_interval_heuristic(nxt_root, nxt->left, nxt->right);
+    nxt->f = nxt->g + fence_h.second;
     nxt->parent = lazy;
     #ifndef NDEBUG
     if (verbose) {
@@ -233,10 +233,8 @@ int FenceHeuristic::search() {
     timer.stop();
     return 0;
   }
-
   while (!open_list.empty()) {
     SearchNodePtr node = open_list.top(); open_list.pop();
-
     #ifndef NDEBUG
     if (verbose) {
       std::cerr << "popped off: ";
@@ -277,7 +275,6 @@ int FenceHeuristic::search() {
       int num_succ = get_successors(cur, start, *mesh, search_successors);
       successor_calls++;
       num_nodes = succ_to_node(&cur, search_successors, num_succ, search_nodes_to_push);
-      //break;
       if (num_nodes == 1) { // we should continue
         // Did we turn?
         if (cur.g != search_nodes_to_push[0].g) {
@@ -309,7 +306,7 @@ int FenceHeuristic::search() {
       const Point& nxt_root = (nxt->root == -1 ? start: mesh->mesh_vertices[nxt->root].p);
       pair<int, double> fence_h = get_fence_heuristic(nxt);
       if (fence_h.first == -1) continue;
-      nxt->f = fence_h.second + nxt->g + get_interval_heuristic(nxt_root, nxt->left, nxt->right);
+      nxt->f = fence_h.second + nxt->g;
       nxt->parent = node;
       #ifndef NDEBUG
       if (verbose) {
@@ -484,12 +481,25 @@ std::pair<int, double> FenceHeuristic::nn_query(SearchInstance* si, double& elap
 pair<int, double> FenceHeuristic::get_fence_heuristic(SearchNode* node) {
   vector<Fence> fences = meshFence->get_fences(node->left_vertex, node->right_vertex);
   int heuristic_gid = -1;
-  double lb = INF;
-  for (auto& it: fences) if (it.lb < lb) {
-    lb = it.lb;
-    heuristic_gid = it.gid;
+  double hValue = INF;
+  int heuristic_gid2 = -1;
+  double hValue2 = INF;
+  for (auto& it: fences) {
+    const Point& inner = it.s.root == -1? goals[it.gid]: mesh->mesh_vertices[it.s.root].p;
+    double tmph = it.s.g + get_h_value(root_to_point(node->root), inner, node->left, node->right);
+    if (tmph < hValue) {
+      hValue = tmph;
+      heuristic_gid = it.gid;
+    }
+    if (fabs(reached[it.gid] - INF) <= EPSILON && tmph < hValue2) {
+      hValue2 = tmph;
+      heuristic_gid2 = it.gid;
+    }
   }
-  return {heuristic_gid, lb};
+  if (heuristic_gid2 != -1)
+    return {heuristic_gid2, hValue2};
+  else
+    return {heuristic_gid, hValue};
 }
 
 }
