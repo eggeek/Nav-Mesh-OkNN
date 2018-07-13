@@ -257,8 +257,9 @@ int TargetHeuristic::search() {
     }
 
     assert(node->heuristic_gid!= -1);
-    //if (reached.find(node->heuristic_gid) != reached.end()) {
-    if (fabs(reached[node->heuristic_gid] - INF) > EPSILON) {
+    // the target of current search node has been visited
+    bool isVisited = fabs(reached[node->heuristic_gid] - INF) > EPSILON;
+    if (isVisited && this->reassign) {
       // reset heuristic goal
       const Point& root = node->root == -1? start: mesh->mesh_vertices[node->root].p;
       std::pair<int, double> nexth = get_min_hueristic(root, node->left, node->right);
@@ -337,15 +338,13 @@ int TargetHeuristic::search() {
       const Point& nxt_root = (nxt->root == -1 ? start: mesh->mesh_vertices[nxt->root].p);
       assert(node->heuristic_gid != -1);
       double geth = get_h_value(nxt_root, goals[node->heuristic_gid], nxt->left, nxt->right);
-      if (fabs(geth - (node->f - nxt->g)) <= EPSILON) { // heuristic not change
+      if (!isVisited && fabs(geth - (node->f - nxt->g)) <= EPSILON) { // heuristic not change
         nxt->heuristic_gid = node->heuristic_gid;
         nxt->f = node->f;
       }
       else {
-        std::pair<int, double> nxth = {-1, INF};
-        if (nxth.first == -1 || fabs(reached[nxth.first] - INF) > EPSILON) {
-          nxth = get_min_hueristic(nxt_root, nxt->left, nxt->right, geth, node->heuristic_gid);
-        }
+        std::pair<int, double> nxth;
+        nxth = get_min_hueristic(nxt_root, nxt->left, nxt->right, geth, node->heuristic_gid);
         nxt->heuristic_gid = nxth.first;
         nxt->f = nxt->g + nxth.second;
       }
