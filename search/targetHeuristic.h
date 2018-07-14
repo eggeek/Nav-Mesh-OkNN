@@ -25,6 +25,7 @@ class TargetHeuristic {
                                 PointerComp<SearchNode> > pq;
     private:
         int K = 1;
+        bool reassign = true;
         warthog::mem::cpool* node_pool;
         MeshPtr mesh;
         Point start;
@@ -290,6 +291,9 @@ class TargetHeuristic {
         }
 
         std::pair<int, double> nn_query(SearchInstance* si, double& elapsed_time_micro);
+        void set_reassign(bool flag) {
+          this->reassign = flag;
+        }
 };
 
 }

@@ -262,6 +262,31 @@ TEST_CASE("Test fence heuristic") {
   }
 }
 
+TEST_CASE("no_reassign") {
+  int N = 10;
+  int k = min(2, (int)pts.size());
+  vector<Point> starts;
+  generator::gen_points_in_traversable(oMap, polys, N, starts);
+  hi->set_K(k);
+  hi->set_goals(pts);
+  hi->set_reassign(true);
+  hi2->set_K(k);
+  hi2->set_goals(pts);
+  hi2->set_reassign(false);
+  for (Point& start: starts) {
+    hi->set_start(start);
+    hi2->set_start(start);
+    int res = hi->search();
+    int res2 = hi2->search();
+    REQUIRE(res == res2);
+    for (int i=0; i<res; i++) {
+      double d = hi->get_cost(i);
+      double d2 = hi2->get_cost(i); 
+      REQUIRE(fabs(d - d2) < EPSILON);
+    }
+  }
+}
+
 int main(int argv, char* args[]) {
 	cout << "Loading data..." << endl;
   load_data();

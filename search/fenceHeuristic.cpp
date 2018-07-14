@@ -386,7 +386,7 @@ void FenceHeuristic::deal_final_node(const SearchNodePtr node) {
   }();
 
   assert(node->goal_id != -1);
-  assert(fabs(reached[node->goal_id]-INF) <= EPSILON || reached[node->goal_id] <= node->f);
+  //assert(fabs(reached[node->goal_id]-INF) <= EPSILON || reached[node->goal_id] <= node->f);
 
   //if (reached.find(node->goal_id) == reached.end()) {
   if (fabs(reached[node->goal_id]-INF) < EPSILON) {
@@ -433,7 +433,7 @@ void FenceHeuristic::gen_final_nodes(const SearchNodePtr node, const Point& root
         nodes_generated++;
         nodes_pushed++;
       }
-      else assert(reached[gid] <= final_node->f + EPSILON);
+      //else assert(reached[gid] <= final_node->f + EPSILON);
     }
 }
 
