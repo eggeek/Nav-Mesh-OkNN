@@ -8,6 +8,7 @@
 #include "intervaHeuristic.h"
 #include "targetHeuristic.h"
 #include "fenceHeuristic.h"
+#include "FastFilterPolyanya.h"
 #include "EDBTknn.h"
 #include "park2poly.h"
 #include "knnMeshFence.h"
@@ -24,6 +25,7 @@ IntervalHeuristic* ki0;
 TargetHeuristic* hi;
 TargetHeuristic* hi2;
 FenceHeuristic* fi;
+FastFilterPolyanya* ffp;
 KnnMeshEdgeFence* meshFence;
 vector<Scenario> scenarios;
 vector<Point> pts;
@@ -61,6 +63,7 @@ void load_data() {
   hi2 = new TargetHeuristic(mp);
   fi = new FenceHeuristic(mp);
   meshFence = new KnnMeshEdgeFence(mp);
+  ffp = new FastFilterPolyanya(si);
   fi->set_meshFence(meshFence);
   //edbt = new EDBT::EDBTkNN(oMap);
   printf("vertices: %d, polygons: %d\n", (int)m.mesh_vertices.size(), (int)m.mesh_polygons.size());
@@ -123,7 +126,7 @@ TEST_CASE("Test target heuristic") {
 }
 
 
-TEST_CASE("Test brute force polyanya") {
+TEST_CASE("BFPolyanya") {
   int N = 10;
   vector<Point> starts;
   generator::gen_points_in_traversable(oMap, polys, N, starts);
@@ -221,7 +224,7 @@ TEST_CASE("FenceNN") {
   }
 }
 
-TEST_CASE("Test fence heuristic") {
+TEST_CASE("fence_heuristic") {
   int N = 10;
   vector<Point> starts;
   generator::gen_points_in_traversable(oMap, polys, N, starts);
@@ -283,6 +286,33 @@ TEST_CASE("no_reassign") {
       double d = hi->get_cost(i);
       double d2 = hi2->get_cost(i); 
       REQUIRE(fabs(d - d2) < EPSILON);
+    }
+  }
+}
+
+TEST_CASE("FastFilter") {
+  int N = 10;
+  vector<Point> starts;
+  generator::gen_points_in_traversable(oMap, polys, N, starts);
+  int k = min(5, (int)pts.size());
+
+  ffp->set_K(k);
+  ffp->set_goals(pts);
+  for (Point& start: starts) {
+    double cost_poly = 0, gen_poly = 0;
+    vector<double> dists = si->brute_force(start, pts, k, cost_poly, gen_poly);
+
+    ffp->set_start(start);
+    vector<double> dists2 = ffp->search();
+    ki->set_K(k);
+    ki->set_start_goal(start, pts);
+    int reski = ki->search();
+    REQUIRE(reski == (int)dists.size());
+    REQUIRE(reski == (int)dists2.size());
+    for (int i=0; i<reski; i++) {
+      double dki = ki->get_cost(i);
+      REQUIRE(fabs(dki - dists[i]) < EPSILON);
+      REQUIRE(fabs(dki - dists2[i]) < EPSILON);
     }
   }
 }

@@ -116,6 +116,8 @@ public:
   }
 
   void initRtree() {
+    // rte can be initialized only once
+    assert(rte != nullptr);
     rtEntries.clear();
     rte = new rs::RStarTree();
     for (auto& it: goals) {
