@@ -81,6 +81,7 @@ private:
     nodes_pushed = 0;
     nodes_popped = 0;
     nodes_pruned = 0;
+    fences.clear();
     gen_initial_nodes();
   }
 
