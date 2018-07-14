@@ -20,6 +20,7 @@ pl::SearchInstance* si;
 pl::IntervalHeuristic* ki;
 pl::IntervalHeuristic* ki0;
 pl::TargetHeuristic* hi;
+pl::TargetHeuristic* hi2;
 pl::FenceHeuristic* fi;
 pl::KnnMeshEdgeFence* meshFence;
 vg::ObstacleMap* oMap;
@@ -58,6 +59,7 @@ void load_data() {
   ki = new pl::IntervalHeuristic(mp);
 	ki0 = new pl::IntervalHeuristic(mp); ki0->setZero(true);
   hi = new pl::TargetHeuristic(mp);
+  hi2 = new pl::TargetHeuristic(mp);
   fi = new pl::FenceHeuristic(mp);
   fi->set_meshFence(meshFence);
   edbt = new vg::EDBTkNN(oMap);
@@ -232,11 +234,18 @@ void sparse_experiment(pl::Point start, int k, vector<string>& cols, bool verbos
   hi->set_start(start);
   int actual2 = hi->search();
 
+  hi2->verbose = verbose;
+  hi2->set_reassign(false);
+  hi2->set_goals(pts);
+  hi2->set_K(k);
+  hi2->set_start(start);
+  int actual3 = hi2->search();
+
   fi->verbose = verbose;
   fi->set_goals(pts);
   fi->set_K(k);
   fi->set_start(start);
-  int actual3 = fi->search();
+  int actual4 = fi->search();
 
   double cost_poly = 0, gen_poly = 0;
   vector<double> odists = si->brute_force(start, pts, k, cost_poly, gen_poly);
@@ -276,12 +285,23 @@ void sparse_experiment(pl::Point start, int k, vector<string>& cols, bool verbos
 	row["hcall"] = hcall;
 	row["hcost"] = hcost;
 	row["reevaluate"] = reevaluate;
+
+  int gen_hi2 = hi2->nodes_generated;
+  double cost_hi2 = hi2->get_search_micro();
+  int hcall2 =  hi2->heuristic_call;
+  double hcost2 = hi2->get_heuristic_micro();
+  row["gen_hi2"] = gen_hi2;
+  row["cost_hi2"] = cost_hi2;
+  row["hcall2"] = hcall2;
+  row["hcost2"] = hcost2;
+
   row["gen_fi"] = fi->nodes_generated;
   row["cost_fi"] = fi->get_search_micro();
 
   if (actual != actual0 || 
       actual != actual2 ||
-      actual != actual3) {
+      actual != actual3 ||
+      actual != actual4) {
     dump();
     assert(false);
     exit(1);
@@ -354,6 +374,7 @@ int main(int argv, char* args[]) {
 				"cost_ki", "gen_ki",
 				"cost_poly","gen_poly",
 				"cost_hi", "gen_hi", "hcost", "hcall", "reevaluate",
+        "cost_hi2", "gen_hi2", "hcost2", "hcall2", 
 				"cost_fi", "gen_fi", "cost_pre", "gen_pre", "edgecnt", "fencecnt",
 				"pts", "polys"
 			};
