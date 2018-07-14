@@ -7,6 +7,7 @@
 #include "genPoints.h"
 #include "knnMeshFence.h"
 #include "mesh.h"
+#include "FastFilterPolyanya.h"
 #include <sstream>
 #include <stdio.h>
 #include <iostream>
@@ -22,6 +23,7 @@ pl::IntervalHeuristic* ki0;
 pl::TargetHeuristic* hi;
 pl::TargetHeuristic* hi2;
 pl::FenceHeuristic* fi;
+pl::FastFilterPolyanya* ffp;
 pl::KnnMeshEdgeFence* meshFence;
 vg::ObstacleMap* oMap;
 vg::EDBTkNN* edbt;
@@ -61,6 +63,7 @@ void load_data() {
   hi = new pl::TargetHeuristic(mp);
   hi2 = new pl::TargetHeuristic(mp);
   fi = new pl::FenceHeuristic(mp);
+  ffp = new pl::FastFilterPolyanya(si);
   fi->set_meshFence(meshFence);
   edbt = new vg::EDBTkNN(oMap);
 }
@@ -139,7 +142,6 @@ void dense_experiment(pl::Point start, int k, vector<string>& cols, bool verbose
   row["gen_ki0"] = gen_ki0;
 
 	hi->set_start(start);
-	hi->set_goals(pts);
 	hi->set_K(k);
 	cnt_hi = hi->search();
   cost_hi = hi->get_search_micro();
@@ -170,7 +172,6 @@ void dense_experiment(pl::Point start, int k, vector<string>& cols, bool verbose
   row["edgecnt"] = edgecnt;
   row["fencecnt"] = fencecnt;
 
-  edbt->set_goals(pts);
   edbt->set_start(start);
   vector<pair<vg::pPtr, double>> res = edbt->OkNN(k);
   cost_edbt = edbt->get_search_micro();
@@ -182,8 +183,15 @@ void dense_experiment(pl::Point start, int k, vector<string>& cols, bool verbose
   row["cost_poly"] = cost_poly;
   row["gen_poly"] = gen_poly;
 
+  ffp->set_start(start);
+  ffp->set_K(k);
+  vector<double> odists2 = ffp->search();
+  row["cost_ffp"] = ffp->search_cost;
+  row["gen_ffp"] = ffp->nodes_generated;
+
   if (!(cnt_ki == cnt_ki0 && cnt_ki == cnt_hi && cnt_ki == cnt_fi &&
-        cnt_ki == (int)res.size())) {
+        cnt_ki == (int)res.size() && cnt_ki == (int)odists.size() &&
+        cnt_ki == (int)odists2.size())) {
     dump();
     assert(false);
     exit(1);
@@ -197,8 +205,10 @@ void dense_experiment(pl::Point start, int k, vector<string>& cols, bool verbose
     dist_edbt = res[i].second;
     if (fabs(dist_ki - dist_edbt) > EPSILON ||
         fabs(dist_ki - dist_hi) > EPSILON  ||
-				fabs(dist_ki - dist_ki0 > EPSILON) ||
-        fabs(dist_ki - dist_fi) > EPSILON) {
+				fabs(dist_ki - dist_ki0) > EPSILON ||
+        fabs(dist_ki - dist_fi) > EPSILON ||
+        fabs(dist_ki - odists[i]) > EPSILON ||
+        fabs(dist_ki - odists2[i]) > EPSILON) {
       dump();
       assert(false);
       exit(1);
@@ -238,14 +248,12 @@ void sparse_experiment(pl::Point start, int k, vector<string>& cols, bool verbos
   int actual = ki->search();
 
   hi->verbose = verbose;
-  hi->set_goals(pts);
   hi->set_K(k);
   hi->set_start(start);
   int actual2 = hi->search();
 
   hi2->verbose = verbose;
   hi2->set_reassign(false);
-  hi2->set_goals(pts);
   hi2->set_K(k);
   hi2->set_start(start);
   int actual3 = hi2->search();
@@ -258,6 +266,12 @@ void sparse_experiment(pl::Point start, int k, vector<string>& cols, bool verbos
 
   double cost_poly = 0, gen_poly = 0;
   vector<double> odists = si->brute_force(start, pts, k, cost_poly, gen_poly);
+
+  ffp->set_start(start);
+  ffp->set_K(k);
+  vector<double> odists2 = ffp->search();
+  row["cost_ffp"] = ffp->search_cost;
+  row["gen_ffp"] = ffp->nodes_generated;
 
   cost_pre = meshFence->get_processing_micro();
   edgecnt = (double)meshFence->edgecnt;
@@ -310,7 +324,8 @@ void sparse_experiment(pl::Point start, int k, vector<string>& cols, bool verbos
   if (actual != actual0 || 
       actual != actual2 ||
       actual != actual3 ||
-      actual != actual4) {
+      actual != actual4 ||
+      actual != (int)odists.size()) {
     dump();
     assert(false);
     exit(1);
@@ -322,7 +337,8 @@ void sparse_experiment(pl::Point start, int k, vector<string>& cols, bool verbos
 		dist_ki0 = ki0->get_cost(i);
     if (fabs(dist_ki - dist_hi) > EPSILON ||
 				fabs(dist_ki - dist_ki0) > EPSILON ||
-        fabs(dist_ki - odists[i]) > EPSILON) {
+        fabs(dist_ki - odists[i]) > EPSILON ||
+        fabs(dist_ki - odists2[i]) > EPSILON) {
       dump();
       assert(false);
       exit(1);
@@ -365,7 +381,6 @@ void nn_experiment(pl::Point start,
   row["cost_ki"] = ki->get_search_micro();
 
   hi->verbose = verbose;
-  hi->set_goals(targets);
   hi->set_K(k);
   hi->set_start(start);
   int foundhi = hi->search();
@@ -377,7 +392,6 @@ void nn_experiment(pl::Point start,
 
   hi2->verbose = verbose;
   hi2->set_reassign(false);
-  hi2->set_goals(targets);
   hi2->set_K(k);
   hi2->set_start(start);
   int foundhi2 = hi2->search();
@@ -402,6 +416,12 @@ void nn_experiment(pl::Point start,
   vector<double> odists = si->brute_force(start, targets, 1, cost_poly, gen_poly);
   row["cost_poly"] = cost_poly;
   row["gen_poly"] = gen_poly;
+
+  ffp->set_K(k);
+  ffp->set_start(start);
+  vector<double> odists2 = ffp->search();
+  row["cost_ffp"] = ffp->search_cost;
+  row["gen_ffp"] = ffp->nodes_generated;
 
   if (res.first == -1) {
     if (foundki0 || foundki ||
@@ -457,6 +477,7 @@ int main(int argv, char* args[]) {
     "cost_ki0", "gen_ki0", 
     "cost_ki", "gen_ki", 
     "cost_poly", "gen_poly",
+    "cost_ffp", "gen_ffp",
     "cost_hi", "gen_hi", "hcost", "hcall", "reevaluate",
     "cost_fi", "gen_fi", "cost_pre", "gen_pre", "edgecnt", "fencecnt",
     "pts", "polys" 
@@ -476,13 +497,21 @@ int main(int argv, char* args[]) {
     generator::gen_points_in_traversable(oMap, polys, N, starts);
     meshFence->set_goals(pts);
     meshFence->floodfill();
+
     if (t == "s1") { // dense experiment
       // ./bin/experiment s1 {k} < {input file}
+      hi->set_goals(pts);
+      hi2->set_goals(pts);
+      edbt->set_goals(pts);
+      ffp->set_goals(pts);
       for (int i=0; i<N; i++)
         dense_experiment(starts[i], k, cols);
     }
     else if (t == "s2") { // sparse experiment
       // ./bin/experiment s2 {k} < {input file}
+      hi->set_goals(pts);
+      hi2->set_goals(pts);
+      ffp->set_goals(pts);
       for (int i=0; i<N; i++)
         sparse_experiment(starts[i], k, cols);
     }
@@ -496,6 +525,9 @@ int main(int argv, char* args[]) {
       generator::gen_points_in_traversable(oMap, polys, targetSize, pts);
       meshFence->set_goals(pts);
       meshFence->floodfill();
+      hi->set_goals(pts);
+      hi2->set_goals(pts);
+      ffp->set_goals(pts);
       for (pl::Point& start: starts) {
         nn_experiment(start, pts, cols);
       }

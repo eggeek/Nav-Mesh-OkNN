@@ -15,8 +15,8 @@ def nn_experiment_time(DF, time_ylim=None, saveto=None, limit=10):
   xs[0], ys[0] = gen_xy(df, 'pts', 'cost_fi', limit=limit)
   algos.append(alias['fence nn'])
 
-  # xs[1], ys[1] = gen_xy(df, 'pts', 'cost_ki0', limit=limit)
-  # algos.append(alias['poly-zero'])
+  xs[1], ys[1] = gen_xy(df, 'pts', 'cost_ffp', limit=limit)
+  algos.append("ffp")
 
   xs[2], ys[2] = gen_xy(df, 'pts', 'cost_ki', limit=limit)
   algos.append(alias['interval heuristic'])
@@ -48,8 +48,8 @@ def nn_experiment_gen(DF, gen_ylim=None, saveto=None, limit=10):
   xs[0], ys[0] = gen_xy(df, 'pts', 'gen_fi', limit=limit)
   algos.append(alias['fence nn'])
 
-  # xs[1], ys[1] = gen_xy(df, 'pts', 'gen_ki0', limit=limit)
-  # algos.append(alias['poly-zero'])
+  xs[1], ys[1] = gen_xy(df, 'pts', 'gen_ffp', limit=limit)
+  algos.append("ffp")
 
   xs[2], ys[2] = gen_xy(df, 'pts', 'gen_ki', limit=limit)
   algos.append(alias['interval heuristic'])
