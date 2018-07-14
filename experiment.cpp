@@ -69,6 +69,7 @@ void dump() {
   ofstream file;
   string fname = "dump/" + globalT + "-poly" + to_string(polys.size())
     + "-pts" + to_string(pts.size()) + "-k" + to_string(globalK);
+  cerr << fname << endl;
   file.open(fname + ".in");
   file << mesh_path << endl;
   file << obs_path << endl;
@@ -77,12 +78,20 @@ void dump() {
   file.close();
 
   ofstream ptsfile;
-  ptsfile.open(fname + ".points");
+  ptsfile.open(fname + "starts.points");
   ptsfile << starts.size() << endl;
   for (size_t i=0; i<starts.size(); i++) {
     ptsfile << starts[i].x << " " << starts[i].y << endl;
   }
   ptsfile.close();
+
+  ofstream targetsfile;
+  targetsfile.open(fname + "-targets.points");
+  targetsfile << pts.size() << endl;
+  for (size_t i=0; i< pts.size(); i++) {
+    targetsfile << pts[i].x << " " << pts[i].y << endl;
+  }
+  targetsfile.close();
 }
 
 void dense_experiment(pl::Point start, int k, vector<string>& cols, bool verbose=false) {
@@ -334,84 +343,161 @@ void sparse_experiment(pl::Point start, int k, vector<string>& cols, bool verbos
   }
 }
 
+void nn_experiment(pl::Point start,
+    const vector<pl::Point>& targets,
+    const vector<string>& cols,
+    bool verbose=false) {
+  map<string, double> row;
+  int k = 1;
+
+  ki0->verbose = verbose;
+  ki0->set_K(k);
+  ki0->set_start_goal(start, targets);
+  int foundki0 = ki0->search();
+  row["gen_ki0"] = ki0->nodes_generated;
+  row["cost_ki0"] = ki0->get_search_micro();
+
+  ki->verbose = verbose;
+  ki->set_K(k);
+  ki->set_start_goal(start, targets);
+  int foundki = ki->search();
+  row["gen_ki"] = ki->nodes_generated;
+  row["cost_ki"] = ki->get_search_micro();
+
+  hi->verbose = verbose;
+  hi->set_goals(targets);
+  hi->set_K(k);
+  hi->set_start(start);
+  int foundhi = hi->search();
+  row["gen_hi"] = hi->nodes_generated;
+  row["cost_hi"] = hi->get_search_micro();
+  row["hcall"] = hi->heuristic_call;
+  row["hcost"] = hi->get_heuristic_micro();
+  row["reevaluate"] = hi->nodes_reevaluate;
+
+  hi2->verbose = verbose;
+  hi2->set_reassign(false);
+  hi2->set_goals(targets);
+  hi2->set_K(k);
+  hi2->set_start(start);
+  int foundhi2 = hi2->search();
+  row["gen_hi2"] = hi2->nodes_generated;
+  row["cost_hi2"] = hi2->get_search_micro();
+  row["hcall2"] = hi2->heuristic_call;
+  row["hcost2"] = hi2->get_heuristic_micro();
+
+  fi->verbose = verbose;
+  fi->set_goals(targets);
+  fi->set_start(start);
+  double nn_cost = 0.0;
+  pair<int, double> res = fi->nn_query(si, nn_cost);
+  row["gen_fi"] = fi->nodes_generated;
+  row["cost_fi"] = nn_cost;
+  row["gen_pre"] = meshFence->nodes_generated;
+  row["cost_pre"] = meshFence->get_processing_micro();
+  row["edgecnt"] = meshFence->edgecnt;
+  row["fencecnt"] = meshFence->fenceCnt;
+
+  double cost_poly = 0, gen_poly = 0;
+  vector<double> odists = si->brute_force(start, targets, 1, cost_poly, gen_poly);
+  row["cost_poly"] = cost_poly;
+  row["gen_poly"] = gen_poly;
+
+  if (res.first == -1) {
+    if (foundki0 || foundki ||
+        foundhi || foundhi2 || (int)odists.size()) {
+      dump();
+      assert(false);
+      exit(1);
+    }
+  }
+  if (res.first != -1) {
+    if (!foundki0 || !foundki || !foundhi ||
+        !foundhi2 || !(int)odists.size()) {
+      dump();
+      assert(false);
+      exit(1);
+    }
+  }
+  for (int i=0; i<foundhi; i++) {
+    double dist_ki0 = ki0->get_cost(i);
+    double dist_ki = ki->get_cost(i);
+    double dist_hi = hi->get_cost(i);
+    double dist_hi2 = hi2->get_cost(i);
+    double dist_fi = res.second;
+    double dist_poly = odists[i];
+    if (fabs(dist_ki0 - dist_ki) > EPSILON ||
+        fabs(dist_hi - dist_ki) > EPSILON ||
+        fabs(dist_hi2 - dist_ki) > EPSILON ||
+        fabs(dist_fi - dist_ki) > EPSILON ||
+        fabs(dist_poly - dist_ki) > EPSILON ) {
+      dump();
+      assert(false);
+      exit(1);
+    }
+  }
+  if (foundki >= 1) {
+    row["k"] = k;
+    row["dist"] = ki->get_cost(foundki-1);
+    row["polys"] = polys.size();
+    row["pts"] = targets.size();
+    for (int i=0; i<(int)cols.size(); i++) {
+      cout << setw(10) << row[cols[i]];
+      if (i+1 == (int)cols.size()) cout << endl;
+      else cout << ",";
+    }
+  }
+}
+
 int main(int argv, char* args[]) {
   load_data();
-  meshFence->set_goals(pts);
-  meshFence->floodfill();
+  vector<string> cols = {
+    "k", "dist", 
+    "cost_edbt", "gen_edbt",
+    "cost_ki0", "gen_ki0", 
+    "cost_ki", "gen_ki", 
+    "cost_poly", "gen_poly",
+    "cost_hi", "gen_hi", "hcost", "hcall", "reevaluate",
+    "cost_fi", "gen_fi", "cost_pre", "gen_pre", "edgecnt", "fencecnt",
+    "pts", "polys" 
+  };
   if (argv == 3) { // ./bin/test [s1/s2]
     string t = string(args[1]);
     int k = atoi(args[2]);
+    // print header
+    for (int i=0; i<(int)cols.size(); i++) {
+      cout << setw(10) << cols[i];
+      if (i+1 == (int)cols.size()) cout << endl;
+      else cout << ",";
+    }
     globalT = t;
     globalK = k;
-    if (t == "s1") { // edbt vs polyanya
-			vector<string> cols = {
-				"k", "dist", 
-        "cost_edbt", "gen_edbt",
-        "cost_ki0", "gen_ki0", 
-        "cost_ki", "gen_ki", 
-        "cost_poly", "gen_poly",
-        "cost_hi", "gen_hi", "hcost", "hcall", "reevaluate",
-        "cost_fi", "gen_fi", "cost_pre", "gen_pre", "edgecnt", "fencecnt",
-				"pts", "polys" 
-			};
-			// print header
-      for (int i=0; i<(int)cols.size(); i++) {
-        cout << setw(10) << cols[i];
-        if (i+1 == (int)cols.size()) cout << endl;
-        else cout << ",";
-      }
-
-      int N = 1000;
-      generator::gen_points_in_traversable(oMap, polys, N, starts);
+    int N = 1000;
+    generator::gen_points_in_traversable(oMap, polys, N, starts);
+    meshFence->set_goals(pts);
+    meshFence->floodfill();
+    if (t == "s1") { // dense experiment
+      // ./bin/experiment s1 {k} < {input file}
       for (int i=0; i<N; i++)
         dense_experiment(starts[i], k, cols);
     }
-    else if (t == "s2") { // hueristic vs polyanya
-
-      vector<string> cols = {
-				"k", "dist",
-				"cost_ki0", "gen_ki0",
-				"cost_ki", "gen_ki",
-				"cost_poly","gen_poly",
-				"cost_hi", "gen_hi", "hcost", "hcall", "reevaluate",
-        "cost_hi2", "gen_hi2", "hcost2", "hcall2", 
-				"cost_fi", "gen_fi", "cost_pre", "gen_pre", "edgecnt", "fencecnt",
-				"pts", "polys"
-			};
-      for (int i=0; i<(int)cols.size(); i++) {
-        cout << setw(10) << cols[i];
-        if (i+1 == (int)cols.size()) cout << endl;
-        else cout << ",";
-      }
-      int N = 1000;
-      generator::gen_points_in_traversable(oMap, polys, N, starts);
+    else if (t == "s2") { // sparse experiment
+      // ./bin/experiment s2 {k} < {input file}
       for (int i=0; i<N; i++)
         sparse_experiment(starts[i], k, cols);
     }
-    else if (t == "blind") {
-      pl::Point start = pts.back();
-      pts.pop_back();
-      ki->verbose = true;
-      ki->set_K(k);
-      ki->set_start_goal(start, pts);
-      ki->search();
-    }
-    else if (t == "heuristic") {
-      pl::Point start = pts.back();
-      pts.pop_back();
-      hi->verbose = true;
-      hi->set_goals(pts);
-      hi->set_K(k);
-      hi->set_start(start);
-      hi->search();
-    }
-    else if (t == "polyanya") {
-      pl::Point start = pts.back();
-      pts.pop_back();
-      pl::Point goal = pts[2];
-      si->verbose = true;
-      si->set_start_goal(start, goal);
-      si->search();
+    else if (t == "nn") { // preprocessing experiment 
+      // ./bin/experiment nn {num of target} < {input file}
+      int targetSize = k;
+      int N = 1000;
+      generator::gen_points_in_traversable(oMap, polys, N, starts);
+      pts.clear();
+      generator::gen_points_in_traversable(oMap, polys, targetSize, pts);
+      meshFence->set_goals(pts);
+      meshFence->floodfill();
+      for (pl::Point& start: starts) {
+        nn_experiment(start, pts, cols);
+      }
     }
     else assert(false);
   }
