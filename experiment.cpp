@@ -488,7 +488,8 @@ int main(int argv, char* args[]) {
     }
     else if (t == "nn") { // preprocessing experiment 
       // ./bin/experiment nn {num of target} < {input file}
-      int targetSize = k;
+      int targetRatio = k;
+      int targetSize = (int)polys.size() * targetRatio  / 100 + 1;
       int N = 1000;
       generator::gen_points_in_traversable(oMap, polys, N, starts);
       pts.clear();
