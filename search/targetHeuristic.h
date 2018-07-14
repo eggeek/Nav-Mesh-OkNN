@@ -58,6 +58,7 @@ class TargetHeuristic {
 
         void init() {
             meshFence= nullptr;
+            rte = nullptr;
             verbose = false;
             search_successors = new Successor [mesh->max_poly_sides + 2];
             search_nodes_to_push = new SearchNode [mesh->max_poly_sides + 2];
@@ -169,6 +170,8 @@ class TargetHeuristic {
         }
 
         void initRtree() {
+          // rte can be initialized only once
+          assert(rte == nullptr);
           rte = new rs::RStarTree();
           rtEntries.clear();
           gids.clear();
@@ -222,7 +225,7 @@ class TargetHeuristic {
         int heuristic_call;
         int nodes_reevaluate;
         bool verbose;
-        rs::RStarTree* rte;
+        rs::RStarTree* rte = nullptr;
         std::vector<rs::LeafNodeEntry> rtEntries;
         std::vector<int> gids;
 
