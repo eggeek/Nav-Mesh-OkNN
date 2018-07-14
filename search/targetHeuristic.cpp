@@ -332,13 +332,17 @@ int TargetHeuristic::search() {
       }
     } while (num_nodes == 1); // if num_nodes == 0, we still break
 
+    if (this->reassign) assert(isVisited == false);
+
     for (int i = 0; i < num_nodes; i++) {
       // update h value before we push
       const SearchNodePtr nxt = new (node_pool->allocate()) SearchNode(search_nodes_to_push[i]);
       const Point& nxt_root = (nxt->root == -1 ? start: mesh->mesh_vertices[nxt->root].p);
       assert(node->heuristic_gid != -1);
-      double geth = get_h_value(nxt_root, goals[node->heuristic_gid], nxt->left, nxt->right);
-      if (!isVisited && fabs(geth - (node->f - nxt->g)) <= EPSILON) { // heuristic not change
+      double geth;
+      if (isVisited) geth = INF;
+      else geth = get_h_value(nxt_root, goals[node->heuristic_gid], nxt->left, nxt->right);
+      if (fabs(geth - (node->f - nxt->g)) <= EPSILON) { // heuristic not change
         nxt->heuristic_gid = node->heuristic_gid;
         nxt->f = node->f;
       }
@@ -645,47 +649,6 @@ rs::MinHeapEntry TargetHeuristic::NearestInAreaC(double angle0, double angle1, c
     }
   }
   while (!heap.isEmpty()) heap.pop();
-  return res;
-}
-
-std::pair<int, double> TargetHeuristic::nn_query(SearchInstance* si, double& elapsed_time_micro) {
-  // only support nearest neighbour query
-  // return {target_id, dist}
-  std::pair<int, double> res = {-1, INF};
-  assert(meshFence != nullptr);
-  init_search();
-  this->K = 1;
-  while (!open_list.empty()) {
-    SearchNodePtr node = open_list.top(); open_list.pop();
-    nodes_popped++;
-    if (node->reached) {
-      if (node->f < res.second) {
-        res.second = node->f;
-        res.first = node->goal_id;
-      }
-      continue;
-    }
-    assert(node->root == -1);
-    std::vector<Fence> fences = meshFence->get_fences(node->left_vertex, node->right_vertex);
-    for (const auto& it: fences) {
-      Point goal = it.s.root == -1? goals[it.gid]: mesh->mesh_vertices[it.s.root].p;
-      //Point goal = goals[it.gid];
-      si->verbose=false;
-      si->set_start_goal(start, goal);
-      si->search();
-      elapsed_time_micro += si->get_search_micro();
-      nodes_generated += si->nodes_generated;
-      nodes_popped += si->nodes_popped;
-      nodes_pushed += si->nodes_pushed;
-      double start_to_root = si->get_cost();
-      double dist = it.s.g + start_to_root;
-      //double dist = si->get_cost();
-      if (dist < res.second) {
-        res.second = dist;
-        res.first = it.gid;
-      }
-    }
-  }
   return res;
 }
 
