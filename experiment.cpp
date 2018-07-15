@@ -119,6 +119,7 @@ void dense_experiment(pl::Point start, int k, vector<string>& cols, bool verbose
   map<string, double> row;
   vector<pl::Point> path;
   map<int, int> rank = get_euclidean_rank(start, pts);
+  int vnum = 0;
 
 	double dist_ki0, cost_ki0;
 	int gen_ki0, cnt_ki0;
@@ -172,6 +173,7 @@ void dense_experiment(pl::Point start, int k, vector<string>& cols, bool verbose
   row["hcost"] = hcost;
   row["hcall"] = hcall;
   row["reevaluate"] = reevaluate;
+  row["hreuse"] = hi->heuristic_reuse;
 
   fi->set_start(start);
   fi->set_goals(pts);
@@ -231,6 +233,9 @@ void dense_experiment(pl::Point start, int k, vector<string>& cols, bool verbose
       assert(false);
       exit(1);
     }
+    vector<pl::Point> path;
+    ki->get_path_points(path, i);
+    vnum += (int)path.size();
   }
 
   if (cnt_ki -1 >= 0) {
@@ -240,6 +245,7 @@ void dense_experiment(pl::Point start, int k, vector<string>& cols, bool verbose
     row["dist"] = ki->get_cost(cnt_ki-1);
     row["polys"] = polys.size();
     row["pts"] = pts.size();
+    row["vnum"] = vnum;
     for (int i=0; i<(int)cols.size(); i++) {
       cout << setw(10) << row[cols[i]];
       if (i+1 == (int)cols.size()) cout << endl;
@@ -254,6 +260,7 @@ void sparse_experiment(pl::Point start, int k, vector<string>& cols, bool verbos
 	double dist_ki0, cost_ki0, gen_ki0;
 	double dist_hi, cost_hi, gen_hi, hcost, hcall, reevaluate;
 	double gen_pre, cost_pre, edgecnt, fenceCnt;
+  int vnum = 0;
   map<string, double> row;
   vector<pl::Point> path;
   map<int, int> rank = get_euclidean_rank(start, pts);
@@ -329,6 +336,7 @@ void sparse_experiment(pl::Point start, int k, vector<string>& cols, bool verbos
 	row["hcall"] = hcall;
 	row["hcost"] = hcost;
 	row["reevaluate"] = reevaluate;
+  row["hreuse"] = hi->heuristic_reuse;
 
   int gen_hi2 = hi2->nodes_generated;
   double cost_hi2 = hi2->get_search_micro();
@@ -338,6 +346,7 @@ void sparse_experiment(pl::Point start, int k, vector<string>& cols, bool verbos
   row["cost_hi2"] = cost_hi2;
   row["hcall2"] = hcall2;
   row["hcost2"] = hcost2;
+  row["hreuse2"] = hi2->heuristic_reuse;
 
   row["gen_fi"] = fi->nodes_generated;
   row["cost_fi"] = fi->get_search_micro();
@@ -348,6 +357,7 @@ void sparse_experiment(pl::Point start, int k, vector<string>& cols, bool verbos
       actual != actual4 ||
       actual != (int)odists.size()) {
     dump();
+    cerr << "faild" << endl;
     assert(false);
     exit(1);
   }
@@ -364,6 +374,9 @@ void sparse_experiment(pl::Point start, int k, vector<string>& cols, bool verbos
       assert(false);
       exit(1);
     }
+    vector<pl::Point> path;
+    ki->get_path_points(path, i);
+    vnum += (int)path.size();
 	}
 
   if (actual-1 >= 0) {
@@ -374,12 +387,14 @@ void sparse_experiment(pl::Point start, int k, vector<string>& cols, bool verbos
 		row["dist"] = ki->get_cost(actual-1);
 		row["polys"] = polys.size();
 		row["pts"] = pts.size();
+    row["vnum"] = vnum;
     for (int i=0; i<(int)cols.size(); i++) {
       cout << setw(10) << row[cols[i]];
       if (i+1 == (int)cols.size()) cout << endl;
       else cout << ",";
     }
   }
+  else cerr << "target not found" << endl;
 }
 
 void nn_experiment(pl::Point start,
@@ -388,6 +403,7 @@ void nn_experiment(pl::Point start,
     bool verbose=false) {
   map<string, double> row;
   int k = 1;
+  int vnum = 0;
   map<int, int> rank = get_euclidean_rank(start, targets);
 
   ki0->verbose = verbose;
@@ -423,6 +439,7 @@ void nn_experiment(pl::Point start,
   row["cost_hi2"] = hi2->get_search_micro();
   row["hcall2"] = hi2->heuristic_call;
   row["hcost2"] = hi2->get_heuristic_micro();
+  row["hreuse2"] = hi2->heuristic_reuse;
 
   fi->verbose = verbose;
   fi->set_goals(targets);
@@ -479,6 +496,9 @@ void nn_experiment(pl::Point start,
       assert(false);
       exit(1);
     }
+    vector<pl::Point> path;
+    ki->get_path_points(path, i);
+    vnum += (int)path.size();
   }
   if (foundki >= 1) {
     row["k"] = k;
@@ -487,6 +507,7 @@ void nn_experiment(pl::Point start,
     row["dist"] = ki->get_cost(foundki-1);
     row["polys"] = polys.size();
     row["pts"] = targets.size();
+    row["vnum"] = vnum;
     for (int i=0; i<(int)cols.size(); i++) {
       cout << setw(10) << row[cols[i]];
       if (i+1 == (int)cols.size()) cout << endl;
@@ -498,13 +519,14 @@ void nn_experiment(pl::Point start,
 int main(int argv, char* args[]) {
   load_data();
   vector<string> cols = {
-    "k", "dist", "rank",
+    "k", "dist", "rank", "vnum",
     "cost_edbt", "gen_edbt",
     "cost_ki0", "gen_ki0", 
     "cost_ki", "gen_ki", 
     "cost_poly", "gen_poly",
     "cost_ffp", "gen_ffp",
-    "cost_hi", "gen_hi", "hcost", "hcall", "reevaluate",
+    "cost_hi", "gen_hi", "hcost", "hcall", "hreuse", "reevaluate",
+    "cost_hi2", "gen_hi2", "hcost2", "hcall2", "hreuse2",
     "cost_fi", "gen_fi", "cost_pre", "gen_pre", "edgecnt", "fencecnt",
     "pts", "polys" 
   };

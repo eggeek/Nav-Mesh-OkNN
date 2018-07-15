@@ -345,6 +345,7 @@ int TargetHeuristic::search() {
       if (fabs(geth - (node->f - nxt->g)) <= EPSILON) { // heuristic not change
         nxt->heuristic_gid = node->heuristic_gid;
         nxt->f = node->f;
+        heuristic_reuse++;
       }
       else {
         std::pair<int, double> nxth;

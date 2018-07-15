@@ -205,6 +205,7 @@ class TargetHeuristic {
             gen_initial_nodes();
             heuristic_using = 0;
             heuristic_call = 0;
+            heuristic_reuse = 0;
             angle_using = 0;
         }
         void set_end_polygon();
@@ -222,6 +223,7 @@ class TargetHeuristic {
         int nodes_popped;           // Nodes popped off open
         int nodes_pruned_post_pop;  // Nodes we prune right after popping off
         int successor_calls;        // Times we call get_successors
+        int heuristic_reuse;
         int heuristic_call;
         int nodes_reevaluate;
         bool verbose;
