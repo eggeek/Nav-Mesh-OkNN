@@ -223,6 +223,7 @@ void dense_experiment(pl::Point start, int k, vector<string>& cols, bool verbose
     dist_hi = hi->get_cost(i);
     dist_fi = fi->get_cost(i);
     dist_edbt = res[i].second;
+    row["max_rank"] = max(row["max_rank"], (double)rank[ki->get_gid(i)]);
     if (fabs(dist_ki - dist_edbt) > EPSILON ||
         fabs(dist_ki - dist_hi) > EPSILON  ||
 				fabs(dist_ki - dist_ki0) > EPSILON ||
@@ -366,6 +367,7 @@ void sparse_experiment(pl::Point start, int k, vector<string>& cols, bool verbos
 		dist_hi = ki->get_cost(i);
     dist_ki= ki->get_cost(i);
 		dist_ki0 = ki0->get_cost(i);
+    row["max_rank"] = max(row["max_rank"], (double)rank[ki->get_gid(i)]);
     if (fabs(dist_ki - dist_hi) > EPSILON ||
 				fabs(dist_ki - dist_ki0) > EPSILON ||
         fabs(dist_ki - odists[i]) > EPSILON ||
@@ -487,6 +489,7 @@ void nn_experiment(pl::Point start,
     double dist_hi2 = hi2->get_cost(i);
     double dist_fi = res.second;
     double dist_poly = odists[i];
+    row["max_rank"] = max(row["max_rank"], (double)rank[ki->get_gid(i)]);
     if (fabs(dist_ki0 - dist_ki) > EPSILON ||
         fabs(dist_hi - dist_ki) > EPSILON ||
         fabs(dist_hi2 - dist_ki) > EPSILON ||
@@ -519,7 +522,7 @@ void nn_experiment(pl::Point start,
 int main(int argv, char* args[]) {
   load_data();
   vector<string> cols = {
-    "k", "dist", "rank", "vnum",
+    "k", "dist", "rank", "max_rank", "vnum",
     "cost_edbt", "gen_edbt",
     "cost_ki0", "gen_ki0", 
     "cost_ki", "gen_ki", 
