@@ -35,12 +35,14 @@ def gen_xy(df=None, colx='', coly='', ignore=True, limit=20):
     return x, y
 
 def plot_graph(xlabel='', ylabel='', xs=[[]], ys=[[]], labels=[], color=None, 
-               yscale='log', ylim=None, saveto=None):
+               yscale='log', xscale=None, ylim=None, saveto=None):
     
     fig, ax = plt.subplots()
     ax.set_xlabel(xlabel)
     ax.set_ylabel(ylabel)
     ax.set_yscale(yscale)
+    if xscale is not None:
+      ax.set_xscale(xscale)
     if ylim is not None:
         ax.set_ylim(ylim)
     n = len(xs)

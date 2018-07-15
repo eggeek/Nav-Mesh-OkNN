@@ -3,10 +3,8 @@ from utilities import alias
 from utilities import plot_graph
 from utilities import gen_xy
 
-def experiment1_dense_time(DF, time_ylim=None):
+def experiment1_dense_time(DF, time_ylim=None, size=50, blimit=10):
   saveto = './figs/e1_dense_time.png'
-  size = 50
-  blimit = 10
   df = DF.copy()
   df = df[df.k == 1]
   df.dist = (df.dist / size).astype(int)
@@ -35,11 +33,9 @@ def experiment1_dense_time(DF, time_ylim=None):
              ylim=time_ylim, saveto=saveto)
 
 
-def experiment1_dense_gen(DF, gen_ylim=None):
+def experiment1_dense_gen(DF, gen_ylim=None, size=50, limit=10):
   # dense: gen
   saveto = './figs/e1_dense_gen.png'
-  size = 50
-  limit = 10
   df = DF.copy()
   df = df[df.k == 1]
   df.dist = (df.dist / size).astype(int)
@@ -67,11 +63,9 @@ def experiment1_dense_gen(DF, gen_ylim=None):
              ylim=gen_ylim, saveto=saveto)
 
 
-def experiment1_sparse_time(DF, time_ylim):
+def experiment1_sparse_time(DF, time_ylim, size=500, limit=10):
   # sparse: time
   saveto = './figs/e1_sparse_time.png'
-  limit = 10
-  size = 500
   df = DF.copy()
   df = df[(df.k == 1) & (df.pts == 10)]
   df.dist = (df.dist / size).astype(int)
@@ -98,11 +92,9 @@ def experiment1_sparse_time(DF, time_ylim):
   ut.plot_graph('dist', 'time(ms) (log10)', list(xs.values()), list(ys.values()), algos,
              ylim=time_ylim, saveto=saveto)
 
-def experiment1_sparse_gen(DF, gen_ylim):
+def experiment1_sparse_gen(DF, gen_ylim, limit=10, size=500):
   # sparse: gen
   saveto = './figs/e1_sparse_gen.png'
-  limit = 10
-  size = 500
   df = DF.copy()
   df = df[(df.k == 1) & (df.pts == 10)]
   df.dist = (df.dist / size).astype(int)
@@ -128,10 +120,9 @@ def experiment1_sparse_gen(DF, gen_ylim):
   ut.plot_graph('dist', 'generated (log10)', list(xs.values()), list(ys.values()), algos,
              ylim=gen_ylim, saveto=saveto)
 
-def experiment2_dense_time(DF, time_ylim):
+def experiment2_dense_time(DF, time_ylim, limit=10):
   # dense: time
   saveto = './figs/e2_dense_time.png'
-  limit = 10
   df = DF.copy()
   df = df[(df.polys >= 8000) & (df.k <= 10)]
   xs = {}
@@ -157,11 +148,10 @@ def experiment2_dense_time(DF, time_ylim):
   ut.plot_graph('k', 'time(ms) (log10)', list(xs.values()), list(ys.values()), algos,
              ylim=time_ylim, saveto=saveto)
 
-def experiment2_dense_gen(DF, gen_ylim):
+def experiment2_dense_gen(DF, gen_ylim, limit=10):
   # dense: gen
   saveto = './figs/e2_dense_gen.png'
 
-  limit = 10
   df = DF.copy()
   df = df[(df.polys >= 8000) & (df.k <= 10)]
   xs = {}
@@ -188,10 +178,9 @@ def experiment2_dense_gen(DF, gen_ylim):
              ylim=gen_ylim, saveto=saveto)
 
 
-def experiment2_sparse_time(DF, time_ylim):
+def experiment2_sparse_time(DF, time_ylim, limit=10):
   # sparse: time
   saveto = './figs/e2_sparse_time.png'
-  limit = 10
   df = DF.copy()
   df = df[(df.polys >= 8000) & (df.pts == 10)]
   xs = {}
@@ -218,10 +207,9 @@ def experiment2_sparse_time(DF, time_ylim):
              ylim=time_ylim, saveto=saveto)
 
 
-def experiment2_sparse_gen(DF, gen_ylim):
+def experiment2_sparse_gen(DF, gen_ylim, limit=10):
   # sparse: expanded
   saveto = './figs/e2_sparse_gen.png'
-  limit = 10
   df = DF.copy()
   df = df[(df.polys >= 8000) & (df.pts == 10)]
   xs = {}
@@ -247,10 +235,9 @@ def experiment2_sparse_gen(DF, gen_ylim):
              ylim=gen_ylim, saveto=saveto)
 
 
-def experiment3_time(DF, time_ylim):
+def experiment3_time(DF, time_ylim, limit=10):
   # sparse: time
   saveto = './figs/e3_time.png'
-  limit = 10
   df = DF.copy()
   df = df[(df.polys >= 8000) & (df.k == 1) & (df.pts <= 10)]
   xs = {}
@@ -276,10 +263,9 @@ def experiment3_time(DF, time_ylim):
   plot_graph('target', 'time(ms) (log10)', list(xs.values()), list(ys.values()), algos,
              ylim=time_ylim, saveto=saveto)
 
-def experiment3_gen(DF, gen_ylim):
+def experiment3_gen(DF, gen_ylim, limit=10):
   # sparse: expaned
   saveto = './figs/e3_gen.png'
-  limit = 10
   df = DF.copy()
   df = df[(df.polys >= 8000) & (df.k == 1) & (df.pts <= 10)]
   xs = {}
