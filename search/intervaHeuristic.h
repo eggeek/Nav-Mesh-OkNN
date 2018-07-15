@@ -140,7 +140,7 @@ class IntervalHeuristic{
 				}
 
         double get_gid(int k) {
-          if (k > (int)final_nodes.size()) return -1;
+          if (k >= (int)final_nodes.size()) return -1;
           else return final_nodes[k]->goal_id;
         }
 

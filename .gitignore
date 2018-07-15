@@ -12,3 +12,4 @@ dump/*
 */.ipynb_checkpoints/*
 analysis/figs/*
 analysis/__pycache__/*
+analysis/Analysis.ipynb
