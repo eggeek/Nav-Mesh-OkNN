@@ -68,6 +68,23 @@ void load_data() {
   edbt = new vg::EDBTkNN(oMap);
 }
 
+map<int, int> get_euclidean_rank(pl::Point start,  const vector<pl::Point> ts) {
+  vector<pair<int, double>> id_dists;
+  map<int, int> res;
+  for (int i=0; i<(int)ts.size(); i++) {
+    id_dists.push_back({i, start.distance(ts[i])});
+  }
+
+  auto cmp = [&](pair<int, double> a, pair<int, double> b) {
+    return a.second < b.second;
+  };
+  sort(id_dists.begin(), id_dists.end(), cmp);
+  for (int i=0; i<(int)ts.size(); i++) {
+    res[id_dists[i].first] = i+1;
+  }
+  return res;
+}
+
 void dump() {
   ofstream file;
   string fname = "dump/" + globalT + "-poly" + to_string(polys.size())
@@ -101,6 +118,7 @@ void dense_experiment(pl::Point start, int k, vector<string>& cols, bool verbose
 
   map<string, double> row;
   vector<pl::Point> path;
+  map<int, int> rank = get_euclidean_rank(start, pts);
 
 	double dist_ki0, cost_ki0;
 	int gen_ki0, cnt_ki0;
@@ -217,6 +235,8 @@ void dense_experiment(pl::Point start, int k, vector<string>& cols, bool verbose
 
   if (cnt_ki -1 >= 0) {
     row["k"] = k;
+    row["rank"] = rank[ki->get_gid(cnt_ki-1)];
+    assert(row["rank"]>0);
     row["dist"] = ki->get_cost(cnt_ki-1);
     row["polys"] = polys.size();
     row["pts"] = pts.size();
@@ -236,6 +256,7 @@ void sparse_experiment(pl::Point start, int k, vector<string>& cols, bool verbos
 	double gen_pre, cost_pre, edgecnt, fenceCnt;
   map<string, double> row;
   vector<pl::Point> path;
+  map<int, int> rank = get_euclidean_rank(start, pts);
 
 	ki0->verbose = verbose;
 	ki0->set_K(k);
@@ -348,6 +369,8 @@ void sparse_experiment(pl::Point start, int k, vector<string>& cols, bool verbos
   if (actual-1 >= 0) {
 
 		row["k"] = k;
+    row["rank"] = rank[ki->get_gid(actual-1)];
+    assert(row["rank"]>0);
 		row["dist"] = ki->get_cost(actual-1);
 		row["polys"] = polys.size();
 		row["pts"] = pts.size();
@@ -365,6 +388,7 @@ void nn_experiment(pl::Point start,
     bool verbose=false) {
   map<string, double> row;
   int k = 1;
+  map<int, int> rank = get_euclidean_rank(start, targets);
 
   ki0->verbose = verbose;
   ki0->set_K(k);
@@ -458,6 +482,8 @@ void nn_experiment(pl::Point start,
   }
   if (foundki >= 1) {
     row["k"] = k;
+    row["rank"] = rank[ki->get_gid(foundki-1)];
+    assert(row["rank"] > 0);
     row["dist"] = ki->get_cost(foundki-1);
     row["polys"] = polys.size();
     row["pts"] = targets.size();
@@ -472,7 +498,7 @@ void nn_experiment(pl::Point start,
 int main(int argv, char* args[]) {
   load_data();
   vector<string> cols = {
-    "k", "dist", 
+    "k", "dist", "rank",
     "cost_edbt", "gen_edbt",
     "cost_ki0", "gen_ki0", 
     "cost_ki", "gen_ki", 
