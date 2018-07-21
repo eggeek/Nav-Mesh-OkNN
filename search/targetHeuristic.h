@@ -201,7 +201,6 @@ class TargetHeuristic {
             nodes_pruned_post_pop = 0;
             successor_calls = 0;
             nodes_reevaluate = 0;
-            set_end_polygon();
             gen_initial_nodes();
             heuristic_using = 0;
             heuristic_call = 0;
@@ -252,6 +251,7 @@ class TargetHeuristic {
         void set_goals(std::vector<Point> gs) {
           goals = std::vector<Point>(gs);
           initRtree();
+          set_end_polygon();
         }
 
         void set_start(Point s) { start = s; }

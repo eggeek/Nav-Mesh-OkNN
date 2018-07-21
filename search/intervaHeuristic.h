@@ -73,7 +73,6 @@ class IntervalHeuristic{
             nodes_popped = 0;
             nodes_pruned_post_pop = 0;
             successor_calls = 0;
-            set_end_polygon();
             gen_initial_nodes();
         }
         void set_end_polygon();
@@ -115,6 +114,7 @@ class IntervalHeuristic{
             for (const auto it: gs)
               goals.push_back(it);
             final_nodes.clear();
+            set_end_polygon();
         }
 
         int search();
