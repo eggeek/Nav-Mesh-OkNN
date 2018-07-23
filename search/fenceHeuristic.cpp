@@ -98,7 +98,6 @@ void FenceHeuristic::push_lazy(SearchNodePtr lazy) {
   #define v(vertex) mesh->mesh_vertices[vertex]
   const int poly = lazy->next_polygon;
   if (poly == -1) return;
-
   if (!end_polygons[poly].empty()) {
     for (int gid: end_polygons[poly]) {
       const Point& goal = goals[gid];
@@ -282,6 +281,7 @@ int FenceHeuristic::search() {
           // node pointer to this after allocating space for it.
           search_nodes_to_push[0].parent = node;
           node = new (node_pool->allocate()) SearchNode(search_nodes_to_push[0]);
+          node->f = search_nodes_to_push[0].f;
           nodes_generated++;
         }
         if (!end_polygons[search_nodes_to_push[0].next_polygon].empty()) {
@@ -305,8 +305,17 @@ int FenceHeuristic::search() {
       const SearchNodePtr nxt = new (node_pool->allocate()) SearchNode(search_nodes_to_push[i]);
       const Point& nxt_root = (nxt->root == -1 ? start: mesh->mesh_vertices[nxt->root].p);
       pair<int, double> fence_h = get_fence_heuristic(nxt);
+
+      // when nxt can be final_node
+      int nxt_poly = nxt->next_polygon;
+      if (!end_polygons[nxt_poly].empty()) {
+        gen_final_nodes(nxt, nxt_root);
+      }
+
       if (fence_h.first == -1) continue;
       nxt->f = fence_h.second + nxt->g;
+      // manually guarantee the consistency
+      nxt->f = max(nxt->f, node->f);
       nxt->parent = node;
       #ifndef NDEBUG
       if (verbose) {
@@ -318,12 +327,6 @@ int FenceHeuristic::search() {
       open_list.push(nxt);
       nodes_pushed++;
       nodes_generated++;
-
-      // when nxt can be final_node
-      int nxt_poly = nxt->next_polygon;
-      if (!end_polygons[nxt_poly].empty()) {
-        gen_final_nodes(nxt, nxt_root);
-      }
     }
   }
   timer.stop();
@@ -482,8 +485,6 @@ pair<int, double> FenceHeuristic::get_fence_heuristic(SearchNode* node) {
   vector<Fence> fences = meshFence->get_fences(node->left_vertex, node->right_vertex);
   int heuristic_gid = -1;
   double hValue = INF;
-  int heuristic_gid2 = -1;
-  double hValue2 = INF;
   for (auto& it: fences) {
     const Point& inner = it.s.root == -1? goals[it.gid]: mesh->mesh_vertices[it.s.root].p;
     double tmph = it.s.g + get_h_value(root_to_point(node->root), inner, node->left, node->right);
@@ -491,15 +492,8 @@ pair<int, double> FenceHeuristic::get_fence_heuristic(SearchNode* node) {
       hValue = tmph;
       heuristic_gid = it.gid;
     }
-    if (fabs(reached[it.gid] - INF) <= EPSILON && tmph < hValue2) {
-      hValue2 = tmph;
-      heuristic_gid2 = it.gid;
-    }
   }
-  if (heuristic_gid2 != -1)
-    return {heuristic_gid2, hValue2};
-  else
-    return {heuristic_gid, hValue};
+  return {heuristic_gid, hValue};
 }
 
 }

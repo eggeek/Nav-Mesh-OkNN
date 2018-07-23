@@ -87,7 +87,6 @@ class FenceHeuristic {
             nodes_pruned_post_pop = 0;
             successor_calls = 0;
             nodes_reevaluate = 0;
-            set_end_polygon();
             gen_initial_nodes();
             heuristic_using = 0;
             heuristic_call = 0;
@@ -134,6 +133,7 @@ class FenceHeuristic {
 
         void set_goals(std::vector<Point> gs) {
           goals = std::vector<Point>(gs);
+          set_end_polygon();
         }
 
         void set_start(Point s) { start = s; }
@@ -168,7 +168,7 @@ class FenceHeuristic {
         void gen_final_nodes(const SearchNodePtr node, const Point& rootPoint);
 
         double get_gid(int k) {
-          if (k > (int)final_nodes.size()) return -1;
+          if (k >= (int)final_nodes.size()) return -1;
           else return final_nodes[k]->goal_id;
         }
 
