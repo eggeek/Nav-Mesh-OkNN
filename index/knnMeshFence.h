@@ -81,6 +81,7 @@ private:
     nodes_pushed = 0;
     nodes_popped = 0;
     nodes_pruned = 0;
+    fenceCnt = 0;
     fences.clear();
     gen_initial_nodes();
   }
@@ -103,6 +104,7 @@ public:
     int nump = m->mesh_polygons.size();
     fences.clear();
     fenceCnt = 0;
+    edgecnt = 0;
     for (int i=0; i<nump; i++) {
       int numv = m->mesh_polygons[i].vertices.size();
       for (int j=0; j<numv; j++) {
@@ -146,6 +148,10 @@ public:
   const vector<Fence>& get_fences(int left_vid, int right_vid) {
     pair<int, int> key = {min(left_vid, right_vid), max(left_vid, right_vid)};
     return fences[key];
+  }
+
+  int get_active_edge_cnt() {
+    return fences.size();
   }
 };
 

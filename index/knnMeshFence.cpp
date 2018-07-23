@@ -149,6 +149,12 @@ void KnnMeshEdgeFence::gen_initial_nodes() {
           nodes_generated++;
           push_lazy(lazy2, i);
           nodes_generated++;
+
+          double lb = 0;
+          double ub = max(goals[i].distance(lazy1->left), goals[i].distance(lazy1->right));
+          FloodFillNode fnode(lazy1, lb, ub, i, pl.poly1, pl.poly2);
+          open_list.push(fnode);
+          nodes_pushed++;
         }
         break;
       case PointLocation::ON_NON_CORNER_VERTEX:
