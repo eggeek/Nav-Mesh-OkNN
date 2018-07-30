@@ -149,6 +149,15 @@ inline bool is_intersect(const Point& p0, const Point& p1, const Point& q0, cons
   return false;
 }
 
+inline bool same_side(const Point& v1, const Point& v2, const Point& l, const Point& r) {
+  const Point lr = r - l;
+  const Point lv1= v1 - l;
+  const Point lv2 = v2 - l;
+  if ((lv1 * lr > 0) == (lv2 * lr > 0)) 
+    return true;
+  return false;
+}
+
 int inSegment(const Point& p, const Point& s1, const Point& s2);
 SegIntPos intersect2D_2Segments(const Point& p0, const Point& p1, const Point& q0, const Point& q1, Point& I0, Point& I1);
 
