@@ -19,9 +19,7 @@ namespace vg = EDBT;
 pl::MeshPtr mp;
 pl::SearchInstance* si;
 pl::IntervalHeuristic* ki;
-pl::IntervalHeuristic* ki0;
 pl::TargetHeuristic* hi;
-pl::TargetHeuristic* hi2;
 pl::FenceHeuristic* fi;
 pl::FastFilterPolyanya* ffp;
 pl::KnnMeshEdgeFence* meshFence;
@@ -43,6 +41,15 @@ void load_points(istream& infile) {
   }
 }
 
+void load_starts(istream& infile) {
+  int N;
+  infile >> N;
+  starts.resize(N);
+  for (int i=0; i<N; i++) {
+    infile >> starts[i].x >> starts[i].y;
+  }
+}
+
 void load_data() {
   cin >> mesh_path >> polys_path >> obs_path >> pts_path;
 
@@ -59,9 +66,7 @@ void load_data() {
   meshFence= new pl::KnnMeshEdgeFence(mp);
   si = new pl::SearchInstance(mp);
   ki = new pl::IntervalHeuristic(mp);
-	ki0 = new pl::IntervalHeuristic(mp); ki0->setZero(true);
   hi = new pl::TargetHeuristic(mp);
-  hi2 = new pl::TargetHeuristic(mp);
   fi = new pl::FenceHeuristic(mp);
   ffp = new pl::FastFilterPolyanya(si);
   fi->set_meshFence(meshFence);
@@ -114,15 +119,28 @@ void dump() {
   targetsfile.close();
 }
 
+pair<int, int> count_miss_and_false(const map<int, double>& correct_dist, const map<int, double>& actual_dist) {
+  int miss = 0;
+  for (const auto& i: correct_dist) {
+    bool flag = false;
+    for (const auto& j: actual_dist) {
+      if (fabs(i.second - j.second) <= EPSILON) {
+        flag = true;
+        break;
+      }
+    }
+    if (!flag) miss++;
+  }
+
+  return {miss, miss};
+} 
+
 void dense_experiment(pl::Point start, int k, vector<string>& cols, bool verbose=false) {
 
   map<string, double> row;
   vector<pl::Point> path;
   map<int, int> rank = get_euclidean_rank(start, pts);
   int vnum = 0;
-
-	double dist_ki0, cost_ki0;
-	int gen_ki0, cnt_ki0;
 
 	double dist_ki, cost_ki;
 	int gen_ki, cnt_ki;
@@ -133,11 +151,8 @@ void dense_experiment(pl::Point start, int k, vector<string>& cols, bool verbose
   double dist_fi, cost_fi, cost_pre;
   int gen_fi, cnt_fi, gen_pre, edgecnt, fencecnt;
 
-	double dist_edbt, cost_edbt;
-	int gen_edbt;
-
-  double cost_poly, gen_poly;
-  vector<double> odists;
+	//double dist_edbt, cost_edbt;
+	//int gen_edbt;
 
 	int ptsnum, polynum;
 	ptsnum = (int)pts.size(); polynum = (int)polys.size();
@@ -150,15 +165,6 @@ void dense_experiment(pl::Point start, int k, vector<string>& cols, bool verbose
 	gen_ki = ki->nodes_generated;
   row["cost_ki"] = cost_ki;
   row["gen_ki"] = gen_ki;
-
-	ki0->verbose = verbose;
-	ki0->set_K(k);
-	ki0->set_start_goal(start, pts);
-	cnt_ki0 = ki0->search();
-  cost_ki0 = ki0->get_search_micro();
-  gen_ki0 = ki0->nodes_generated;
-  row["cost_ki0"] = cost_ki0;
-  row["gen_ki0"] = gen_ki0;
 
 	hi->set_start(start);
 	hi->set_K(k);
@@ -191,45 +197,42 @@ void dense_experiment(pl::Point start, int k, vector<string>& cols, bool verbose
   row["gen_pre"] = gen_pre;
   row["edgecnt"] = edgecnt;
   row["fencecnt"] = fencecnt;
+  row["keycnt"] = meshFence->get_active_edge_cnt();
 
   edbt->set_start(start);
   vector<pair<vg::pPtr, double>> res = edbt->OkNN(k);
-  cost_edbt = edbt->get_search_micro();
-  gen_edbt = edbt->g.nodes_generated;
-  cost_edbt = edbt->get_search_micro();
-
-  cost_poly = gen_poly = 0;
-  odists = si->brute_force(start, pts, k, cost_poly, gen_poly);
-  row["cost_poly"] = cost_poly;
-  row["gen_poly"] = gen_poly;
+  row["cost_edbt"] = edbt->get_search_micro();
+  row["gen_edbt"] = edbt->g.nodes_generated;
 
   ffp->set_start(start);
   ffp->set_K(k);
-  vector<double> odists2 = ffp->search();
+  vector<double> odists = ffp->search();
   row["cost_ffp"] = ffp->search_cost;
   row["gen_ffp"] = ffp->nodes_generated;
 
-  if (!(cnt_ki == cnt_ki0 && cnt_ki == cnt_hi && cnt_ki == cnt_fi &&
-        cnt_ki == (int)res.size() && cnt_ki == (int)odists.size() &&
-        cnt_ki == (int)odists2.size())) {
+  if (!(cnt_ki == cnt_hi &&
+        cnt_ki == (int)odists.size())) {
     dump();
     assert(false);
     exit(1);
   }
 
+  map<int, double> gid_dist_ki;
+  map<int, double> gid_dist_fi;
+  for (int i=0; i<cnt_fi; i++) {
+    int gid = fi->get_gid(i);
+    gid_dist_fi[gid] = fi->get_cost(i);
+  }
   for (int i=0; i<cnt_ki; i++) {
+    int gid = ki->get_gid(i);
+    gid_dist_ki[gid] = ki->get_cost(i);
     dist_ki = ki->get_cost(i);
-		dist_ki0 = ki0->get_cost(i);
     dist_hi = hi->get_cost(i);
     dist_fi = fi->get_cost(i);
-    dist_edbt = res[i].second;
+    //dist_edbt = res[i].second;
     row["max_rank"] = max(row["max_rank"], (double)rank[ki->get_gid(i)]);
-    if (fabs(dist_ki - dist_edbt) > EPSILON ||
-        fabs(dist_ki - dist_hi) > EPSILON  ||
-				fabs(dist_ki - dist_ki0) > EPSILON ||
-        fabs(dist_ki - dist_fi) > EPSILON ||
-        fabs(dist_ki - odists[i]) > EPSILON ||
-        fabs(dist_ki - odists2[i]) > EPSILON) {
+    if (fabs(dist_ki - dist_hi) > EPSILON  ||
+        fabs(dist_ki - odists[i]) > EPSILON) {
       dump();
       assert(false);
       exit(1);
@@ -247,6 +250,10 @@ void dense_experiment(pl::Point start, int k, vector<string>& cols, bool verbose
     row["polys"] = polys.size();
     row["pts"] = pts.size();
     row["vnum"] = vnum;
+    pair<int, int> miss_false = count_miss_and_false(gid_dist_ki, gid_dist_fi);
+    row["miss"] = miss_false.first;
+    row["vertices"] = mp->mesh_vertices.size();
+    row["false_retrieval"] = miss_false.second;
     for (int i=0; i<(int)cols.size(); i++) {
       cout << setw(10) << row[cols[i]];
       if (i+1 == (int)cols.size()) cout << endl;
@@ -255,21 +262,15 @@ void dense_experiment(pl::Point start, int k, vector<string>& cols, bool verbose
   }
 }
 
-void sparse_experiment(pl::Point start, int k, vector<string>& cols, bool verbose=false) {
+void knn_experiment(pl::Point start, int k, vector<string>& cols, bool verbose=false) {
 
 	double dist_ki, cost_ki, gen_ki;
-	double dist_ki0, cost_ki0, gen_ki0;
 	double dist_hi, cost_hi, gen_hi, hcost, hcall, reevaluate;
 	double gen_pre, cost_pre, edgecnt, fenceCnt;
   int vnum = 0;
   map<string, double> row;
   vector<pl::Point> path;
   map<int, int> rank = get_euclidean_rank(start, pts);
-
-	ki0->verbose = verbose;
-	ki0->set_K(k);
-	ki0->set_start_goal(start, pts);
-	int actual0 = ki0->search();
 
   ki->verbose = verbose;
   ki->set_K(k);
@@ -281,20 +282,11 @@ void sparse_experiment(pl::Point start, int k, vector<string>& cols, bool verbos
   hi->set_start(start);
   int actual2 = hi->search();
 
-  hi2->verbose = verbose;
-  hi2->set_reassign(false);
-  hi2->set_K(k);
-  hi2->set_start(start);
-  int actual3 = hi2->search();
-
   fi->verbose = verbose;
   fi->set_goals(pts);
   fi->set_K(k);
   fi->set_start(start);
   int actual4 = fi->search();
-
-  double cost_poly = 0, gen_poly = 0;
-  vector<double> odists = si->brute_force(start, pts, k, cost_poly, gen_poly);
 
   ffp->set_start(start);
   ffp->set_K(k);
@@ -309,20 +301,12 @@ void sparse_experiment(pl::Point start, int k, vector<string>& cols, bool verbos
 	row["cost_pre"] = cost_pre;
 	row["edgecnt"] = edgecnt;
 	row["fencecnt"] = fenceCnt;
+  row["keycnt"] = meshFence->get_active_edge_cnt();
 	row["gen_pre"] = gen_pre;
   row["cost_fi"] = fi->get_search_micro();
   row["gen_fi"] = fi->nodes_generated;
 
-
-	row["cost_poly"] = cost_poly;
-	row["gen_poly"] = gen_poly;
-
-	gen_ki0 = (double)ki0->nodes_generated;
-	cost_ki0 = (double)ki0->get_search_micro();
-	row["gen_ki0"] = gen_ki0;
-	row["cost_ki0"] = cost_ki0;
-
-  gen_ki = (double)ki->nodes_generated;
+	gen_ki = (double)ki->nodes_generated;
 	cost_ki = (double)ki->get_search_micro();
 	row["gen_ki"] = gen_ki;
 	row["cost_ki"] = cost_ki;
@@ -339,38 +323,30 @@ void sparse_experiment(pl::Point start, int k, vector<string>& cols, bool verbos
 	row["reevaluate"] = reevaluate;
   row["hreuse"] = hi->heuristic_reuse;
 
-  int gen_hi2 = hi2->nodes_generated;
-  double cost_hi2 = hi2->get_search_micro();
-  int hcall2 =  hi2->heuristic_call;
-  double hcost2 = hi2->get_heuristic_micro();
-  row["gen_hi2"] = gen_hi2;
-  row["cost_hi2"] = cost_hi2;
-  row["hcall2"] = hcall2;
-  row["hcost2"] = hcost2;
-  row["hreuse2"] = hi2->heuristic_reuse;
-
   row["gen_fi"] = fi->nodes_generated;
   row["cost_fi"] = fi->get_search_micro();
 
-  if (actual != actual0 || 
-      actual != actual2 ||
-      actual != actual3 ||
-      actual != actual4 ||
-      actual != (int)odists.size()) {
+  if (actual != actual2) {
     dump();
     cerr << "faild" << endl;
     assert(false);
     exit(1);
   }
 
+  map<int, double> gid_dist_ki;
+  map<int, double> gid_dist_fi;
+  for (int i=0; i<actual4; i++) {
+    int gid = fi->get_gid(i);
+    gid_dist_fi[gid] = fi->get_cost(i);
+  }
+
 	for (int i=0; i<actual; i++) {
 		dist_hi = ki->get_cost(i);
     dist_ki= ki->get_cost(i);
-		dist_ki0 = ki0->get_cost(i);
+    int gid = ki->get_gid(i);
+    gid_dist_ki[gid] = dist_ki;
     row["max_rank"] = max(row["max_rank"], (double)rank[ki->get_gid(i)]);
     if (fabs(dist_ki - dist_hi) > EPSILON ||
-				fabs(dist_ki - dist_ki0) > EPSILON ||
-        fabs(dist_ki - odists[i]) > EPSILON ||
         fabs(dist_ki - odists2[i]) > EPSILON) {
       dump();
       assert(false);
@@ -390,6 +366,10 @@ void sparse_experiment(pl::Point start, int k, vector<string>& cols, bool verbos
 		row["polys"] = polys.size();
 		row["pts"] = pts.size();
     row["vnum"] = vnum;
+    pair<int, int> miss_false = count_miss_and_false(gid_dist_ki, gid_dist_fi);
+    row["miss"] = miss_false.first;
+    row["vertices"] = mp->mesh_vertices.size();
+    row["false_retrieval"] = miss_false.second;
     for (int i=0; i<(int)cols.size(); i++) {
       cout << setw(10) << row[cols[i]];
       if (i+1 == (int)cols.size()) cout << endl;
@@ -399,123 +379,11 @@ void sparse_experiment(pl::Point start, int k, vector<string>& cols, bool verbos
   else cerr << "target not found" << endl;
 }
 
-void nn_experiment(pl::Point start,
-    const vector<pl::Point>& targets,
-    const vector<string>& cols,
-    bool verbose=false) {
-  map<string, double> row;
-  int k = 1;
-  int vnum = 0;
-  map<int, int> rank = get_euclidean_rank(start, targets);
-
-  ki0->verbose = verbose;
-  ki0->set_K(k);
-  ki0->set_start_goal(start, targets);
-  int foundki0 = ki0->search();
-  row["gen_ki0"] = ki0->nodes_generated;
-  row["cost_ki0"] = ki0->get_search_micro();
-
-  ki->verbose = verbose;
-  ki->set_K(k);
-  ki->set_start_goal(start, targets);
-  int foundki = ki->search();
-  row["gen_ki"] = ki->nodes_generated;
-  row["cost_ki"] = ki->get_search_micro();
-
-  hi->verbose = verbose;
-  hi->set_K(k);
-  hi->set_start(start);
-  int foundhi = hi->search();
-  row["gen_hi"] = hi->nodes_generated;
-  row["cost_hi"] = hi->get_search_micro();
-  row["hcall"] = hi->heuristic_call;
-  row["hcost"] = hi->get_heuristic_micro();
-  row["reevaluate"] = hi->nodes_reevaluate;
-
-  hi2->verbose = verbose;
-  hi2->set_reassign(false);
-  hi2->set_K(k);
-  hi2->set_start(start);
-  int foundhi2 = hi2->search();
-  row["gen_hi2"] = hi2->nodes_generated;
-  row["cost_hi2"] = hi2->get_search_micro();
-  row["hcall2"] = hi2->heuristic_call;
-  row["hcost2"] = hi2->get_heuristic_micro();
-  row["hreuse2"] = hi2->heuristic_reuse;
-
-  fi->verbose = verbose;
-  fi->set_goals(targets);
-  fi->set_start(start);
-  double nn_cost = 0.0;
-  pair<int, double> res = fi->nn_query(si, nn_cost);
-  row["gen_fi"] = fi->nodes_generated;
-  row["cost_fi"] = nn_cost;
-  row["gen_pre"] = meshFence->nodes_generated;
-  row["cost_pre"] = meshFence->get_processing_micro();
-  row["edgecnt"] = meshFence->edgecnt;
-  row["fencecnt"] = meshFence->fenceCnt;
-
-  double cost_poly = 0, gen_poly = 0;
-  vector<double> odists = si->brute_force(start, targets, 1, cost_poly, gen_poly);
-  row["cost_poly"] = cost_poly;
-  row["gen_poly"] = gen_poly;
-
-  ffp->set_K(k);
-  ffp->set_start(start);
-  vector<double> odists2 = ffp->search();
-  row["cost_ffp"] = ffp->search_cost;
-  row["gen_ffp"] = ffp->nodes_generated;
-
-  if (res.first == -1) {
-    if (foundki0 || foundki ||
-        foundhi || foundhi2 || (int)odists.size()) {
-      dump();
-      assert(false);
-      exit(1);
-    }
-  }
-  if (res.first != -1) {
-    if (!foundki0 || !foundki || !foundhi ||
-        !foundhi2 || !(int)odists.size()) {
-      dump();
-      assert(false);
-      exit(1);
-    }
-  }
-  for (int i=0; i<foundhi; i++) {
-    double dist_ki0 = ki0->get_cost(i);
-    double dist_ki = ki->get_cost(i);
-    double dist_hi = hi->get_cost(i);
-    double dist_hi2 = hi2->get_cost(i);
-    double dist_fi = res.second;
-    double dist_poly = odists[i];
-    row["max_rank"] = max(row["max_rank"], (double)rank[ki->get_gid(i)]);
-    if (fabs(dist_ki0 - dist_ki) > EPSILON ||
-        fabs(dist_hi - dist_ki) > EPSILON ||
-        fabs(dist_hi2 - dist_ki) > EPSILON ||
-        fabs(dist_fi - dist_ki) > EPSILON ||
-        fabs(dist_poly - dist_ki) > EPSILON ) {
-      dump();
-      assert(false);
-      exit(1);
-    }
-    vector<pl::Point> path;
-    ki->get_path_points(path, i);
-    vnum += (int)path.size();
-  }
-  if (foundki >= 1) {
-    row["k"] = k;
-    row["rank"] = rank[ki->get_gid(foundki-1)];
-    assert(row["rank"] > 0);
-    row["dist"] = ki->get_cost(foundki-1);
-    row["polys"] = polys.size();
-    row["pts"] = targets.size();
-    row["vnum"] = vnum;
-    for (int i=0; i<(int)cols.size(); i++) {
-      cout << setw(10) << row[cols[i]];
-      if (i+1 == (int)cols.size()) cout << endl;
-      else cout << ",";
-    }
+void print_header(const vector<string>& cols) {
+  for (int i=0; i<(int)cols.size(); i++) {
+    cout << setw(10) << cols[i];
+    if (i+1 == (int)cols.size()) cout << endl;
+    else cout << ",";
   }
 }
 
@@ -524,63 +392,134 @@ int main(int argv, char* args[]) {
   vector<string> cols = {
     "k", "dist", "rank", "max_rank", "vnum",
     "cost_edbt", "gen_edbt",
-    "cost_ki0", "gen_ki0", 
     "cost_ki", "gen_ki", 
-    "cost_poly", "gen_poly",
     "cost_ffp", "gen_ffp",
     "cost_hi", "gen_hi", "hcost", "hcall", "hreuse", "reevaluate",
-    "cost_hi2", "gen_hi2", "hcost2", "hcall2", "hreuse2",
-    "cost_fi", "gen_fi", "cost_pre", "gen_pre", "edgecnt", "fencecnt",
-    "pts", "polys" 
+    "cost_fc" , "gen_fc",
+    "cost_fi", "gen_fi", "cost_pre", "gen_pre", "edgecnt", "fencecnt", "keycnt",
+    "miss", "false_retrieval",
+    "pts", "polys", "vertices"
   };
-  if (argv == 3) { // ./bin/test [s1/s2]
+  if (argv >= 3) { // ./bin/test [s1/s2]
     string t = string(args[1]);
-    int k = atoi(args[2]);
-    // print header
-    for (int i=0; i<(int)cols.size(); i++) {
-      cout << setw(10) << cols[i];
-      if (i+1 == (int)cols.size()) cout << endl;
-      else cout << ",";
-    }
-    globalT = t;
-    globalK = k;
-    int N = 1000;
-    generator::gen_points_in_traversable(oMap, polys, N, starts);
-    meshFence->set_goals(pts);
-    meshFence->floodfill();
 
-    if (t == "s1") { // dense experiment
-      // ./bin/experiment s1 {k} < {input file}
-      hi->set_goals(pts);
-      hi2->set_goals(pts);
-      edbt->set_goals(pts);
-      ffp->set_goals(pts);
-      for (int i=0; i<N; i++)
-        dense_experiment(starts[i], k, cols);
-    }
-    else if (t == "s2") { // sparse experiment
-      // ./bin/experiment s2 {k} < {input file}
-      hi->set_goals(pts);
-      hi2->set_goals(pts);
-      ffp->set_goals(pts);
-      for (int i=0; i<N; i++)
-        sparse_experiment(starts[i], k, cols);
-    }
-    else if (t == "nn") { // preprocessing experiment 
+    if (t == "nn") { // nn query with preprocessing experiment 
       // ./bin/experiment nn {num of target} < {input file}
-      int targetRatio = k;
-      int targetSize = (int)polys.size() * targetRatio  / 100 + 1;
-      int N = 1000;
+      double ratio = atof(args[2]);
+      int targetSize = mp->mesh_vertices.size() * ratio + 1;
+      int N = 500;
       generator::gen_points_in_traversable(oMap, polys, N, starts);
       pts.clear();
       generator::gen_points_in_traversable(oMap, polys, targetSize, pts);
       meshFence->set_goals(pts);
       meshFence->floodfill();
       hi->set_goals(pts);
-      hi2->set_goals(pts);
       ffp->set_goals(pts);
+      edbt->set_goals(pts);
+      print_header(cols);
       for (pl::Point& start: starts) {
-        nn_experiment(start, pts, cols);
+        dense_experiment(start, 1, cols);
+      }
+    }
+    else if (t == "k") {
+      globalT = t;
+      int N = 500;
+      int targetNum = mp->mesh_vertices.size() / 100 + 1;
+      generator::gen_points_in_traversable(oMap, polys, N, starts);
+      pts.clear();
+      generator::gen_points_in_traversable(oMap, polys, targetNum, pts);
+      meshFence->set_goals(pts);
+      meshFence->floodfill();
+      hi->set_goals(pts);
+      ffp->set_goals(pts);
+      edbt->set_goals(pts);
+      print_header(cols);
+      int ks[] = {1, 5, 10, 25, 50};
+      for (auto& start: starts) {
+        for (int i=0; i< 5; i++) {
+          int k = ks[i];
+          globalK = k;
+          dense_experiment(start, k, cols);
+        }
+      }
+    }
+    else if (t == "t") {
+      int N = 500;
+      int k = 5;
+      double ratio = atof(args[2]);
+      int targetNum = mp->mesh_vertices.size() * ratio + 1;
+      generator::gen_points_in_traversable(oMap, polys, N, starts);
+      pts.clear();
+      generator::gen_points_in_traversable(oMap, polys, targetNum, pts);
+      meshFence->set_goals(pts);
+      meshFence->floodfill();
+      hi->set_goals(pts);
+      ffp->set_goals(pts);
+      edbt->set_goals(pts);
+      print_header(cols);
+      for (auto& start: starts) {
+        globalK = k;
+        dense_experiment(start, k, cols);
+      }
+    }
+    else if (t == "fence") { // preproessing experiment
+      string para = "random";
+      if (argv >= 4) {
+        para = string(args[3]); 
+      }
+      vector<pl::Point> targets;
+      if (para == "cluster") {
+        double clusterRatio = atof(args[2]);
+        int clusterNum = (int)mp->mesh_vertices.size() * clusterRatio / 100 + 1;
+        vector<pl::Point> clusters;
+        generator::gen_points_in_traversable(oMap, polys, clusterNum, clusters);
+        generator::gen_clusters_in_traversable(oMap, mp, 10, clusters, targets, false);
+      }
+      else {
+        double targetRatio = atof(args[2]);
+        int targetSize = (int)mp->mesh_vertices.size() * targetRatio  / 100 + 1;
+        generator::gen_points_in_traversable(oMap, polys, targetSize, targets);
+      }
+      meshFence->set_goals(targets);
+      meshFence->floodfill();
+      vector<string> headers = {
+        "edgecnt", "totalfence", "keycnt", "pts", "polys", "gen", "cost", "fencecnt"
+      };
+      print_header(headers);
+      const auto fences = meshFence->get_all_fences();
+      for (const auto& it: fences) {
+        map<string, double> row;
+        row["fencecnt"] = (int)it.second.size();
+        row["edgecnt"] = meshFence->edgecnt;
+        row["totalfence"] = meshFence->fenceCnt;
+        row["keycnt"] = meshFence->get_active_edge_cnt();
+        row["pts"] = targets.size();
+        row["polys"] = polys.size();
+        row["gen"] = meshFence->nodes_generated;
+        row["cost"] = meshFence->get_processing_micro();
+        for (int i=0; i<(int)headers.size(); i++) {
+          cout << setw(10) << row[headers[i]];
+          if (i+1 == (int)headers.size()) cout << endl;
+          else cout << ",";
+        }
+      }
+
+    }
+    else if (t == "cluster") {
+      string starts_path = string(args[2]);
+      int k = atoi(args[3]);
+      ifstream startsfile(starts_path);
+      load_starts(startsfile);
+
+      meshFence->set_goals(pts);
+      meshFence->floodfill();
+      hi->set_goals(pts);
+      ffp->set_goals(pts);
+      print_header(cols);
+      for (auto& start: starts) {
+        globalK = k;
+        globalT = t;
+        knn_experiment(start, k, cols);
       }
     }
     else assert(false);
