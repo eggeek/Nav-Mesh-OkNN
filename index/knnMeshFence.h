@@ -153,6 +153,9 @@ public:
   int get_active_edge_cnt() {
     return fences.size();
   }
+  const map<pair<int, int>, vector<Fence>> get_all_fences() {
+    return this->fences;
+  }
 };
 
 } // end namespace polyanya
