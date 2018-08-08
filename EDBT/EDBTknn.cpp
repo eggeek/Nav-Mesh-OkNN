@@ -215,11 +215,14 @@ vector<pair<pPtr, double>> EDBTkNN::OkNN(int k) {
   } while (true);
   while (!que.empty()) {
     res.push_back({que.top().second, que.top().first});
-    paths.push_back(to_point_path(path_to_goals[res.back().first], res.back().first));
+    if (!path_to_goals[res.back().first].empty())
+      paths.push_back(to_point_path(path_to_goals[res.back().first], res.back().first));
     que.pop();
   }
-  reverse(res.begin(), res.end());
-  reverse(paths.begin(), paths.end());
+  if (!res.empty())
+    reverse(res.begin(), res.end());
+  if (!paths.empty())
+    reverse(paths.begin(), paths.end());
   timer.stop();
   return res;
 }
