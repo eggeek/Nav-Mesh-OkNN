@@ -137,6 +137,9 @@ pair<int, int> count_miss_and_false(const map<int, double>& correct_dist, const 
 
 void dense_experiment(pl::Point start, int k, vector<string>& cols, bool verbose=false) {
 
+  if (start.distance({52722.2, 84437.8}) <= EPSILON) {
+    assert(true);
+  }
   map<string, double> row;
   vector<pl::Point> path;
   map<int, int> rank = get_euclidean_rank(start, pts);
@@ -199,10 +202,146 @@ void dense_experiment(pl::Point start, int k, vector<string>& cols, bool verbose
   row["fencecnt"] = fencecnt;
   row["keycnt"] = meshFence->get_active_edge_cnt();
 
-  edbt->set_start(start);
-  vector<pair<vg::pPtr, double>> res = edbt->OkNN(k);
-  row["cost_edbt"] = edbt->get_search_micro();
-  row["gen_edbt"] = edbt->g.nodes_generated;
+  //edbt->set_start(start);
+  //vector<pair<vg::pPtr, double>> res = edbt->OkNN(k);
+  //row["cost_edbt"] = edbt->get_search_micro();
+  //row["gen_edbt"] = edbt->g.nodes_generated;
+
+  ffp->set_start(start);
+  ffp->set_K(k);
+  vector<double> odists = ffp->search();
+  row["cost_ffp"] = ffp->search_cost;
+  row["gen_ffp"] = ffp->nodes_generated;
+  row["rtree_cost"] = ffp->rtree_cost;
+
+  double cost_poly=0, gen_poly=0;
+  si->brute_force(start, pts, k, cost_poly, gen_poly);
+  row["cost_poly"] = cost_poly;
+  row["gen_poly"] = gen_poly;
+  row["sort_cost"] = si->sort_cost;
+
+  if (!(cnt_ki == cnt_hi &&
+        cnt_ki == (int)odists.size())) {
+    dump();
+    assert(false);
+    exit(1);
+  }
+
+  map<int, double> gid_dist_ki;
+  map<int, double> gid_dist_fi;
+  for (int i=0; i<cnt_fi; i++) {
+    int gid = fi->get_gid(i);
+    gid_dist_fi[gid] = fi->get_cost(i);
+  }
+  for (int i=0; i<cnt_ki; i++) {
+    int gid = ki->get_gid(i);
+    gid_dist_ki[gid] = ki->get_cost(i);
+    dist_ki = ki->get_cost(i);
+    dist_hi = hi->get_cost(i);
+    dist_fi = fi->get_cost(i);
+    //dist_edbt = res[i].second;
+    row["max_rank"] = max(row["max_rank"], (double)rank[ki->get_gid(i)]);
+    row["tot_hit"] = ffp->tot_hit;
+    if (fabs(dist_ki - dist_hi) > EPSILON  ||
+        fabs(dist_ki - odists[i]) > EPSILON) {
+      dump();
+      assert(false);
+      exit(1);
+    }
+    vector<pl::Point> path;
+    ki->get_path_points(path, i);
+    vnum += (int)path.size();
+  }
+
+  if (cnt_ki -1 >= 0) {
+    row["k"] = k;
+    row["rank"] = rank[ki->get_gid(cnt_ki-1)];
+    assert(row["rank"]>0);
+    row["dist"] = ki->get_cost(cnt_ki-1);
+    row["polys"] = polys.size();
+    row["pts"] = pts.size();
+    row["vnum"] = vnum;
+    pair<int, int> miss_false = count_miss_and_false(gid_dist_ki, gid_dist_fi);
+    row["miss"] = miss_false.first;
+    row["vertices"] = mp->mesh_vertices.size();
+    row["false_retrieval"] = miss_false.second;
+    row["x"] = start.x, row["y"] = start.y;
+    for (int i=0; i<(int)cols.size(); i++) {
+      cout << setw(10) << row[cols[i]];
+      if (i+1 == (int)cols.size()) cout << endl;
+      else cout << ",";
+    }
+  }
+}
+
+void nn_experiment(pl::Point start, vector<string>& cols, bool verbose=false) {
+  int k = 1;
+
+  map<string, double> row;
+  vector<pl::Point> path;
+  map<int, int> rank = get_euclidean_rank(start, pts);
+  int vnum = 0;
+
+	double dist_ki, cost_ki;
+	int gen_ki, cnt_ki;
+
+	double dist_hi, cost_hi, hcost;
+	int gen_hi, cnt_hi, hcall, reevaluate;
+
+  double dist_fi, cost_fi, cost_pre;
+  int gen_fi, cnt_fi, gen_pre, edgecnt, fencecnt;
+
+	int ptsnum, polynum;
+	ptsnum = (int)pts.size(); polynum = (int)polys.size();
+
+  ki->verbose = verbose;
+  ki->set_K(k);
+  ki->set_start_goal(start, pts);
+  cnt_ki = ki->search();
+	cost_ki = ki->get_search_micro();
+	gen_ki = ki->nodes_generated;
+  row["cost_ki"] = cost_ki;
+  row["gen_ki"] = gen_ki;
+
+	hi->set_start(start);
+	hi->set_K(k);
+	cnt_hi = hi->search();
+  cost_hi = hi->get_search_micro();
+  gen_hi = hi->nodes_generated;
+  reevaluate = hi->nodes_reevaluate;
+  hcall = hi->heuristic_call;
+  hcost = hi->get_heuristic_micro();
+  row["cost_hi"] = cost_hi;
+  row["gen_hi"] = gen_hi;
+  row["hcost"] = hcost;
+  row["hcall"] = hcall;
+  row["reevaluate"] = reevaluate;
+  row["hreuse"] = hi->heuristic_reuse;
+
+
+  double cost_fc = 0;
+  fi->set_start(start);
+  fi->set_goals(pts);
+  fi->nn_query(si, cost_fc);
+  row["cost_fc"] = cost_fc;
+  row["gen_fc"] = fi->nodes_generated;
+
+  fi->set_start(start);
+  fi->set_K(k);
+  cost_pre = meshFence->get_processing_micro();
+  gen_pre = meshFence->nodes_generated;
+  edgecnt = meshFence->edgecnt;
+  fencecnt = meshFence->fenceCnt;
+  cnt_fi = fi->search();
+  cost_fi = fi->get_search_micro();
+  gen_fi = fi->nodes_generated;
+  row["cost_fi"] = cost_fi;
+  row["gen_fi"] = gen_fi;
+  row["cost_pre"] = cost_pre;
+  row["gen_pre"] = gen_pre;
+  row["edgecnt"] = edgecnt;
+  row["fencecnt"] = fencecnt;
+  row["keycnt"] = meshFence->get_active_edge_cnt();
 
   ffp->set_start(start);
   ffp->set_K(k);
@@ -229,8 +368,8 @@ void dense_experiment(pl::Point start, int k, vector<string>& cols, bool verbose
     dist_ki = ki->get_cost(i);
     dist_hi = hi->get_cost(i);
     dist_fi = fi->get_cost(i);
-    //dist_edbt = res[i].second;
     row["max_rank"] = max(row["max_rank"], (double)rank[ki->get_gid(i)]);
+    row["tot_hit"] = ffp->tot_hit;
     if (fabs(dist_ki - dist_hi) > EPSILON  ||
         fabs(dist_ki - odists[i]) > EPSILON) {
       dump();
@@ -254,6 +393,7 @@ void dense_experiment(pl::Point start, int k, vector<string>& cols, bool verbose
     row["miss"] = miss_false.first;
     row["vertices"] = mp->mesh_vertices.size();
     row["false_retrieval"] = miss_false.second;
+    row["x"] = start.x, row["y"] = start.y;
     for (int i=0; i<(int)cols.size(); i++) {
       cout << setw(10) << row[cols[i]];
       if (i+1 == (int)cols.size()) cout << endl;
@@ -346,6 +486,7 @@ void knn_experiment(pl::Point start, int k, vector<string>& cols, bool verbose=f
     int gid = ki->get_gid(i);
     gid_dist_ki[gid] = dist_ki;
     row["max_rank"] = max(row["max_rank"], (double)rank[ki->get_gid(i)]);
+    row["tot_hit"] = ffp->tot_hit;
     if (fabs(dist_ki - dist_hi) > EPSILON ||
         fabs(dist_ki - odists2[i]) > EPSILON) {
       dump();
@@ -370,6 +511,7 @@ void knn_experiment(pl::Point start, int k, vector<string>& cols, bool verbose=f
     row["miss"] = miss_false.first;
     row["vertices"] = mp->mesh_vertices.size();
     row["false_retrieval"] = miss_false.second;
+    row["x"] = start.x, row["y"] = start.y;
     for (int i=0; i<(int)cols.size(); i++) {
       cout << setw(10) << row[cols[i]];
       if (i+1 == (int)cols.size()) cout << endl;
@@ -390,15 +532,16 @@ void print_header(const vector<string>& cols) {
 int main(int argv, char* args[]) {
   load_data();
   vector<string> cols = {
-    "k", "dist", "rank", "max_rank", "vnum",
+    "k", "dist", "rank", "max_rank", "vnum", "tot_hit",
     "cost_edbt", "gen_edbt",
     "cost_ki", "gen_ki", 
-    "cost_ffp", "gen_ffp",
+    "cost_ffp", "gen_ffp", "rtree_cost",
+    "cost_poly", "gen_poly", "sort_cost",
     "cost_hi", "gen_hi", "hcost", "hcall", "hreuse", "reevaluate",
     "cost_fc" , "gen_fc",
     "cost_fi", "gen_fi", "cost_pre", "gen_pre", "edgecnt", "fencecnt", "keycnt",
     "miss", "false_retrieval",
-    "pts", "polys", "vertices"
+    "pts", "polys", "vertices", "x", "y",
   };
   if (argv >= 3) { // ./bin/test [s1/s2]
     string t = string(args[1]);
@@ -407,7 +550,7 @@ int main(int argv, char* args[]) {
       // ./bin/experiment nn {num of target} < {input file}
       double ratio = atof(args[2]);
       int targetSize = mp->mesh_vertices.size() * ratio + 1;
-      int N = 500;
+      int N = 1000;
       generator::gen_points_in_traversable(oMap, polys, N, starts);
       pts.clear();
       generator::gen_points_in_traversable(oMap, polys, targetSize, pts);
@@ -415,15 +558,31 @@ int main(int argv, char* args[]) {
       meshFence->floodfill();
       hi->set_goals(pts);
       ffp->set_goals(pts);
-      edbt->set_goals(pts);
       print_header(cols);
       for (pl::Point& start: starts) {
-        dense_experiment(start, 1, cols);
+        nn_experiment(start, cols);
+      }
+    }
+    else if (t == "knn") {
+      double ratio = atof(args[2]);
+      int targetSize = mp->mesh_vertices.size() * ratio + 1;
+      int k = atoi(args[3]);
+      int N = 1000;
+      generator::gen_points_in_traversable(oMap, polys, N, starts);
+      pts.clear();
+      generator::gen_points_in_traversable(oMap, polys, targetSize, pts); 
+      meshFence->set_goals(pts);
+      meshFence->floodfill();
+      hi->set_goals(pts);
+      ffp->set_goals(pts);
+      print_header(cols);
+      for (auto& start: starts) {
+        knn_experiment(start, k, cols);
       }
     }
     else if (t == "k") {
       globalT = t;
-      int N = 500;
+      int N = 1000;
       int targetNum = mp->mesh_vertices.size() / 100 + 1;
       generator::gen_points_in_traversable(oMap, polys, N, starts);
       pts.clear();
@@ -444,7 +603,7 @@ int main(int argv, char* args[]) {
       }
     }
     else if (t == "t") {
-      int N = 500;
+      int N = 1000;
       int k = 5;
       double ratio = atof(args[2]);
       int targetNum = mp->mesh_vertices.size() * ratio + 1;
@@ -462,6 +621,26 @@ int main(int argv, char* args[]) {
         dense_experiment(start, k, cols);
       }
     }
+    else if (t == "dense") {
+      int ks[] = {1, 5, 10, 25, 50};
+      //ifstream startsfile("./points/9000-start-cluster.points");
+      //load_starts(startsfile);;
+      int N = 1000;
+      generator::gen_points_in_traversable(oMap, polys, N, starts);
+      meshFence->set_goals(pts);
+      meshFence->floodfill();
+      hi->set_goals(pts);
+      ffp->set_goals(pts);
+      edbt->set_goals(pts);
+      print_header(cols);
+      for (auto& start: starts) {
+        for (int i=0; i<5; i++) {
+          int k = ks[i];
+          globalK = k;
+          dense_experiment(start, k, cols);
+        }
+      }
+    }
     else if (t == "fence") { // preproessing experiment
       string para = "random";
       if (argv >= 4) {
@@ -470,14 +649,14 @@ int main(int argv, char* args[]) {
       vector<pl::Point> targets;
       if (para == "cluster") {
         double clusterRatio = atof(args[2]);
-        int clusterNum = (int)mp->mesh_vertices.size() * clusterRatio / 100 + 1;
+        int clusterNum = (int)mp->mesh_vertices.size() * clusterRatio + 1;
         vector<pl::Point> clusters;
         generator::gen_points_in_traversable(oMap, polys, clusterNum, clusters);
-        generator::gen_clusters_in_traversable(oMap, mp, 10, clusters, targets, false);
+        generator::gen_clusters_in_traversable(oMap, mp, 10, clusters, targets);
       }
       else {
         double targetRatio = atof(args[2]);
-        int targetSize = (int)mp->mesh_vertices.size() * targetRatio  / 100 + 1;
+        int targetSize = (int)mp->mesh_vertices.size() * targetRatio + 1;
         generator::gen_points_in_traversable(oMap, polys, targetSize, targets);
       }
       meshFence->set_goals(targets);
@@ -503,7 +682,6 @@ int main(int argv, char* args[]) {
           else cout << ",";
         }
       }
-
     }
     else if (t == "cluster") {
       string starts_path = string(args[2]);

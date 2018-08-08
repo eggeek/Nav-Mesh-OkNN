@@ -30,6 +30,7 @@ KnnMeshEdgeFence* meshFence;
 vector<Scenario> scenarios;
 vector<Point> pts;
 vector<vector<Point>> polys;
+string obs_path, polys_path, pts_path, mesh_path;
 
 void load_points(istream& infile ) {
   int N;
@@ -40,11 +41,38 @@ void load_points(istream& infile ) {
   }
 }
 
+void dump(const vector<pl::Point> starts) {
+  ofstream file;
+  string fname = "dump/" + to_string(polys.size()) + "polys"
+    + to_string(pts.size()) + "pts";
+  cerr << fname << endl;
+  file.open(fname + ".in");
+  file << mesh_path << endl;
+  file << obs_path << endl;
+  file << pts_path << endl;
+  file << polys_path << endl;
+  file.close();
+
+  ofstream ptsfile;
+  ptsfile.open(fname + "starts.points");
+  ptsfile << starts.size() << endl;
+  for (size_t i=0; i<starts.size(); i++) {
+    ptsfile << starts[i].x << " " << starts[i].y << endl;
+  }
+  ptsfile.close();
+
+  ofstream targetsfile;
+  targetsfile.open(fname + "-targets.points");
+  targetsfile << pts.size() << endl;
+  for (size_t i=0; i< pts.size(); i++) {
+    targetsfile << pts[i].x << " " << pts[i].y << endl;
+  }
+  targetsfile.close();
+}
+
 void load_data() {
-  string scenario_path, obs_path, polys_path, pts_path, mesh_path;
   cin >> mesh_path >> polys_path >> obs_path >> pts_path;
 
-  ifstream scenfile(scenario_path);
   ifstream meshfile(mesh_path);
   ifstream obsfile(obs_path);
   ifstream ptsfile(pts_path);
@@ -71,9 +99,9 @@ void load_data() {
 
 void print_path(const vector<Point>& path) {
   for (int i=0; i<(int)path.size(); i++) {
-    cout << "(" << path[i].x << "," << path[i].y << ")";
+    cout << "(" << path[i].x << ", " << path[i].y << ")";
     if (i == (int)path.size()-1) cout << endl;
-    else cout << ",";
+    else cout << " ";
   }
 }
 
@@ -147,20 +175,17 @@ TEST_CASE("BFPolyanya") {
 }
 
 TEST_CASE("FENCE") {
-//  Point start = {438, 415};
-//  pts.clear();
-//  pts.push_back({486, 383}); // missing
-//  pts.push_back({477, 278}); // down
-//  pts.push_back({470, 443}); // nearest
-  int N = 1;
-  Point start = {16, 7};
+  // data from input/brc202d-20.in
+  Point start = {291, 302};
+  //pts.clear();
+  // int N = 1;
   //vector<Point> starts;
   //generator::gen_points_in_traversable(oMap, polys, N, starts);
   //Point start = starts.back();
-  meshFence->verbose = true;
+  //meshFence->verbose = true;
   meshFence->set_goals(pts);
   meshFence->floodfill();
-  int k = min(5, (int)pts.size());
+  int k = min(3, (int)pts.size());
   hi->set_K(k);
   hi->set_start(start);
   hi->set_goals(pts);
@@ -172,7 +197,7 @@ TEST_CASE("FENCE") {
     print_path(path);
   }
 
-  fi->verbose = true;
+  //fi->verbose = true;
   fi->set_K(k);
   fi->set_start(start);
   fi->set_goals(pts);
@@ -225,17 +250,17 @@ TEST_CASE("FenceNN") {
 }
 
 TEST_CASE("fence_heuristic") {
-  int N = 10;
+  int N = 1000;
   vector<Point> starts;
   generator::gen_points_in_traversable(oMap, polys, N, starts);
 
   meshFence->set_goals(pts);
   meshFence->floodfill();
+  hi->set_goals(pts);
   for (Point& start: starts) {
     int k = min(5, (int)pts.size());
     hi->set_K(k);
     hi->set_start(start);
-    hi->set_goals(pts);
 
     fi->set_K(k);
     fi->set_start(start);
@@ -263,6 +288,37 @@ TEST_CASE("fence_heuristic") {
       REQUIRE(fabs(dhi - dfi) < EPSILON);
     }
   }
+}
+
+TEST_CASE("fence_knn") {
+  int N = 1000;
+  vector<Point> starts;
+  pts.clear();
+  generator::gen_points_in_traversable(oMap, polys, (int)polys.size(), pts);
+  generator::gen_points_in_traversable(oMap, polys, N, starts);
+  meshFence->set_goals(pts);
+  meshFence->floodfill();
+  dump(starts);
+  for (auto& start: starts) {
+    for (int i=1; i<=min(50, (int)pts.size()); i += 5) {
+      ki->set_start_goal(start, pts);
+      ki->set_K(i);
+      int cntki = ki->search();
+      fi->set_start(start);
+      fi->set_K(i);
+      fi->set_goals(pts);
+      int cntfi = fi->search();
+      REQUIRE(cntki == cntfi);
+      for (int j=0; j<cntki; j++) {
+        double dist_ki = ki->get_cost(j);
+        double dist_fi = fi->get_cost(j);
+        if (fabs(dist_ki - dist_fi) > EPSILON) {
+          cout << "Start: " << start.x << " " << start.y << endl;
+        }
+        REQUIRE(fabs(dist_ki - dist_fi) <= EPSILON);
+      }
+    }
+  }  
 }
 
 TEST_CASE("no_reassign") {

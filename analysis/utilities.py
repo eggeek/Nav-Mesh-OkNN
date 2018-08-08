@@ -35,16 +35,28 @@ def gen_xy(df=None, colx='', coly='', ignore=True, limit=20):
     return x, y
 
 def plot_graph(xlabel='', ylabel='', xs=[[]], ys=[[]], labels=[], color=None, 
-               yscale='log', xscale=None, ylim=None, saveto=None):
+               yscale='log', xscale=None, ylim=None, xlim=None, saveto=None, xticks=None,
+               loc='out'):
     
     fig, ax = plt.subplots()
     ax.set_xlabel(xlabel)
     ax.set_ylabel(ylabel)
     ax.set_yscale(yscale)
+    font = {'family': 'monospace',
+            'weight': 'bold',
+            'size': 22}
+    plt.rc('font',**font)
+    plt.rc("text", usetex=True)
     if xscale is not None:
       ax.set_xscale(xscale)
     if ylim is not None:
         ax.set_ylim(ylim)
+    if xlim is not None:
+        ax.set_xlim(xlim)
+    if xticks is not None:
+      print(xticks)
+      plt.xticks(xticks[0], xticks[1])
+
     n = len(xs)
     for i in range(n):
         x = xs[i]
@@ -55,7 +67,10 @@ def plot_graph(xlabel='', ylabel='', xs=[[]], ys=[[]], labels=[], color=None,
             ax.scatter(x, y)
             ax.plot(x, y, label=labels[i])
     ax.legend(labels)
-    ax.legend(loc='best', fancybox=True, framealpha=0, prop={'size': 14})
+    if loc == 'in':
+      ax.legend(loc='best', fancybox=True, framealpha=0, prop={'size': 15})
+    else:
+      ax.legend(loc='upper center', bbox_to_anchor=(0.5, 1.25), ncol=3, fancybox=True, prop={'size': 15})
     plt.grid(True)
     if saveto is not None:
         fig.savefig(saveto, bbox_inches='tight')
