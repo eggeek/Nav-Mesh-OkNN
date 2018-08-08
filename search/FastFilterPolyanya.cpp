@@ -10,6 +10,7 @@
 #include <cassert>
 #include <iostream>
 #include <algorithm>
+#include <chrono>
 #include <ctime>
 
 using namespace std;
@@ -27,7 +28,10 @@ namespace polyanya {
     heap.push(rs::MinHeapEntry(D, rte->root));
     rs::MinHeapEntry cur(INF, (rs::Entry_P)nullptr);
     while (true) {
+      auto stime = std::chrono::steady_clock::now();
       cur = rs::RStarTreeUtil::iNearestNeighbour(heap, P);
+      auto etime = std::chrono::steady_clock::now();
+      rtree_cost += std::chrono::duration_cast<std::chrono::microseconds>(etime- stime).count();
       if (cur.key == INF) // not found
         break;
       int gid = *((int*)cur.entryPtr->data);
@@ -36,6 +40,7 @@ namespace polyanya {
         break;
       polyanya->set_start_goal(start, goals[gid]);
       bool found = polyanya->search();
+      tot_hit++;
       search_cost += polyanya->get_search_micro();
       nodes_generated += polyanya->nodes_generated;
       if (!found) continue;

@@ -51,16 +51,20 @@ class FastFilterPolyanya {
 
         void init_search() {
           search_cost = 0;
+          rtree_cost = 0;
           nodes_generated = 0;
           nodes_pushed = 0;
           nodes_popped = 0;
+          tot_hit = 0;
         }
 
     public:
         int nodes_generated;        // Nodes stored in memory
         int nodes_pushed;           // Nodes pushed onto open
         int nodes_popped;           // Nodes popped off open
+        int tot_hit;
         double search_cost;
+        double rtree_cost;
         bool verbose;
         rs::RStarTree* rte = nullptr;
         std::vector<rs::LeafNodeEntry> rtEntries;

@@ -97,6 +97,7 @@ class SearchInstance
         int nodes_pruned_post_pop;  // Nodes we prune right after popping off
         int successor_calls;        // Times we call get_successors
         bool verbose;
+        double sort_cost;
 
         SearchInstance() { }
         SearchInstance(MeshPtr m) : mesh(m) { init(); }
@@ -143,7 +144,9 @@ class SearchInstance
           std::priority_queue<double, std::vector<double>> maxh; 
           std::vector<std::pair<double, Point>> edists;
           std::vector<double> odists;
+          sort_cost = 0;
           this->timer.start();
+          auto stime = std::chrono::steady_clock::now();
           for (auto i: pts) {
             edists.push_back({s.distance(i), i});
           }
@@ -152,6 +155,8 @@ class SearchInstance
             return a.first < b.first;
           };
           sort(edists.begin(), edists.end(), cmp);
+          auto etime = std::chrono::steady_clock::now();
+          sort_cost = std::chrono::duration_cast<std::chrono::microseconds>(etime- stime).count();
           this->timer.stop();
           cost += timer.elapsed_time_micro(); 
           for (auto i: edists) {
