@@ -51,7 +51,7 @@ void gen_entities_points(string polypath, string meshpath, int num) {
   generator::gen_points_in_traversable(oMap, polys, num, out, true);
 }
 
-void gen_clusters(string polypath, string pointpath, string meshpath, int maxNum) {
+void gen_clusters(string polypath, string pointpath, string meshpath, int maxNum, double radius=EPSILON) {
   ifstream polyfile(polypath);
   ifstream pointfile(pointpath);
   ifstream meshfile(meshpath);
@@ -69,7 +69,7 @@ void gen_clusters(string polypath, string pointpath, string meshpath, int maxNum
   cerr << "loading obstacle map ..." << endl;
   EDBT::ObstacleMap* oMap = new EDBT::ObstacleMap(polyfile, mp, false);
   cerr << "generating clusters ... " << endl;
-  generator::gen_clusters_in_traversable(oMap, mp, maxNum, pts, out, true);
+  generator::gen_clusters_in_traversable(oMap, mp, maxNum, pts, out, radius, true);
 }
 
 int main(int argc, char* argv[]) {
@@ -97,9 +97,12 @@ int main(int argc, char* argv[]) {
       string pointpath = string(argv[3]);
       string meshpath = string(argv[4]);
       int maxNum = 10;
+      double radius = EPSILON;
       if (argc > 5)
         maxNum = atoi(argv[5]);
-      gen_clusters(polypath, pointpath, meshpath, maxNum);
+      if (argc > 6)
+        radius = atof(argv[6]);
+      gen_clusters(polypath, pointpath, meshpath, maxNum, radius);
     }
   }
   return 0;

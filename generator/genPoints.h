@@ -68,17 +68,22 @@ void gen_clusters_in_traversable(
     EDBT::ObstacleMap* oMap, pl::Mesh* mesh,
     int maxNum,
     vector<pl::Point>& targets,
-    vector<pl::Point>& out, bool verbose=false) {
+    vector<pl::Point>& out, double radius=EPSILON, bool verbose=false)  {
 
   double min_x = mesh->get_minx();
   double max_x = mesh->get_maxx();
   double min_y = mesh->get_miny();
   double max_y = mesh->get_maxy();
-  double dx = (max_x - min_x) / 100.0;
-  double dy = (max_y - min_y) / 100.0;
+  double dx, dy;
+  if (fabs(radius-EPSILON) <= EPSILON) {
+    dx = (max_x - min_x) / 100.0;
+    dy = (max_y - min_y) / 100.0;
+  } else {
+    dx = dy = radius;
+  }
   random_device rd;
   mt19937 eng(rd());
-  uniform_int_distribution<> distnum(2, maxNum);
+  uniform_int_distribution<> distnum(maxNum, maxNum);
   uniform_real_distribution<> distx(-dx, dx);
   uniform_real_distribution<> disty(-dy, dy);
   for (auto& t: targets) {
