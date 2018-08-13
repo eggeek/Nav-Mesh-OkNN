@@ -16,7 +16,7 @@ namespace polyanya {
 
 namespace rs = rstar;
 
-class FastFilterPolyanya {
+class IERPolyanya {
     typedef std::priority_queue<SearchNodePtr, std::vector<SearchNodePtr>,
                                 PointerComp<SearchNode> > pq;
     private:
@@ -70,13 +70,13 @@ class FastFilterPolyanya {
         std::vector<rs::LeafNodeEntry> rtEntries;
         std::vector<int> gids;
 
-        FastFilterPolyanya() { }
-        FastFilterPolyanya(SearchInstance* si): polyanya(si) {
+        IERPolyanya () { }
+        IERPolyanya(SearchInstance* si): polyanya(si) {
           rte = nullptr; 
         };
-        FastFilterPolyanya(FastFilterPolyanya const &) = delete;
-        void operator=(FastFilterPolyanya const &x) = delete;
-        ~FastFilterPolyanya() {
+        IERPolyanya(IERPolyanya const &) = delete;
+        void operator=(IERPolyanya const &x) = delete;
+        ~IERPolyanya() {
             if (rte)
               delete rte;
         }

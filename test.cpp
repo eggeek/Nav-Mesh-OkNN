@@ -8,7 +8,7 @@
 #include "intervaHeuristic.h"
 #include "targetHeuristic.h"
 #include "fenceHeuristic.h"
-#include "FastFilterPolyanya.h"
+#include "IERPolyanya.h"
 #include "EDBTknn.h"
 #include "park2poly.h"
 #include "knnMeshFence.h"
@@ -25,7 +25,7 @@ IntervalHeuristic* ki0;
 TargetHeuristic* hi;
 TargetHeuristic* hi2;
 FenceHeuristic* fi;
-FastFilterPolyanya* ffp;
+IERPolyanya* ffp;
 KnnMeshEdgeFence* meshFence;
 vector<Scenario> scenarios;
 vector<Point> pts;
@@ -91,7 +91,7 @@ void load_data() {
   hi2 = new TargetHeuristic(mp);
   fi = new FenceHeuristic(mp);
   meshFence = new KnnMeshEdgeFence(mp);
-  ffp = new FastFilterPolyanya(si);
+  ffp = new IERPolyanya(si);
   fi->set_meshFence(meshFence);
   //edbt = new EDBT::EDBTkNN(oMap);
   printf("vertices: %d, polygons: %d\n", (int)m.mesh_vertices.size(), (int)m.mesh_polygons.size());

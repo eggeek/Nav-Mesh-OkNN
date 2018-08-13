@@ -1,4 +1,4 @@
-#include "FastFilterPolyanya.h"
+#include "IERPolyanya.h"
 #include "geometry.h"
 #include "vertex.h"
 #include "point.h"
@@ -17,7 +17,7 @@ using namespace std;
 
 namespace polyanya {
   namespace rs = rstar; 
-  vector<double> FastFilterPolyanya::search() {
+  vector<double> IERPolyanya::search() {
     init_search();
     priority_queue<double, vector<double>> maxh;
     vector<pair<double, Point>> edists;

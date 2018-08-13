@@ -7,7 +7,7 @@
 #include "genPoints.h"
 #include "knnMeshFence.h"
 #include "mesh.h"
-#include "FastFilterPolyanya.h"
+#include "IERPolyanya.h"
 #include <sstream>
 #include <stdio.h>
 #include <iostream>
@@ -21,7 +21,7 @@ pl::SearchInstance* si;
 pl::IntervalHeuristic* ki;
 pl::TargetHeuristic* hi;
 pl::FenceHeuristic* fi;
-pl::FastFilterPolyanya* ffp;
+pl::IERPolyanya* ffp;
 pl::KnnMeshEdgeFence* meshFence;
 vg::ObstacleMap* oMap;
 vg::EDBTkNN* edbt;
@@ -68,7 +68,7 @@ void load_data() {
   ki = new pl::IntervalHeuristic(mp);
   hi = new pl::TargetHeuristic(mp);
   fi = new pl::FenceHeuristic(mp);
-  ffp = new pl::FastFilterPolyanya(si);
+  ffp = new pl::IERPolyanya(si);
   fi->set_meshFence(meshFence);
   edbt = new vg::EDBTkNN(oMap);
 }
