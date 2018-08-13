@@ -6,62 +6,6 @@ using namespace std;
 
 namespace polyanya {
 
-PointLocation KnnMeshEdgeFence::get_point_location(Point p) {
-  assert(mesh != nullptr);
-  PointLocation out = mesh->get_point_location(p);
-  if (out.type == PointLocation::ON_CORNER_VERTEX_AMBIG)
-  {
-      // Add a few EPSILONS to the point and try again.
-      static const Point CORRECTOR = {EPSILON * 10, EPSILON * 10};
-      Point corrected = p + CORRECTOR;
-      PointLocation corrected_loc = mesh->get_point_location(corrected);
-
-      #ifndef NDEBUG
-      if (verbose)
-      {
-          std::cerr << p << " " << corrected_loc << std::endl;
-      }
-      #endif
-
-      switch (corrected_loc.type)
-      {
-          case PointLocation::ON_CORNER_VERTEX_AMBIG:
-          case PointLocation::ON_CORNER_VERTEX_UNAMBIG:
-          case PointLocation::ON_NON_CORNER_VERTEX:
-              #ifndef NDEBUG
-              if (verbose)
-              {
-                  std::cerr << "Warning: corrected " << p << " lies on vertex"
-                            << std::endl;
-              }
-              #endif
-          case PointLocation::NOT_ON_MESH:
-              #ifndef NDEBUG
-              if (verbose)
-              {
-                  std::cerr << "Warning: completely ambiguous point at " << p
-                            << std::endl;
-              }
-              #endif
-              break;
-
-          case PointLocation::IN_POLYGON:
-          case PointLocation::ON_MESH_BORDER:
-          // Note that ON_EDGE should be fine: any polygon works and there's
-          // no need to special case successor generation.
-          case PointLocation::ON_EDGE:
-              out.poly1 = corrected_loc.poly1;
-              break;
-
-          default:
-              // Should be impossible to reach.
-              assert(false);
-              break;
-      }
-  }
-  return out;
-}
-
 int KnnMeshEdgeFence::succ_to_node(SearchNodePtr parent, Successor* successors, int num_succ, SearchNodePtr nodes, int gid) {
 
   assert(mesh != nullptr);
@@ -153,7 +97,7 @@ void KnnMeshEdgeFence::gen_initial_nodes() {
     for (int i = 0; i < num_nodes; i++) {
       SearchNodePtr nxt = new (node_pool->allocate()) SearchNode(nodes[i]);
       const Point& nxt_root = nxt->root == -1? start: mesh->mesh_vertices[nxt->root].p;
-      nxt->f += get_knn_h_value(nxt_root, nxt->left, nxt->right);
+      nxt->f += get_interval_heuristic(nxt_root, nxt->left, nxt->right);
       nxt->parent = lazy;
       const Point& left = mesh->mesh_vertices[nxt->left_vertex].p;
       const Point& right = mesh->mesh_vertices[nxt->right_vertex].p;
@@ -176,7 +120,7 @@ void KnnMeshEdgeFence::gen_initial_nodes() {
     nodes_pushed += num_nodes;
   };
   for (int i=0; i<(int)goals.size(); i++) {
-    const PointLocation pl = get_point_location(goals[i]);
+    const PointLocation pl = get_point_location_in_search(goals[i], mesh, verbose);
     switch(pl.type) {
       case PointLocation::NOT_ON_MESH:
         break;
@@ -205,6 +149,12 @@ void KnnMeshEdgeFence::gen_initial_nodes() {
           nodes_generated++;
           push_lazy(lazy2, i);
           nodes_generated++;
+
+          double lb = 0;
+          double ub = max(goals[i].distance(lazy1->left), goals[i].distance(lazy1->right));
+          FloodFillNode fnode(lazy1, lb, ub, i, pl.poly1, pl.poly2);
+          open_list.push(fnode);
+          nodes_pushed++;
         }
         break;
       case PointLocation::ON_NON_CORNER_VERTEX:
@@ -267,7 +217,7 @@ void KnnMeshEdgeFence::floodfill() {
     for (int i=0; i<num_nodes; i++) {
       const SearchNodePtr nxt = new (node_pool->allocate()) SearchNode(search_nodes_to_push[i]);
       const Point& nxt_root = (nxt->root == -1? start: mesh->mesh_vertices[nxt->root].p);
-      nxt->f += get_knn_h_value(nxt_root, nxt->left, nxt->right);
+      nxt->f += get_interval_heuristic(nxt_root, nxt->left, nxt->right);
       nxt->parent = snode;
       const Point& left = mesh->mesh_vertices[nxt->left_vertex].p;
       const Point& right = mesh->mesh_vertices[nxt->right_vertex].p;

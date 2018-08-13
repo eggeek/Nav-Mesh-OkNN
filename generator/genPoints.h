@@ -2,6 +2,7 @@
 #include "point.h"
 #include "mesh.h"
 #include "EDBTObstacles.h"
+#include "expansion.h"
 #include <vector>
 #include <string>
 #include <sstream>
@@ -48,7 +49,8 @@ void gen_points_in_traversable(EDBT::ObstacleMap* oMap, const vector<vector<pl::
       x = distx(eng);
       y = disty(eng);
       pl::Point p{(double)x, (double)y};
-      if (oMap->isCoveredByTraversable(p, p)) {
+      if (oMap->isCoveredByTraversable(p, p) &&
+          oMap->mesh->get_point_location(p).type == pl::PointLocation::IN_POLYGON) {
         out[i] = p;
         if (verbose) {
           cout << x << " " << y << endl;
@@ -56,6 +58,53 @@ void gen_points_in_traversable(EDBT::ObstacleMap* oMap, const vector<vector<pl::
         break;
       }
     } while (true);
+  }
+}
+
+/*
+ * generate clusters around given targets
+ */
+void gen_clusters_in_traversable(
+    EDBT::ObstacleMap* oMap, pl::Mesh* mesh,
+    int maxNum,
+    vector<pl::Point>& targets,
+    vector<pl::Point>& out, double radius=EPSILON, bool verbose=false)  {
+
+  double min_x = mesh->get_minx();
+  double max_x = mesh->get_maxx();
+  double min_y = mesh->get_miny();
+  double max_y = mesh->get_maxy();
+  double dx, dy;
+  if (fabs(radius-EPSILON) <= EPSILON) {
+    dx = (max_x - min_x) / 100.0;
+    dy = (max_y - min_y) / 100.0;
+  } else {
+    dx = dy = radius;
+  }
+  random_device rd;
+  mt19937 eng(rd());
+  uniform_int_distribution<> distnum(maxNum, maxNum);
+  uniform_real_distribution<> distx(-dx, dx);
+  uniform_real_distribution<> disty(-dy, dy);
+  for (auto& t: targets) {
+    int num = distnum(eng);
+    for (int i=0; i<num; i++) {
+      double x, y;
+      do {
+        x = t.x + distx(eng);
+        y = t.y + disty(eng);
+        pl::Point p{x, y};
+        if (oMap->isCoveredByTraversable(p, p) &&
+            oMap->mesh->get_point_location(p).type == pl::PointLocation::IN_POLYGON) {
+          out.push_back(p);
+          break;
+        } 
+      } while (true); 
+    }
+  }
+  if (verbose) {
+    cout << out.size() << endl;
+    for (auto it: out) cout << it.x << " " << it.y << endl;
   }
 }
 

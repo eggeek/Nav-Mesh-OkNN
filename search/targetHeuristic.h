@@ -25,6 +25,7 @@ class TargetHeuristic {
                                 PointerComp<SearchNode> > pq;
     private:
         int K = 1;
+        bool reassign = true;
         warthog::mem::cpool* node_pool;
         MeshPtr mesh;
         Point start;
@@ -57,6 +58,7 @@ class TargetHeuristic {
 
         void init() {
             meshFence= nullptr;
+            rte = nullptr;
             verbose = false;
             search_successors = new Successor [mesh->max_poly_sides + 2];
             search_nodes_to_push = new SearchNode [mesh->max_poly_sides + 2];
@@ -168,6 +170,8 @@ class TargetHeuristic {
         }
 
         void initRtree() {
+          // rte can be initialized only once
+          assert(rte == nullptr);
           rte = new rs::RStarTree();
           rtEntries.clear();
           gids.clear();
@@ -197,13 +201,12 @@ class TargetHeuristic {
             nodes_pruned_post_pop = 0;
             successor_calls = 0;
             nodes_reevaluate = 0;
-            set_end_polygon();
             gen_initial_nodes();
             heuristic_using = 0;
             heuristic_call = 0;
+            heuristic_reuse = 0;
             angle_using = 0;
         }
-        PointLocation get_point_location(Point p);
         void set_end_polygon();
         void gen_initial_nodes();
         int succ_to_node(
@@ -219,10 +222,11 @@ class TargetHeuristic {
         int nodes_popped;           // Nodes popped off open
         int nodes_pruned_post_pop;  // Nodes we prune right after popping off
         int successor_calls;        // Times we call get_successors
+        int heuristic_reuse;
         int heuristic_call;
         int nodes_reevaluate;
         bool verbose;
-        rs::RStarTree* rte;
+        rs::RStarTree* rte = nullptr;
         std::vector<rs::LeafNodeEntry> rtEntries;
         std::vector<int> gids;
 
@@ -247,6 +251,7 @@ class TargetHeuristic {
         void set_goals(std::vector<Point> gs) {
           goals = std::vector<Point>(gs);
           initRtree();
+          set_end_polygon();
         }
 
         void set_start(Point s) { start = s; }
@@ -291,6 +296,9 @@ class TargetHeuristic {
         }
 
         std::pair<int, double> nn_query(SearchInstance* si, double& elapsed_time_micro);
+        void set_reassign(bool flag) {
+          this->reassign = flag;
+        }
 };
 
 }

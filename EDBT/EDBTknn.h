@@ -5,6 +5,7 @@
 #include "timer.h"
 #include "EDBTObstacles.h"
 #include <set>
+#include <chrono>
 
 
 namespace EDBT {
@@ -65,6 +66,8 @@ public:
 class EDBTkNN {
 
 public:
+  std::chrono::steady_clock::time_point start; 
+  double time_limit_micro = 1e6;
   vector<pPoint> goals;
   pPoint q;
   Graph g;
@@ -113,9 +116,12 @@ public:
     explored.clear();
     exploredV.clear();
 		g.nodes_generated = 0;
+    start = chrono::steady_clock::now();
   }
 
   void initRtree() {
+    // rte can be initialized only once
+    assert(rte == nullptr);
     rtEntries.clear();
     rte = new rs::RStarTree();
     for (auto& it: goals) {
@@ -130,6 +136,10 @@ public:
   double ODC(Graph& g, pPtr p, double& curR);
   double get_search_micro() {
     return timer.elapsed_time_micro();
+  }
+  double get_current_micro() {
+    auto cur = chrono::steady_clock::now();
+    return std::chrono::duration_cast<std::chrono::microseconds>(cur - start).count();
   }
   void updateObstacles(set<pii> obs);
   void changeTarget(pPtr p);
@@ -147,6 +157,10 @@ public:
       for (pPoint i: paths[k])
         outIter.push_back(i);
     }
+  }
+
+  void set_time_limit_micro(double tlimit) {
+    this->time_limit_micro = tlimit;
   }
 
   vector<pPoint> to_point_path(vector<int>& path_ids, pPtr last) {

@@ -82,7 +82,6 @@ class SearchInstance
             set_end_polygon();
             gen_initial_nodes();
         }
-        PointLocation get_point_location(Point p);
         void set_end_polygon();
         void gen_initial_nodes();
         int succ_to_node(
@@ -98,6 +97,7 @@ class SearchInstance
         int nodes_pruned_post_pop;  // Nodes we prune right after popping off
         int successor_calls;        // Times we call get_successors
         bool verbose;
+        double sort_cost;
 
         SearchInstance() { }
         SearchInstance(MeshPtr m) : mesh(m) { init(); }
@@ -144,7 +144,9 @@ class SearchInstance
           std::priority_queue<double, std::vector<double>> maxh; 
           std::vector<std::pair<double, Point>> edists;
           std::vector<double> odists;
+          sort_cost = 0;
           this->timer.start();
+          auto stime = std::chrono::steady_clock::now();
           for (auto i: pts) {
             edists.push_back({s.distance(i), i});
           }
@@ -153,6 +155,8 @@ class SearchInstance
             return a.first < b.first;
           };
           sort(edists.begin(), edists.end(), cmp);
+          auto etime = std::chrono::steady_clock::now();
+          sort_cost = std::chrono::duration_cast<std::chrono::microseconds>(etime- stime).count();
           this->timer.stop();
           cost += timer.elapsed_time_micro(); 
           for (auto i: edists) {
@@ -161,10 +165,11 @@ class SearchInstance
               break;
             Point p = i.second;
             this->set_start_goal(s, p);
-            this->search();       
+            bool found = this->search();       
             cost += this->get_search_micro();
             gen += (double)this->nodes_generated;
             double d_o = this->get_cost();
+            if (! found) continue;
             if ((int)maxh.size() < k) {
               maxh.push(d_o);
             } else if (d_o < maxh.top()) {

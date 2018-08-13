@@ -16,64 +16,7 @@
 
 namespace polyanya {
 
-PointLocation OkNNIntervalHeuristic::get_point_location(Point p)
-{
-    assert(mesh != nullptr);
-    PointLocation out = mesh->get_point_location(p);
-    if (out.type == PointLocation::ON_CORNER_VERTEX_AMBIG)
-    {
-        // Add a few EPSILONS to the point and try again.
-        static const Point CORRECTOR = {EPSILON * 10, EPSILON * 10};
-        Point corrected = p + CORRECTOR;
-        PointLocation corrected_loc = mesh->get_point_location(corrected);
-
-        #ifndef NDEBUG
-        if (verbose)
-        {
-            std::cerr << p << " " << corrected_loc << std::endl;
-        }
-        #endif
-
-        switch (corrected_loc.type)
-        {
-            case PointLocation::ON_CORNER_VERTEX_AMBIG:
-            case PointLocation::ON_CORNER_VERTEX_UNAMBIG:
-            case PointLocation::ON_NON_CORNER_VERTEX:
-                #ifndef NDEBUG
-                if (verbose)
-                {
-                    std::cerr << "Warning: corrected " << p << " lies on vertex"
-                              << std::endl;
-                }
-                #endif
-            case PointLocation::NOT_ON_MESH:
-                #ifndef NDEBUG
-                if (verbose)
-                {
-                    std::cerr << "Warning: completely ambiguous point at " << p
-                              << std::endl;
-                }
-                #endif
-                break;
-
-            case PointLocation::IN_POLYGON:
-            case PointLocation::ON_MESH_BORDER:
-            // Note that ON_EDGE should be fine: any polygon works and there's
-            // no need to special case successor generation.
-            case PointLocation::ON_EDGE:
-                out.poly1 = corrected_loc.poly1;
-                break;
-
-            default:
-                // Should be impossible to reach.
-                assert(false);
-                break;
-        }
-    }
-    return out;
-}
-
-int OkNNIntervalHeuristic::succ_to_node(
+int IntervalHeuristic::succ_to_node(
     SearchNodePtr parent, Successor* successors, int num_succ,
     SearchNodePtr nodes) {
   // copy from searchinstance.cpp
@@ -137,23 +80,23 @@ int OkNNIntervalHeuristic::succ_to_node(
   return out;
 }
 
-void OkNNIntervalHeuristic::set_end_polygon() {
+void IntervalHeuristic::set_end_polygon() {
   end_polygons.resize(mesh->mesh_polygons.size());
   for (int i=0; i<(int)mesh->mesh_polygons.size(); i++) end_polygons[i].clear();
   for (int i=0; i<(int)goals.size(); i++) {
-    int poly_id = get_point_location(goals[i]).poly1;
+    int poly_id = get_point_location_in_search(goals[i], mesh, verbose).poly1;
     if (poly_id == -1) continue;
     assert(poly_id < (int)end_polygons.size());
     end_polygons[poly_id].push_back(i);
   }
 }
 
-void OkNNIntervalHeuristic::gen_initial_nodes() {
+void IntervalHeuristic::gen_initial_nodes() {
   // revised from SearchInstance::gen_initial_nodes
   // modify:
   // 1. h value for get_lazy() is 0
   // 2. no end_polygon in knn search
-  const PointLocation pl = get_point_location(start);
+  const PointLocation pl = get_point_location_in_search(start, mesh, verbose);
   #define get_lazy(next, left, right) new (node_pool->allocate()) SearchNode \
     {nullptr, -1, start, start, left, right, next, 0, 0}
   #define v(vertex) mesh->mesh_vertices[vertex]
@@ -205,7 +148,7 @@ void OkNNIntervalHeuristic::gen_initial_nodes() {
       SearchNodePtr nxt = new (node_pool->allocate()) SearchNode(nodes[i]);
       const Point& nxt_root = (nxt->root == -1? start: mesh->mesh_vertices[nxt->root].p);
 			if (!this->isZero)
-				nxt->f += get_knn_h_value(nxt_root, nxt->left, nxt->right);
+				nxt->f += get_interval_heuristic(nxt_root, nxt->left, nxt->right);
       nxt->parent = lazy;
       #ifndef NDEBUG
       if (verbose) {
@@ -275,7 +218,7 @@ void OkNNIntervalHeuristic::gen_initial_nodes() {
 
 #define root_to_point(root) ((root) == -1 ? start : mesh->mesh_vertices[root].p)
 
-int OkNNIntervalHeuristic::search() {
+int IntervalHeuristic::search() {
   init_search();
   timer.start();
   if (mesh == nullptr) {
@@ -355,7 +298,7 @@ int OkNNIntervalHeuristic::search() {
       const SearchNodePtr nxt = new (node_pool->allocate()) SearchNode(search_nodes_to_push[i]);
       const Point& nxt_root = (nxt->root == -1 ? start: mesh->mesh_vertices[nxt->root].p);
 			if (!this->isZero)
-				nxt->f += get_knn_h_value(nxt_root, nxt->left, nxt->right);
+				nxt->f += get_interval_heuristic(nxt_root, nxt->left, nxt->right);
       nxt->parent = node;
       #ifndef NDEBUG
       if (verbose) {
@@ -379,13 +322,13 @@ int OkNNIntervalHeuristic::search() {
   return (int)final_nodes.size();
 }
 
-void OkNNIntervalHeuristic::print_node(SearchNodePtr node, std::ostream& outfile) {
+void IntervalHeuristic::print_node(SearchNodePtr node, std::ostream& outfile) {
   outfile << "root=" << root_to_point(node->root) << "; left=" << node->left
           << "; right=" << node->right << "; f=" << node->f << ", g="
           << node->g;
 }
 
-void OkNNIntervalHeuristic::get_path_points(std::vector<Point>& out, int k) {
+void IntervalHeuristic::get_path_points(std::vector<Point>& out, int k) {
   if (k >= (int)goals.size()) return;
   assert((int)final_nodes.size() <= K);
   assert(final_nodes[k]->goal_id != -1);
@@ -401,7 +344,7 @@ void OkNNIntervalHeuristic::get_path_points(std::vector<Point>& out, int k) {
   std::reverse(out.begin(), out.end());
 }
 
-void OkNNIntervalHeuristic::print_search_nodes(std::ostream& outfile, int k) {
+void IntervalHeuristic::print_search_nodes(std::ostream& outfile, int k) {
   if (k > (int)final_nodes.size()) return;
   SearchNodePtr cur = final_nodes[k];
   while (cur != nullptr) {
@@ -413,7 +356,7 @@ void OkNNIntervalHeuristic::print_search_nodes(std::ostream& outfile, int k) {
   }
 }
 
-void OkNNIntervalHeuristic::deal_final_node(const SearchNodePtr node) {
+void IntervalHeuristic::deal_final_node(const SearchNodePtr node) {
 
   const Point& goal = goals[node->goal_id];
   const int final_root = [&]() {
@@ -448,7 +391,7 @@ void OkNNIntervalHeuristic::deal_final_node(const SearchNodePtr node) {
   }
 }
 
-void OkNNIntervalHeuristic::gen_final_nodes(const SearchNodePtr node, const Point& rootPoint) {
+void IntervalHeuristic::gen_final_nodes(const SearchNodePtr node, const Point& rootPoint) {
     assert(node->next_polygon != -1);
     for (int gid: end_polygons[node->next_polygon]) {
       const Point& goal = goals[gid];

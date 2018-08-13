@@ -16,6 +16,7 @@ void EDBTkNN::updateObstacles(set<pii> obs) {
   for (pii it: obs) {
     if (!exploredV.count(it.first)) newV.insert(it.first);
     if (!exploredV.count(it.second)) newV.insert(it.second);
+    if (this->get_current_micro() >= this->time_limit_micro) break;
   }
   // add edges between vertices
   for (int vid: exploredV) {
@@ -26,6 +27,7 @@ void EDBTkNN::updateObstacles(set<pii> obs) {
         g.add_edge(v.id, newv.id, sqrt(Vertex::dist2(v, newv)));
       }
     }
+    if (this->get_current_micro() >= this->time_limit_micro) break;
   }
   // add edges between new vertices
   for (int vid1: newV) {
@@ -36,7 +38,9 @@ void EDBTkNN::updateObstacles(set<pii> obs) {
       const Vertex v2 = getV(vid2);
       if (O->isVisible({v1, v2}))
         g.add_edge(v1.id, v2.id, sqrt(Vertex::dist2(v1, v2)));
+      if (this->get_current_micro() >= this->time_limit_micro) break;
     }
+    if (this->get_current_micro() >= this->time_limit_micro) break;
   }
   for (int vid: newV) {
     Vertex v = getV(vid);
@@ -49,6 +53,7 @@ void EDBTkNN::updateObstacles(set<pii> obs) {
     if (O->isVisible(g.goal, p)) {
       g.add_edge(v.id, g.tid(), p.distance(g.goal));
     }
+    if (this->get_current_micro() >= this->time_limit_micro) break;
   }
   exploredV.insert(newV.begin(), newV.end());
 }
@@ -69,6 +74,7 @@ void EDBTkNN::changeTarget(pPtr p) {
     if (O->isVisible(g.goal, vp)) {
       g.add_edge(vid, g.tid(), vp.distance(g.goal));
     }
+    if (this->get_current_micro() >= this->time_limit_micro) break;
   }
   // try to add edge between start and end
   if (O->isVisible(*p, q)) {
@@ -154,8 +160,11 @@ double EDBTkNN::ODC(Graph& g, pPtr p, double& curR) {
       break;
     else if (fabs(d - INF) <= EPSILON) // not reachable
       break;
+    else if (this->get_current_micro() >= this->time_limit_micro)
+      break;
     else { // d > curR
       enlargeExplored(curR, d);
+      if (this->get_current_micro() >= this->time_limit_micro) break;
       curR = d;
     }
   } while (true);
@@ -202,14 +211,18 @@ vector<pair<pPtr, double>> EDBTkNN::OkNN(int k) {
       path_to_goals[nxt.first] = vector<int>(g.path_ids);
     }
     if (nxt.second > dmax) break;
+    if (this->get_search_micro() >= this->time_limit_micro) break;
   } while (true);
   while (!que.empty()) {
     res.push_back({que.top().second, que.top().first});
-    paths.push_back(to_point_path(path_to_goals[res.back().first], res.back().first));
+    if (!path_to_goals[res.back().first].empty())
+      paths.push_back(to_point_path(path_to_goals[res.back().first], res.back().first));
     que.pop();
   }
-  reverse(res.begin(), res.end());
-  reverse(paths.begin(), paths.end());
+  if (!res.empty())
+    reverse(res.begin(), res.end());
+  if (!paths.empty())
+    reverse(paths.begin(), paths.end());
   timer.stop();
   return res;
 }

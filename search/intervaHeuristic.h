@@ -12,7 +12,7 @@
 
 namespace polyanya {
 
-class OkNNIntervalHeuristic {
+class IntervalHeuristic{
     typedef std::priority_queue<SearchNodePtr, std::vector<SearchNodePtr>,
                                 PointerComp<SearchNode> > pq;
     private:
@@ -73,10 +73,8 @@ class OkNNIntervalHeuristic {
             nodes_popped = 0;
             nodes_pruned_post_pop = 0;
             successor_calls = 0;
-            set_end_polygon();
             gen_initial_nodes();
         }
-        PointLocation get_point_location(Point p);
         void set_end_polygon();
         void gen_initial_nodes();
         int succ_to_node(
@@ -94,13 +92,13 @@ class OkNNIntervalHeuristic {
         int successor_calls;        // Times we call get_successors
         bool verbose;
 
-        OkNNIntervalHeuristic() { }
-        OkNNIntervalHeuristic(MeshPtr m) : mesh(m) { init(); }
-        OkNNIntervalHeuristic(int k, MeshPtr m, Point s, std::vector<Point> gs) :
+        IntervalHeuristic() { }
+        IntervalHeuristic(MeshPtr m) : mesh(m) { init(); }
+        IntervalHeuristic(int k, MeshPtr m, Point s, std::vector<Point> gs) :
             K(k), mesh(m), start(s), goals(gs) { init(); }
-        OkNNIntervalHeuristic(OkNNIntervalHeuristic const &) = delete;
-        void operator=(OkNNIntervalHeuristic const &x) = delete;
-        ~OkNNIntervalHeuristic() {
+        IntervalHeuristic(IntervalHeuristic const &) = delete;
+        void operator=(IntervalHeuristic const &x) = delete;
+        ~IntervalHeuristic() {
             if (node_pool) {
                 delete node_pool;
             }
@@ -116,6 +114,7 @@ class OkNNIntervalHeuristic {
             for (const auto it: gs)
               goals.push_back(it);
             final_nodes.clear();
+            set_end_polygon();
         }
 
         int search();
@@ -141,7 +140,7 @@ class OkNNIntervalHeuristic {
 				}
 
         double get_gid(int k) {
-          if (k > (int)final_nodes.size()) return -1;
+          if (k >= (int)final_nodes.size()) return -1;
           else return final_nodes[k]->goal_id;
         }
 
