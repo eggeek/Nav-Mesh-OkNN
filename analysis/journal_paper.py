@@ -32,8 +32,8 @@ def nn_time_by_vnum(DF, ylim=None, xlim=None, saveto=None, limit=10, size=500, x
   xs[4], ys[4] = gen_xy(df, 'vnum', 'cost_fi', limit=limit)
   algos.append(alias['fence heuristic'])
 
-  # xs[5], ys[5] = gen_xy(df, 'pts', 'cost_edbt', limit=limit)
-  # algos.append('LVG')
+  xs[5], ys[5] = gen_xy(df, 'pts', 'cost_edbt', limit=limit)
+  algos.append('LVG')
 
   for i in xs.keys():
     xs[i] = [v * size for v in xs[i]]
@@ -252,10 +252,9 @@ def vary_k(DF, saveto=None, xscale='log', limit=10, xlim=None, yscale=None, ylim
   xs[2], ys[2] = gen_xy(df, 'k', 'cost_hi', limit=limit)
   algos.append(alias['target heuristic'])
 
-  if (df.cost_edbt.max() > 0):
-    df['cost_edbt'] = df.cost_edbt.clip(0, 1e6)
-    xs[3], ys[3] = gen_xy(df, 'k', 'cost_edbt', limit=limit)
-    algos.append('LVG')
+  df['cost_edbt'] = df.cost_edbt.clip(0, 1e6)
+  xs[3], ys[3] = gen_xy(df, 'k', 'cost_edbt', limit=limit)
+  algos.append('LVG')
 
   xs[4], ys[4] = gen_xy(df, 'k', 'cost_fi', limit=limit)
   algos.append(alias['fence heuristic'])

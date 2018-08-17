@@ -202,10 +202,10 @@ void dense_experiment(pl::Point start, int k, vector<string>& cols, bool verbose
   row["fencecnt"] = fencecnt;
   row["keycnt"] = meshFence->get_active_edge_cnt();
 
-  //edbt->set_start(start);
-  //vector<pair<vg::pPtr, double>> res = edbt->OkNN(k);
-  //row["cost_edbt"] = edbt->get_search_micro();
-  //row["gen_edbt"] = edbt->g.nodes_generated;
+  edbt->set_start(start);
+  vector<pair<vg::pPtr, double>> res = edbt->OkNN(k);
+  row["cost_edbt"] = edbt->get_search_micro();
+  row["gen_edbt"] = edbt->g.nodes_generated;
 
   ffp->set_start(start);
   ffp->set_K(k);
