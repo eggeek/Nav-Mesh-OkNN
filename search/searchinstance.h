@@ -8,6 +8,8 @@
 #include <queue>
 #include <vector>
 #include <ctime>
+#include <chrono>
+#include <algorithm>
 
 namespace polyanya
 {
