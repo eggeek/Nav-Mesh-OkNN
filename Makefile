@@ -7,7 +7,9 @@ PA_INCLUDES = $(addprefix -I,$(PA_FOLDERS))
 CXX = g++
 BOOSTFLAGS = -I ${BOOST_BASE}/include
 CXXFLAGS = -std=c++11 -pedantic -Wall -Wno-strict-aliasing -Wno-long-long -Wno-deprecated -Wno-deprecated-declarations 
-CXXFLAGS += $(BOOSTFLAGS)
+ifneq (${BOOST_BASE},)
+	CXXFLAGS += $(BOOSTFLAGS)
+endif
 
 FAST_CXXFLAGS = -O3 -DNDEBUG
 DEV_CXXFLAGS = -g -ggdb -O0 -fno-omit-frame-pointer
