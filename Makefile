@@ -5,7 +5,10 @@ PA_OBJ = $(PA_SRC:.cpp=.o)
 PA_INCLUDES = $(addprefix -I,$(PA_FOLDERS))
 
 CXX = g++
-CXXFLAGS = -std=c++11 -pedantic -Wall -Wno-strict-aliasing -Wno-long-long -Wno-deprecated -Wno-deprecated-declarations -Werror
+BOOSTFLAGS = -I ${BOOST_BASE}/include
+CXXFLAGS = -std=c++11 -pedantic -Wall -Wno-strict-aliasing -Wno-long-long -Wno-deprecated -Wno-deprecated-declarations 
+CXXFLAGS += $(BOOSTFLAGS)
+
 FAST_CXXFLAGS = -O3 -DNDEBUG
 DEV_CXXFLAGS = -g -ggdb -O0 -fno-omit-frame-pointer
 PROFILE_CXXFLAGS = -g -ggdb -O0 -fno-omit-frame-pointer -DNDEBUG
