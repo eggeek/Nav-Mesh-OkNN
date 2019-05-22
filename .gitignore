@@ -2,6 +2,8 @@
 *.d
 *.exe
 bin
+.idea/*
+cmake-build-debug/*
 .vscode/tags
 .vscode/*
 utils/.vscode/tags
