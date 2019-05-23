@@ -3,7 +3,8 @@ project(nav_mesh_oknn)
 
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_FLAGS "-pedantic -Wall -Wno-strict-aliasing -Wno-long-long -Wno-deprecated -Wno-deprecated-declarations")
-set(DEV_CXX_FLAGS "-g -ggdb -O0 -fno-omit-frame-pointer -fsanitize=address")
+#set(DEV_CXX_FLAGS "-g -ggdb -O0 -fno-omit-frame-pointer -fsanitize=address")
+set(DEV_CXX_FLAGS "-g -ggdb -O0 -fno-omit-frame-pointer")
 set(RELEASE_CXX_FLAGS "-O3 -DNDEBUG")
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS} ${DEV_CXX_FLAGS}")
 set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS} ${RELEASE_CXX_FLAGS}")
@@ -18,7 +19,7 @@ include_directories(index)
 include_directories(rstar)
 include_directories(search)
 include_directories(structs)
-include_directories(tests)
+include_directories(testcases)
 
 set(SRC
         EDBT/EDBTknn.cpp
@@ -66,11 +67,11 @@ set(SRC
         structs/searchnode.h
         structs/successor.h
         structs/vertex.h
-        tests/catch.hpp)
+        testcases/catch.hpp)
 
 add_executable(gen ${SRC} gen.cpp)
 add_executable(experiment ${SRC} experiment.cpp)
-add_executable(testing ${SRC} test.cpp)
+add_executable(testing ${SRC} testing.cpp)
 
 find_package(Boost)
 if(Boost_FOUND)

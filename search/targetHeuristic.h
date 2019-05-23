@@ -171,7 +171,7 @@ class TargetHeuristic {
 
         void initRtree() {
           // rte can be initialized only once
-          assert(rte == nullptr);
+          if (rte != NULL) return;
           rte = new rs::RStarTree();
           rtEntries.clear();
           gids.clear();

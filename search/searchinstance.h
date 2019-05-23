@@ -26,6 +26,7 @@ struct PointerComp
 
 typedef Mesh* MeshPtr;
 
+// Polyanya instance for point to point search
 class SearchInstance
 {
     typedef std::priority_queue<SearchNodePtr, std::vector<SearchNodePtr>,
@@ -101,7 +102,7 @@ class SearchInstance
         bool verbose;
         double sort_cost;
 
-        SearchInstance() { }
+        SearchInstance() = default;
         SearchInstance(MeshPtr m) : mesh(m) { init(); }
         SearchInstance(MeshPtr m, Point s, Point g) :
             mesh(m), start(s), goal(g) { init(); }

@@ -23,14 +23,12 @@ SearchInstance* si;
 IntervalHeuristic* ki;
 IntervalHeuristic* ki0;
 TargetHeuristic* hi;
-TargetHeuristic* hi2;
 FenceHeuristic* fi;
 IERPolyanya* ffp;
 KnnMeshEdgeFence* meshFence;
-vector<Scenario> scenarios;
 vector<Point> pts;
 vector<vector<Point>> polys;
-string obs_path, polys_path, pts_path, mesh_path;
+string testfile, obs_path, polys_path, pts_path, mesh_path;
 
 void load_points(istream& infile ) {
   int N;
@@ -42,6 +40,8 @@ void load_points(istream& infile ) {
 }
 
 void dump(const vector<pl::Point> starts) {
+  // write all test data to folder ./dump/
+  // run the function when a test case fail
   ofstream file;
   string fname = "dump/" + to_string(polys.size()) + "polys"
     + to_string(pts.size()) + "pts";
@@ -54,7 +54,7 @@ void dump(const vector<pl::Point> starts) {
   file.close();
 
   ofstream ptsfile;
-  ptsfile.open(fname + "starts.points");
+  ptsfile.open(fname + "-starts.points");
   ptsfile << starts.size() << endl;
   for (size_t i=0; i<starts.size(); i++) {
     ptsfile << starts[i].x << " " << starts[i].y << endl;
@@ -70,8 +70,10 @@ void dump(const vector<pl::Point> starts) {
   targetsfile.close();
 }
 
-void load_data() {
-  cin >> mesh_path >> polys_path >> obs_path >> pts_path;
+void load_data(const string& testcase) {
+  ifstream testin(testcase);
+
+  testin >> mesh_path >> polys_path >> obs_path >> pts_path;
 
   ifstream meshfile(mesh_path);
   ifstream obsfile(obs_path);
@@ -88,7 +90,7 @@ void load_data() {
   ki = new IntervalHeuristic(mp);
 	ki0 = new IntervalHeuristic(mp); ki0->setZero(true);
   hi = new TargetHeuristic(mp);
-  hi2 = new TargetHeuristic(mp);
+  new TargetHeuristic(mp);
   fi = new FenceHeuristic(mp);
   meshFence = new KnnMeshEdgeFence(mp);
   ffp = new IERPolyanya(si);
@@ -105,10 +107,11 @@ void print_path(const vector<Point>& path) {
   }
 }
 
-TEST_CASE("Test polyanya zero heuristic") {
+TEST_CASE("poly-h0") { // test zero heuristic
+  load_data(testfile);
   int N = 10;
   vector<Point> starts;
-  generator::gen_points_in_traversable(oMap, polys, N, starts);
+  generator::gen_points_in_traversable(oMap, polys, N, starts); // generate start points
 
   for (Point& start: starts) {
     ki->set_K(pts.size());
@@ -129,16 +132,18 @@ TEST_CASE("Test polyanya zero heuristic") {
   }
 }
 
-TEST_CASE("Test target heuristic") {
+TEST_CASE("poly-ht") { // test target heuristic
+  load_data(testfile);
   int N = 10;
   vector<Point> starts;
-  generator::gen_points_in_traversable(oMap, polys, N, starts);
-  for (Point& start: starts) {
-    hi->set_K(pts.size());
-    hi->set_start(start);
-    hi->set_goals(pts);
+  generator::gen_points_in_traversable(oMap, polys, N, starts); // generate start points
+  hi->set_K(pts.size());
+  hi->set_goals(pts);
 
-    ki->set_K(pts.size());
+  ki->set_K(pts.size());
+  for (Point& start: starts) {
+    hi->set_start(start);
+
     ki->set_start_goal(start, pts);
 
     int reshi = hi->search();
@@ -153,8 +158,8 @@ TEST_CASE("Test target heuristic") {
   }
 }
 
-
-TEST_CASE("BFPolyanya") {
+TEST_CASE("poly-bf") { // brute force polyanya
+  load_data(testfile);
   int N = 10;
   vector<Point> starts;
   generator::gen_points_in_traversable(oMap, polys, N, starts);
@@ -174,58 +179,8 @@ TEST_CASE("BFPolyanya") {
   }
 }
 
-TEST_CASE("FENCE") {
-  // data from input/brc202d-20.in
-  Point start = {291, 302};
-  //pts.clear();
-  // int N = 1;
-  //vector<Point> starts;
-  //generator::gen_points_in_traversable(oMap, polys, N, starts);
-  //Point start = starts.back();
-  //meshFence->verbose = true;
-  meshFence->set_goals(pts);
-  meshFence->floodfill();
-  int k = min(3, (int)pts.size());
-  hi->set_K(k);
-  hi->set_start(start);
-  hi->set_goals(pts);
-  int resthi = hi->search();
-  for (int i=0; i<k; i++) {
-    cout << hi->get_cost(i) << endl;
-    vector<Point> path;
-    hi->get_path_points(path, i);
-    print_path(path);
-  }
-
-  //fi->verbose = true;
-  fi->set_K(k);
-  fi->set_start(start);
-  fi->set_goals(pts);
-
-  int restfi = fi->search();
-  REQUIRE(resthi == restfi);
-  for (int i=0; i<resthi; i++) {
-    double dhi = hi->get_cost(i);
-    double dfi = fi->get_cost(i);
-    if (fabs(dhi-dfi) > EPSILON) {
-      vector<Point> path;
-      hi->get_path_points(path, i);
-      print_path(path);
-      Point goal_hi = path.back();
-      fi->get_path_points(path, i);
-      print_path(path);
-      Point goal_fi = path.back();
-      cout << "Start: " << start.x << " " << start.y << endl;
-      cout << "k: " << i << endl;
-      cout << "Goal hi: " << goal_hi.x << " " << goal_hi.y << endl;
-      cout << "Goal fi: " << goal_fi.x << " " << goal_fi.y << endl;
-      cout << "dist hi: " << dhi << ", dist fi: " << dfi << endl;
-    }
-    REQUIRE(fabs(dhi - dfi) < EPSILON);
-  }
-}
-
-TEST_CASE("FenceNN") {
+TEST_CASE("fence-nn") { // Fence preprocessing for NN query
+  load_data(testfile);
   int N = 1000;
   vector<Point> starts;
   generator::gen_points_in_traversable(oMap, polys, N, starts);
@@ -249,7 +204,8 @@ TEST_CASE("FenceNN") {
   }
 }
 
-TEST_CASE("fence_heuristic") {
+TEST_CASE("fence-h") { // Fence preoprocessing for kNN
+  load_data(testfile);
   int N = 1000;
   vector<Point> starts;
   generator::gen_points_in_traversable(oMap, polys, N, starts);
@@ -290,63 +246,9 @@ TEST_CASE("fence_heuristic") {
   }
 }
 
-TEST_CASE("fence_knn") {
-  int N = 1000;
-  vector<Point> starts;
-  pts.clear();
-  generator::gen_points_in_traversable(oMap, polys, (int)polys.size(), pts);
-  generator::gen_points_in_traversable(oMap, polys, N, starts);
-  meshFence->set_goals(pts);
-  meshFence->floodfill();
-  dump(starts);
-  for (auto& start: starts) {
-    for (int i=1; i<=min(50, (int)pts.size()); i += 5) {
-      ki->set_start_goal(start, pts);
-      ki->set_K(i);
-      int cntki = ki->search();
-      fi->set_start(start);
-      fi->set_K(i);
-      fi->set_goals(pts);
-      int cntfi = fi->search();
-      REQUIRE(cntki == cntfi);
-      for (int j=0; j<cntki; j++) {
-        double dist_ki = ki->get_cost(j);
-        double dist_fi = fi->get_cost(j);
-        if (fabs(dist_ki - dist_fi) > EPSILON) {
-          cout << "Start: " << start.x << " " << start.y << endl;
-        }
-        REQUIRE(fabs(dist_ki - dist_fi) <= EPSILON);
-      }
-    }
-  }  
-}
 
-TEST_CASE("no_reassign") {
-  int N = 10;
-  int k = min(2, (int)pts.size());
-  vector<Point> starts;
-  generator::gen_points_in_traversable(oMap, polys, N, starts);
-  hi->set_K(k);
-  hi->set_goals(pts);
-  hi->set_reassign(true);
-  hi2->set_K(k);
-  hi2->set_goals(pts);
-  hi2->set_reassign(false);
-  for (Point& start: starts) {
-    hi->set_start(start);
-    hi2->set_start(start);
-    int res = hi->search();
-    int res2 = hi2->search();
-    REQUIRE(res == res2);
-    for (int i=0; i<res; i++) {
-      double d = hi->get_cost(i);
-      double d2 = hi2->get_cost(i); 
-      REQUIRE(fabs(d - d2) < EPSILON);
-    }
-  }
-}
-
-TEST_CASE("FastFilter") {
+TEST_CASE("fast-filter") { // test fast filter in EDBT paper
+  load_data(testfile);
   int N = 10;
   vector<Point> starts;
   generator::gen_points_in_traversable(oMap, polys, N, starts);
@@ -374,10 +276,14 @@ TEST_CASE("FastFilter") {
 }
 
 int main(int argv, char* args[]) {
-	cout << "Loading data..." << endl;
-  load_data();
+  using namespace Catch::clara;
+  Catch::Session session;
+  auto cli = session.cli() | Opt(testfile, "testfile")["--input"]("");
+  session.cli(cli);
+  int resCode = session.applyCommandLine(argv, args);
+  if (resCode != 0)
+    return resCode;
+
 	cout << "Running test cases..." << endl;
-	Catch::Session session;
-	int res = session.run(argv, args);
-  return res;
+	return session.run(argv, args);
 }
