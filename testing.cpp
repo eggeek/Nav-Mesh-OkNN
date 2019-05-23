@@ -19,12 +19,12 @@ MeshPtr mp;
 Mesh m;
 EDBT::ObstacleMap* oMap;
 EDBT::EDBTkNN* edbt;
-SearchInstance* si;
-IntervalHeuristic* ki;
-IntervalHeuristic* ki0;
-TargetHeuristic* hi;
-FenceHeuristic* fi;
-IERPolyanya* ffp;
+SearchInstance* poly_p2p;
+IntervalHeuristic* poly_hi;
+IntervalHeuristic* poly_hi0;
+TargetHeuristic* poly_ht;
+FenceHeuristic* poly_fence;
+IERPolyanya* IERpoly;
 KnnMeshEdgeFence* meshFence;
 vector<Point> pts;
 vector<vector<Point>> polys;
@@ -86,16 +86,15 @@ void load_data(const string& testcase) {
   m = *mp;
   oMap = new EDBT::ObstacleMap(obsfile, &m);
   meshfile.close();
-  si = new SearchInstance(mp);
-  ki = new IntervalHeuristic(mp);
-	ki0 = new IntervalHeuristic(mp); ki0->setZero(true);
-  hi = new TargetHeuristic(mp);
-  new TargetHeuristic(mp);
-  fi = new FenceHeuristic(mp);
+  poly_p2p = new SearchInstance(mp);
+  poly_hi = new IntervalHeuristic(mp);
+	poly_hi0 = new IntervalHeuristic(mp); poly_hi0->setZero(true);
+  poly_ht = new TargetHeuristic(mp);
+  poly_fence = new FenceHeuristic(mp);
   meshFence = new KnnMeshEdgeFence(mp);
-  ffp = new IERPolyanya(si);
-  fi->set_meshFence(meshFence);
-  //edbt = new EDBT::EDBTkNN(oMap);
+  IERpoly = new IERPolyanya(poly_p2p);
+  poly_fence->set_meshFence(meshFence);
+  edbt = new EDBT::EDBTkNN(oMap);
   printf("vertices: %d, polygons: %d\n", (int)m.mesh_vertices.size(), (int)m.mesh_polygons.size());
 }
 
@@ -107,6 +106,34 @@ void print_path(const vector<Point>& path) {
   }
 }
 
+
+TEST_CASE("edbt") { // test competitor in EDBT paper
+  load_data(testfile);
+  int N = 10;
+  vector<Point> starts;
+  generator::gen_points_in_traversable(oMap, polys, N, starts);
+
+  int k;
+  //k = min(5, (int)pts.size());
+  k = (int)pts.size();
+  IERpoly->set_K(k);
+  IERpoly->set_goals(pts);
+
+  edbt->set_goals(pts);
+  for (Point& start: starts) {
+    edbt->set_start(start);
+    vector<pair<EDBT::pPtr, double>> res = edbt->OkNN(k);
+
+    IERpoly->set_start(start);
+    vector<double> dist = IERpoly->search();
+
+    REQUIRE(res.size() == dist.size());
+    for (int i=0; i<(int)dist.size(); i++) {
+      REQUIRE(fabs(dist[i] - res[i].second) < EPSILON);
+    }
+  }
+}
+
 TEST_CASE("poly-h0") { // test zero heuristic
   load_data(testfile);
   int N = 10;
@@ -114,19 +141,19 @@ TEST_CASE("poly-h0") { // test zero heuristic
   generator::gen_points_in_traversable(oMap, polys, N, starts); // generate start points
 
   for (Point& start: starts) {
-    ki->set_K(pts.size());
-    ki->set_start_goal(start, pts);
+    poly_hi->set_K(pts.size());
+    poly_hi->set_start_goal(start, pts);
 
-    ki0->set_K(pts.size());
-    ki0->set_start_goal(start, pts);
+    poly_hi0->set_K(pts.size());
+    poly_hi0->set_start_goal(start, pts);
 
-    int res0 = ki0->search();
-    int res = ki->search();
+    int res0 = poly_hi0->search();
+    int res = poly_hi->search();
     REQUIRE(res0 == res);
     for (int i=0; i<res0; i++) {
       double d0, d;
-      d0 = ki0->get_cost(i);
-      d = ki->get_cost(i);
+      d0 = poly_hi0->get_cost(i);
+      d = poly_hi->get_cost(i);
       REQUIRE(fabs(d0 - d) < EPSILON);
     }
   }
@@ -137,22 +164,22 @@ TEST_CASE("poly-ht") { // test target heuristic
   int N = 10;
   vector<Point> starts;
   generator::gen_points_in_traversable(oMap, polys, N, starts); // generate start points
-  hi->set_K(pts.size());
-  hi->set_goals(pts);
+  poly_ht->set_K(pts.size());
+  poly_ht->set_goals(pts);
 
-  ki->set_K(pts.size());
+  poly_hi->set_K(pts.size());
   for (Point& start: starts) {
-    hi->set_start(start);
+    poly_ht->set_start(start);
 
-    ki->set_start_goal(start, pts);
+    poly_hi->set_start_goal(start, pts);
 
-    int reshi = hi->search();
-    int reski = ki->search();
+    int reshi = poly_ht->search();
+    int reski = poly_hi->search();
     REQUIRE(reski == reshi);
     for (int i=0; i<reshi; i++) {
       double dhi, dki;
-      dhi = hi->get_cost(i);
-      dki = ki->get_cost(i);
+      dhi = poly_ht->get_cost(i);
+      dki = poly_hi->get_cost(i);
       REQUIRE(fabs(dhi - dki) < EPSILON);
     }
   }
@@ -166,14 +193,14 @@ TEST_CASE("poly-bf") { // brute force polyanya
   for (Point& start: starts) {
     int k = min(5, (int)pts.size());
     double cost_poly = 0, gen_poly = 0;
-    vector<double> dists = si->brute_force(start, pts, k, cost_poly, gen_poly);
+    vector<double> dists = poly_p2p->brute_force(start, pts, k, cost_poly, gen_poly);
 
-    ki->set_K(k);
-    ki->set_start_goal(start, pts);
-    int reski = ki->search();
+    poly_hi->set_K(k);
+    poly_hi->set_start_goal(start, pts);
+    int reski = poly_hi->search();
     REQUIRE(reski == (int)dists.size());
     for (int i=0; i<reski; i++) {
-      double dki = ki->get_cost(i);
+      double dki = poly_hi->get_cost(i);
       REQUIRE(fabs(dki - dists[i]) < EPSILON);
     }
   }
@@ -186,17 +213,17 @@ TEST_CASE("fence-nn") { // Fence preprocessing for NN query
   generator::gen_points_in_traversable(oMap, polys, N, starts);
   meshFence->set_goals(pts);
   meshFence->floodfill();
-  hi->set_K(1);
-  hi->set_goals(pts);
-  fi->set_goals(pts);
+  poly_ht->set_K(1);
+  poly_ht->set_goals(pts);
+  poly_fence->set_goals(pts);
   for (Point& start: starts) {
-    fi->set_start(start);
-    hi->set_start(start);
+    poly_fence->set_start(start);
+    poly_ht->set_start(start);
     double nn_cost = 0.0;
-    pair<int, double> res = fi->nn_query(si, nn_cost); 
-    int rest_hi = hi->search();
+    pair<int, double> res = poly_fence->nn_query(poly_p2p, nn_cost);
+    int rest_hi = poly_ht->search();
     if (rest_hi) {
-      double dist_hi = hi->get_cost(0);
+      double dist_hi = poly_ht->get_cost(0);
       REQUIRE(fabs(res.second - dist_hi) <= EPSILON);
     } else {
       REQUIRE(res.first == -1);
@@ -212,34 +239,34 @@ TEST_CASE("fence-h") { // Fence preoprocessing for kNN
 
   meshFence->set_goals(pts);
   meshFence->floodfill();
-  hi->set_goals(pts);
+  poly_ht->set_goals(pts);
   for (Point& start: starts) {
     int k = min(5, (int)pts.size());
-    hi->set_K(k);
-    hi->set_start(start);
+    poly_ht->set_K(k);
+    poly_ht->set_start(start);
 
-    fi->set_K(k);
-    fi->set_start(start);
-    fi->set_goals(pts);
+    poly_fence->set_K(k);
+    poly_fence->set_start(start);
+    poly_fence->set_goals(pts);
 
-    int resthi = hi->search();
-    int restfi = fi->search();
+    int resthi = poly_ht->search();
+    int restfi = poly_fence->search();
     REQUIRE(resthi == restfi);
     for (int i=0; i<resthi; i++) {
-      double dhi = hi->get_cost(i);
-      double dfi = fi->get_cost(i);
+      double dhi = poly_ht->get_cost(i);
+      double dfi = poly_fence->get_cost(i);
       if (fabs(dhi-dfi) > EPSILON) {
         vector<Point> path;
-        hi->get_path_points(path, i);
+        poly_ht->get_path_points(path, i);
         print_path(path);
         Point goal_hi = path.back();
-        fi->get_path_points(path, i);
+        poly_fence->get_path_points(path, i);
         print_path(path);
         Point goal_fi = path.back();
         cout << "Start: " << start.x << " " << start.y << endl;
         cout << "k: " << i << endl;
-        cout << "Goal hi: " << goal_hi.x << " " << goal_hi.y << endl;
-        cout << "Goal fi: " << goal_fi.x << " " << goal_fi.y << endl;
+        cout << "Goal poly_ht: " << goal_hi.x << " " << goal_hi.y << endl;
+        cout << "Goal poly_fence: " << goal_fi.x << " " << goal_fi.y << endl;
       }
       REQUIRE(fabs(dhi - dfi) < EPSILON);
     }
@@ -247,28 +274,28 @@ TEST_CASE("fence-h") { // Fence preoprocessing for kNN
 }
 
 
-TEST_CASE("fast-filter") { // test fast filter in EDBT paper
+TEST_CASE("poly-IER") { // test polyanya with incremental euclidean restriction
   load_data(testfile);
   int N = 10;
   vector<Point> starts;
   generator::gen_points_in_traversable(oMap, polys, N, starts);
   int k = min(5, (int)pts.size());
 
-  ffp->set_K(k);
-  ffp->set_goals(pts);
+  IERpoly->set_K(k);
+  IERpoly->set_goals(pts);
   for (Point& start: starts) {
     double cost_poly = 0, gen_poly = 0;
-    vector<double> dists = si->brute_force(start, pts, k, cost_poly, gen_poly);
+    vector<double> dists = poly_p2p->brute_force(start, pts, k, cost_poly, gen_poly);
 
-    ffp->set_start(start);
-    vector<double> dists2 = ffp->search();
-    ki->set_K(k);
-    ki->set_start_goal(start, pts);
-    int reski = ki->search();
+    IERpoly->set_start(start);
+    vector<double> dists2 = IERpoly->search();
+    poly_hi->set_K(k);
+    poly_hi->set_start_goal(start, pts);
+    int reski = poly_hi->search();
     REQUIRE(reski == (int)dists.size());
     REQUIRE(reski == (int)dists2.size());
     for (int i=0; i<reski; i++) {
-      double dki = ki->get_cost(i);
+      double dki = poly_hi->get_cost(i);
       REQUIRE(fabs(dki - dists[i]) < EPSILON);
       REQUIRE(fabs(dki - dists2[i]) < EPSILON);
     }
