@@ -1,51 +1,22 @@
-MAKEFLAGS += -r
-PA_FOLDERS = structs helpers search rstar EDBT generator index tests
-PA_SRC = $(foreach folder,$(PA_FOLDERS),$(wildcard $(folder)/*.cpp))
-PA_OBJ = $(PA_SRC:.cpp=.o)
-PA_INCLUDES = $(addprefix -I,$(PA_FOLDERS))
+build_dir="cmake-build"
+flag="Debug"
 
-CXX = g++
-BOOSTFLAGS = -I ${BOOST_BASE}/include
-CXXFLAGS = -std=c++11 -pedantic -Wall -Wno-strict-aliasing -Wno-long-long -Wno-deprecated -Wno-deprecated-declarations 
-ifneq (${BOOST_BASE},)
-	CXXFLAGS += $(BOOSTFLAGS)
-endif
+all: build 
+fast dev: all
 
-FAST_CXXFLAGS = -O3 -DNDEBUG
-DEV_CXXFLAGS = -g -ggdb -O0 -fno-omit-frame-pointer
-PROFILE_CXXFLAGS = -g -ggdb -O0 -fno-omit-frame-pointer -DNDEBUG
+dev: flag = Debug
+fast: flag = Release
 
-ifeq ("$(findstring Darwin, "$(shell uname -s)")", "Darwin")
-  CXXFLAGS += -DOS_MAC
-else
-  ifeq ("$(findstring Linux, "$(shell uname -s)")", "Linux")
-    CXXFLAGS += -lrt
-  endif
-endif
+.PHONY: gen build clean
+gen:
+	@mkdir -p ${build_dir}
+	@echo "cmake -B${build_dir} -H. -DCMAKE_BUILD_TYPE=${flag}"
+	@eval "cmake -B${build_dir} -H. -DCMAKE_BUILD_TYPE=${flag}"
 
-TARGETS = test gen experiment
-BIN_TARGETS = $(addprefix bin/,$(TARGETS))
-
-all: $(TARGETS)
-fast: CXXFLAGS += $(FAST_CXXFLAGS)
-dev: CXXFLAGS += $(DEV_CXXFLAGS)
-prof: CXXFLAGS += $(PROFILE_CXXFLAGS)
-fast dev prof: all
+build: gen
+	@echo "cd ${build_dir} && make -j8"
+	@eval "cd ${build_dir} && make -j8"
 
 clean:
-	rm -rf ./bin/*
-	rm -f $(PA_OBJ:.o=.d)
-	rm -f $(PA_OBJ)
-
-.PHONY: $(TARGETS)
-$(TARGETS): % : bin/%
-
-$(BIN_TARGETS): bin/%: %.cpp $(PA_OBJ)
-	@mkdir -p ./bin
-	$(CXX) $(CXXFLAGS) $(PA_INCLUDES) $(PA_OBJ) $(@:bin/%=%).cpp -o $(@)
-
--include $(PA_OBJ:.o=.d)
-
-%.o: %.cpp
-	$(CXX) $(CXXFLAGS) $(PA_INCLUDES) -MM -MP -MT $@ -MF ${@:.o=.d} $<
-	$(CXX) $(CXXFLAGS) $(PA_INCLUDES) $< -c -o $@
+	@echo "cd ${build_dir} && make clean"
+	@eval "cd ${build_dir} && make clean"
