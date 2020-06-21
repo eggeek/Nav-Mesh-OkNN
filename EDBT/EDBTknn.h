@@ -71,7 +71,7 @@ public:
   vector<pPoint> goals;
   pPoint q;
   Graph g;
-  rs::RStarTree* rte; // rtree for entities
+  rs::RStarTree* rte = nullptr; // rtree for entities
   vector<rs::LeafNodeEntry> rtEntries;
   rs::MinHeap heap;
   // < seg({vid, vid}), ... >
