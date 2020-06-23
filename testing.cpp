@@ -1,4 +1,5 @@
 #define CATCH_CONFIG_RUNNER
+#include "EDBTObstacles.h"
 #include "catch.hpp"
 #include "consts.h"
 #include "expansion.h"
@@ -13,6 +14,7 @@
 #include "EDBTknn.h"
 #include "park2poly.h"
 #include "knnMeshFence.h"
+#include "RStarTree.h"
 using namespace std;
 using namespace polyanya;
 
@@ -137,6 +139,28 @@ TEST_CASE("edbt") { // test competitor in EDBT paper
       // this assertion may fail due to the time limit
       REQUIRE(fabs(dist[i] - res[i].second) < EPSILON);
     }
+  }
+}
+
+TEST_CASE("rtree-del") {
+  load_data(testfile);
+  rs::RStarTree* tree = nullptr;
+  int repeat = 10;
+  for (int i=0; i<repeat; i++) {
+    REQUIRE(tree == nullptr);
+    int N = 1000;
+    vector<Point> starts;
+    generator::gen_points_in_traversable(oMap, polys, N, starts);
+    vector<rs::LeafNodeEntry> leaves;
+    for (auto& it: starts) {
+      rs::Mbr mbr(it.x, it.x, it.y, it.y);
+      rs::LeafNodeEntry leaf(mbr, (rs::Data_P)&it);
+      leaves.push_back(leaf);
+    }
+    tree = new rs::RStarTree();
+    for (auto& it: leaves)
+      tree->insertData(&it);
+    delete tree;
   }
 }
 

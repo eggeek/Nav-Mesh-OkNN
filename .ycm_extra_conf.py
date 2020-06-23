@@ -85,7 +85,7 @@ flags = [
 '-Irstar',
 '-Isearch',
 '-Istructs',
-'-Itests',
+'-Itestcases',
 ]
 
 

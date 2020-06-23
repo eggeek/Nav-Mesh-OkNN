@@ -17,6 +17,11 @@ namespace rs = rstar;
 namespace pl = polyanya;
 using namespace std;
 
+typedef polyanya::Point pPoint;
+typedef pair<int, int> pii;
+typedef const pPoint* pPtr;
+
+
 enum struct PolySegPosition {
   WITHIN,
   INTERSECT,
@@ -63,7 +68,7 @@ class ObstacleMap {
   vector<set<pii>> visObs;
   // obs: <obstacle, obstacle, ...>
   vector<Obstacle> obs;
-  rs::RStarTree* rtree;
+  rs::RStarTree* obstacleRtree;
   vector<rs::LeafNodeEntry> rtEntries;
 
   MeshPtr mesh;
@@ -160,9 +165,9 @@ class ObstacleMap {
     {
         fail("Error parsing map (read too much)");
     }
-    rtree = new rs::RStarTree();
+    obstacleRtree = new rs::RStarTree();
     traversableRtree = new rs::RStarTree();
-    initRtree();
+    initObstacleRtree();
     initTraversableRtree();
     if (version != 2 && callInit)
       initVisObs();
@@ -170,7 +175,7 @@ class ObstacleMap {
   ObstacleMap() { }
 
   ~ObstacleMap() {
-    if (rtree) delete rtree;
+    if (obstacleRtree) delete obstacleRtree;
     if (traversableRtree) delete traversableRtree;
   }
 
@@ -212,7 +217,7 @@ class ObstacleMap {
       traversableRtree->insertData(&it);
   }
 
-  void initRtree() {
+  void initObstacleRtree() {
     for (int i=0; i<(int)obs.size(); i++) {
       for (int j=1; j<(int)obs[i].size(); j++) {
         const Vertex& v1 = vs[obs[i][j-1]];
@@ -228,7 +233,7 @@ class ObstacleMap {
       rtEntries.push_back(leaf);
     }
     for (auto& it: rtEntries)
-      rtree->insertData(&it);
+      obstacleRtree->insertData(&it);
   }
 
   bool isVisible(const Seg& seg) {
@@ -251,7 +256,7 @@ class ObstacleMap {
       if (vid_oid[seg.first.id] != vid_oid[seg.second.id])
         return true;
       else
-        return isCoveredByTraversable(p0, p1);
+        return isCoveredByPolys(p0, p1, traversableRtree);
     }
     else { // sPos == ObsSegPosition::ONBORDER
       return true;
@@ -263,13 +268,13 @@ class ObstacleMap {
     if (sPos == ObsSegPosition::INTERSECT)
       return false;
     else
-      return isCoveredByTraversable(p0, p1);
+      return isCoveredByPolys(p0, p1, traversableRtree);
 
   }
 
-  bool isCoveredByTraversable(const pPoint& p0, const pPoint& p1) {
+  bool isCoveredByPolys(const pPoint& p0, const pPoint& p1, rs::RStarTree* rtree) {
     vector<const Polygon*> polys;
-    if (!isCollidePolys(p0, p1, polys))
+    if (!isCollidePolys(p0, p1, polys, rtree))
       return false;
     vector<pair<pPoint, pPoint>> stack;
     stack.push_back({{p0.x, p0.y}, {p1.x, p1.y}});
@@ -385,7 +390,7 @@ class ObstacleMap {
     return covered;
   }
 
-  inline bool isCollideWithMbr(const pPoint& p0, const pPoint& p1, const rs::Mbr& mbr) {
+  static inline bool isCollideWithMbr(const pPoint& p0, const pPoint& p1, const rs::Mbr& mbr) {
     if (mbr.coord[0][0] <= p0.x && p0.x <= mbr.coord[0][1] &&
         mbr.coord[0][0] <= p1.x && p1.x <= mbr.coord[0][1] &&
         mbr.coord[1][0] <= p0.y && p0.y <= mbr.coord[1][1] &&
@@ -403,10 +408,10 @@ class ObstacleMap {
     return flag;
   }
 
-  bool isCollidePolys(const pPoint& pi, const pPoint& pj, vector<const Polygon*>& polys) {
+  bool isCollidePolys(const pPoint& pi, const pPoint& pj, vector<const Polygon*>& polys, rs::RStarTree* rtree) {
 
     rs::Node_P_V stack;
-    stack.push_back(traversableRtree->root);
+    stack.push_back(rtree->root);
     while (!stack.empty()) {
       rs::Node_P c = stack.back(); stack.pop_back();
       if (!isCollideWithMbr(pi, pj, c->mbrn))
@@ -478,7 +483,7 @@ class ObstacleMap {
     // if <i, j> intersect with a obstacle border -> false
     pPoint pi = pPoint{(double)vs[ob[i]].x, (double)vs[ob[i]].y};
     pPoint pj = pPoint{(double)vs[ob[j]].x, (double)vs[ob[j]].y};
-    return isCoveredByTraversable(pi, pj);
+    return isCoveredByPolys(pi, pj, traversableRtree);
   }
 
   PolySegPosition getPolySegPosition(const pPoint& p0, const pPoint& p1, const Polygon& poly) {
@@ -518,7 +523,7 @@ class ObstacleMap {
   public:
   ObsSegPosition getObsSegPosition(const pPoint& p0, const pPoint& p1) {
     rs::Node_P_V stack;
-    stack.push_back(rtree->root);
+    stack.push_back(obstacleRtree->root);
     ObsSegPosition res = ObsSegPosition::DISJOINT;
     while (!stack.empty()) {
       rs::Node_P c = stack.back(); stack.pop_back();
@@ -559,6 +564,41 @@ class ObstacleMap {
     }
     while (!stack.empty()) stack.pop_back();
     return res;
+  }
+
+  // find all obstacle segments intersect with on [p0, p1]
+  static void getObsSegs(rs::RStarTree* tree, const pPoint& p0, const pPoint& p1, vector<Seg*> segs) {
+    rs::Node_P_V stack;
+    stack.push_back(tree->root);
+    while (!stack.empty()) {
+      rs::Node_P c = stack.back(); stack.pop_back();
+      rs::Mbr& mbr = c->mbrn;
+      if (!isCollideWithMbr(p0, p1, mbr)) continue;
+      if (c->level) {
+        rs::Node_P_V& children = *c->children;
+        for (const auto& i: children) stack.push_back(i);
+      }
+      else {
+        rs::Entry_P_V& entires = *c->entries;
+        for (const auto& i: entires) {
+          Seg* seg = (Seg*)i->data;
+          pPoint v0 = pPoint{(double)seg->first.x, (double)seg->first.y};
+          pPoint v1 = pPoint{(double)seg->second.x, (double)seg->second.y};
+          pPoint I0, I1;
+
+          SegIntPos sPos = intersect2D_2Segments(p0, p1, v0, v1, I0, I1);
+          if (sPos == SegIntPos::DISJOINT) // joint at one vertex, regard this case as disjoint
+            continue;
+          else if (sPos == SegIntPos::INTERSECT) {
+            if (I0.distance(p0) < EPSILON || I0.distance(p1) < EPSILON)
+              continue;
+            else
+              segs.push_back(seg);
+          }
+        }
+      }
+    }
+    while (!stack.empty()) stack.pop_back();
   }
 
   boostPoly toBoostPoly(const Polygon& poly) {

@@ -25,6 +25,9 @@ set(SRC
         EDBT/EDBTknn.cpp
         EDBT/EDBTknn.h
         EDBT/EDBTObstacles.h
+        EDBT/Graph.h
+        EDBT/Graph.cpp
+        EDBT/EDBTRtree.h
         generator/genPoints.h
         generator/park2poly.h
         helpers/cfg.cpp

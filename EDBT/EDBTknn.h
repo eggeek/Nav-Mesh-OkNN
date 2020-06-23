@@ -4,68 +4,17 @@
 #include "Data.h"
 #include "timer.h"
 #include "EDBTObstacles.h"
+#include "Graph.h"
 #include <set>
 #include <chrono>
 
 
 namespace EDBT {
 
-namespace rs = rstar;
-using namespace std;
-typedef polyanya::Point pPoint;
-typedef pair<int, int> pii;
-typedef ObstacleMap::Vertex Vertex;
-typedef const pPoint* pPtr;
-
-class Graph {
-typedef 
-  priority_queue<pair<double, int>, vector<pair<double, int>>, greater<pair<double, int>>> pq;
-public:
-  vector<map<int, double>> es;
-  vector<pPoint> vs;
-  vector<int> pre;
-  int vertNum;
-  vector<double> dist;
-  vector<int> path_ids;
-  // start id: vertNum, target id: vertNum+1;
-  pPoint start;
-  pPoint goal;
-	pq open_list;
-	int nodes_generated;
-
-  void add_edge(int from, int to, double w) {
-    if (!es[from].count(to)) es[from][to] = w;
-    else es[from][to] = min(es[from][to], w);
-    if (!es[to].count(from)) es[to][from] = w;
-    else es[to][from] = min(es[to][from], w);
-  }
-
-  void init(vector<Vertex>& vertices, pPoint s, pPoint t) {
-    es.clear();
-    vs.clear();
-    vertNum = (int)vertices.size();
-    vs.resize(vertNum + 2);
-    es.resize(vertNum + 2);
-    pre.resize(vertNum + 2);
-    for (int i=0; i<vertNum + 2; i++) es[i].clear();
-    dist.resize(vertNum + 2);
-    for (const Vertex& v: vertices)
-      vs[v.id] = pPoint{(double)v.x, (double)v.y};
-    start = vs[sid()] = s;
-    goal = vs[tid()] = t;
-		nodes_generated = 0;
-  }
-
-  inline int sid() { return vertNum; }
-  inline int tid() { return vertNum + 1; }
-
-  double Dijkstra(double r, const set<int>& exploredV);
-};
-
-
 class EDBTkNN {
 
 public:
+
   std::chrono::steady_clock::time_point start; 
   double time_limit_micro = 1e6;
   vector<pPoint> goals;
@@ -145,8 +94,6 @@ public:
   void changeTarget(pPtr p);
   void enlargeExplored(double preR, double newR);
   vector<pair<pPtr, double>> OkNN(int k);
-  vector<pair<pPtr, double>> Euclidean_NN(int k);
-  pair<pPtr, double> next_Euclidean_NN();
   inline pPoint getP(int vid) { return pPoint{(double)O->vs[vid].x, (double)O->vs[vid].y}; }
   inline ObstacleMap::Vertex getV(int vid) { return O->vs[vid]; }
 

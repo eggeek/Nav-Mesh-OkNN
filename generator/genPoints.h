@@ -49,7 +49,7 @@ void gen_points_in_traversable(EDBT::ObstacleMap* oMap, const vector<vector<pl::
       x = distx(eng);
       y = disty(eng);
       pl::Point p{(double)x, (double)y};
-      if (oMap->isCoveredByTraversable(p, p) &&
+      if (oMap->isCoveredByPolys(p, p, oMap->traversableRtree) &&
           oMap->mesh->get_point_location(p).type == pl::PointLocation::IN_POLYGON) {
         out[i] = p;
         if (verbose) {
@@ -94,7 +94,7 @@ void gen_clusters_in_traversable(
         x = t.x + distx(eng);
         y = t.y + disty(eng);
         pl::Point p{x, y};
-        if (oMap->isCoveredByTraversable(p, p) &&
+        if (oMap->isCoveredByPolys(p, p, oMap->traversableRtree) &&
             oMap->mesh->get_point_location(p).type == pl::PointLocation::IN_POLYGON) {
           out.push_back(p);
           break;

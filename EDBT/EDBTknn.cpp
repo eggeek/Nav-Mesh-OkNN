@@ -1,6 +1,5 @@
 #include "EDBTknn.h"
-#include "RStarTreeUtil.h"
-#include "consts.h"
+#include "EDBTRtree.h"
 #include <queue>
 
 namespace EDBT {
@@ -82,60 +81,9 @@ void EDBTkNN::changeTarget(pPtr p) {
   }
 }
 
-double Graph::Dijkstra(double r, const set<int>& exploredV) {
-  for (int i: exploredV) {
-    dist[i] = INF;
-    pre[i] = -1;
-  }
-  dist[sid()] = 0;
-  dist[tid()] = INF;
-  pre[sid()] = -1;
-  pre[tid()] = -1;
-  path_ids.clear();
-  // <dist, vid>
-	open_list = pq();
-	this->nodes_generated++;
-  open_list.push({0, sid()});
-  double res = INF;
-  while (!open_list.empty()) {
-    pair<double, int> c = open_list.top(); open_list.pop();
-    if (c.first - EPSILON > dist[c.second]) continue;
-    if (c.second == tid()) {
-      res = c.first;
-      int last_id = c.second;
-      while (last_id != -1) {
-        path_ids.push_back(last_id);
-        last_id = pre[last_id];
-      }
-      reverse(path_ids.begin(), path_ids.end());
-      assert(path_ids.front() == sid());
-      break;
-    }
-    // because all segments touch the ring will be retrieved
-    // if all segments are strictly in explored area:
-    //  1. a path has been found
-    //  2. terminate with res=INF (not reachable)
-    // otherwise there is a `c` in queue that c.first >= r
-    if (c.first > r + EPSILON)
-      res = min(res, c.first);
-
-    for (const auto& it: es[c.second]) {
-      double nxtd = c.first + it.second;
-      if (nxtd < dist[it.first]) {
-        dist[it.first] = nxtd;
-        pre[it.first] = c.second;
-				this->nodes_generated++;
-        open_list.push({nxtd, it.first});
-      }
-    }
-  }
-	while (!open_list.empty()) open_list.pop();
-  return res;
-}
-
 void EDBTkNN::enlargeExplored(double preR, double newR) {
   vector<rs::Data_P> rawObs;
-  rs::RStarTreeUtil::rangeQuery(O->rtree, rs::Point(q.x, q.y), preR, newR, rawObs);
+  rs::RStarTreeUtil::rangeQuery(O->obstacleRtree, rs::Point(q.x, q.y), preR, newR, rawObs);
   set<pii> obs;
   for (auto itPtr: rawObs) {
     Seg seg = *((Seg*)itPtr);
@@ -175,7 +123,7 @@ vector<pair<pPtr, double>> EDBTkNN::OkNN(int k) {
   initSearch();
   timer.start();
   vector<pair<pPtr, double>> res;
-  vector<pair<pPtr, double>> ps = Euclidean_NN(k);
+  vector<pair<pPtr, double>> ps = EDBT::Euclidean_NN(heap, rte, q, k);
   priority_queue<pair<double, pPtr>, vector<pair<double, pPtr>>, less<pair<double, pPtr>>> que;
   if (ps.empty()) return res;
   pPtr p_ = ps.back().first;
@@ -200,7 +148,7 @@ vector<pair<pPtr, double>> EDBTkNN::OkNN(int k) {
 		this->g.nodes_generated++;
 	}
   do {
-    pair<pPtr, double> nxt = next_Euclidean_NN();
+    pair<pPtr, double> nxt = EDBT::next_Euclidean_NN(heap, q);
     if(nxt.first == nullptr) break;
     double d_o = ODC(g, nxt.first, r);
     if (d_o < que.top().first) {
@@ -211,7 +159,7 @@ vector<pair<pPtr, double>> EDBTkNN::OkNN(int k) {
       path_to_goals[nxt.first] = vector<int>(g.path_ids);
     }
     if (nxt.second > dmax) break;
-    if (this->get_search_micro() >= this->time_limit_micro) break;
+    if (this->get_current_micro() >= this->time_limit_micro) break;
   } while (true);
   while (!que.empty()) {
     res.push_back({que.top().second, que.top().first});
@@ -225,32 +173,6 @@ vector<pair<pPtr, double>> EDBTkNN::OkNN(int k) {
     reverse(paths.begin(), paths.end());
   timer.stop();
   return res;
-}
-
-vector<pair<pPtr, double>> EDBTkNN::Euclidean_NN(int k) {
-  heap.clear();
-  double d;
-  rs::Point rq(q.x, q.y);
-  d = sqrt(rs::RStarTreeUtil::dis2(rq, rte->root->mbrn));
-  heap.push(rs::MinHeapEntry(d, rte->root));
-  vector<pair<pPtr, double> > res;
-  for (int i=0; i<k; i++) {
-    rs::MinHeapEntry e = rs::RStarTreeUtil::iNearestNeighbour(heap, rs::Point(q.x, q.y));
-    if (e.entryPtr == nullptr) break;
-    pPtr p = (pPoint*)e.entryPtr->data;
-    d = e.key;
-    res.push_back({p, d});
-  }
-  return res;
-}
-
-pair<pPtr, double> EDBTkNN::next_Euclidean_NN() {
-  rs::MinHeapEntry e = rs::RStarTreeUtil::iNearestNeighbour(heap, rs::Point(q.x, q.y));
-  if (e.entryPtr == nullptr) return {nullptr, INF};
-  else {
-    pPtr p = (pPoint*)e.entryPtr->data;
-    return {p, e.key};
-  }
 }
 
 }// namespace EDBT
