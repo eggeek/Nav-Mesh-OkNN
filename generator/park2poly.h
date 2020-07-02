@@ -5,9 +5,10 @@
 #include <sstream>
 #include <vector>
 using namespace std;
-namespace pl = polyanya;
-namespace rs = rstar;
+
 namespace generator {
+namespace rs = rstar;
+namespace pl = polyanya;
 
 template<typename T>
 void print_polygons(vector<vector<pl::Point>>& outPolys) {

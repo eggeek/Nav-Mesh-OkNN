@@ -125,7 +125,7 @@ TEST_CASE("edbt") { // test competitor in EDBT paper
   edbt->set_goals(pts);
   // Visibility Graph based approach
   // is slow, set time limit to speed up testing
-  edbt->time_limit_micro = INF;
+  edbt->time_limit_micro = 1e6;
   for (Point& start: starts) {
     edbt->set_start(start);
     vector<pair<EDBT::pPtr, double>> res = edbt->OkNN(k);
@@ -144,7 +144,7 @@ TEST_CASE("edbt") { // test competitor in EDBT paper
 
 TEST_CASE("rtree-del") {
   load_data(testfile);
-  rs::RStarTree* tree = nullptr;
+  polyanya::rs::RStarTree* tree = nullptr;
   int repeat = 10;
   for (int i=0; i<repeat; i++) {
     REQUIRE(tree == nullptr);
