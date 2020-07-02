@@ -14,3 +14,4 @@ dump/*
 analysis/figs/*
 analysis/__pycache__/*
 analysis/Analysis.ipynb
+outputs/*
