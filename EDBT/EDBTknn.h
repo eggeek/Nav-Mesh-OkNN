@@ -16,7 +16,7 @@ class EDBTkNN {
 public:
 
   std::chrono::steady_clock::time_point start; 
-  double time_limit_micro = 1e6;
+  double time_limit_micro = INF;
   vector<pPoint> goals;
   pPoint q;
   Graph g;

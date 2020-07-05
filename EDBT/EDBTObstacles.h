@@ -70,13 +70,13 @@ class ObstacleMap {
   vector<Obstacle> obs;
   rs::RStarTree* obstacleRtree;
   vector<rs::LeafNodeEntry> rtEntries;
-
+  string header;
+  int version;
   MeshPtr mesh;
   rs::RStarTree* traversableRtree;
   vector<rs::LeafNodeEntry> traversableEntries;
   ObstacleMap(istream& infile, MeshPtr mp, bool callInit=false): mesh(mp) {
-    string header;
-    int version;
+
 
     if (!(infile >> header))
     {
@@ -240,11 +240,18 @@ class ObstacleMap {
     // if vertices of the segment belong to same obstacle
     // return the precomputed result
     if (vid_oid[seg.first.id] == vid_oid[seg.second.id]) {
-      int oid = vid_oid[seg.first.id];
-      pii p = {min(seg.first.id, seg.second.id), max(seg.first.id, seg.second.id)};
-      if (visObs[oid].find(p) != visObs[oid].end())
-        return true;
-      return false;
+      if (version == 2) { // version 2 poly file has precomputed visibility on same polygon
+        int oid = vid_oid[seg.first.id];
+        pii p = {min(seg.first.id, seg.second.id), max(seg.first.id, seg.second.id)};
+        if (visObs[oid].find(p) != visObs[oid].end())
+          return true;
+        return false;
+      }
+      else {
+        pPoint pi = pPoint{(double)seg.first.x, (double)seg.first.y};
+        pPoint pj = pPoint{(double)seg.second.x, (double)seg.second.y};
+        return isCoveredByPolys(pi, pj, traversableRtree);
+      }
     }
     // otherwise they are covisible only if there is no obstacle segment between them
     pl::Point p0{(double)seg.first.x, (double)seg.first.y};
