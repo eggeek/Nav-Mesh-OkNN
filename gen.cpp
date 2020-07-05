@@ -35,7 +35,7 @@ void gen_poly(string parkpath, double size, int num) {
   generator::print_polygons<long long>(simplified);
 }
 
-void gen_entities_points(string polypath, string meshpath, int num) {
+void gen_query_points(string polypath, string meshpath, int num) {
   ifstream polyfile(polypath);
   ifstream meshfile(meshpath);
   polyanya::Mesh* mp = new polyanya::Mesh(meshfile);
@@ -51,24 +51,47 @@ void gen_entities_points(string polypath, string meshpath, int num) {
   generator::gen_points_in_traversable(oMap, polys, num, out, true);
 }
 
-void gen_clusters(string polypath, string pointpath, string meshpath, int maxNum, double radius=EPSILON) {
+
+void gen_entities_points(string polypath, string meshpath, double density) {
   ifstream polyfile(polypath);
-  ifstream pointfile(pointpath);
   ifstream meshfile(meshpath);
-  int N;
-  cerr << "loading points ..." << endl;
-  pointfile >> N;
+  polyanya::Mesh* mp = new polyanya::Mesh(meshfile);
+  EDBT::ObstacleMap* oMap = new EDBT::ObstacleMap(polyfile, mp);
+
+  // from *.poly2 -> *.poly
+  if (polypath.back() == '2')
+    polypath.pop_back();
+
+  ifstream polysfile(polypath);
+  vector<vector<pl::Point>> polys = generator::read_polys(polysfile);
+  vector<pl::Point> out;
+  int totV = 0;
+  for (const auto& it: polys) totV += it.size();
+  int num = max(1, int((double)totV * density));
+  generator::gen_points_in_traversable(oMap, polys, num, out, true);
+}
+
+void gen_clusters(string polypath, string meshpath, double density, double radius=EPSILON) {
+  ifstream polyfile(polypath);
+  ifstream meshfile(meshpath);
   vector<pl::Point> pts;
-  pts.resize(N);
-  for (int i=0; i<N; i++) {
-    pointfile >> pts[i].x >> pts[i].y;
-  }
+
   cerr << "loading mesh ..." << endl;
   polyanya::Mesh* mp = new polyanya::Mesh(meshfile);
   vector<pl::Point> out;
+
   cerr << "loading obstacle map ..." << endl;
   EDBT::ObstacleMap* oMap = new EDBT::ObstacleMap(polyfile, mp, false);
+
+  cerr << "generating seed ..." << endl;
+  ifstream polysfile(polypath);
+  vector<vector<pl::Point>> polys = generator::read_polys(polysfile);
+  generator::gen_points_in_traversable(oMap, polys, 1, pts, true);
+
   cerr << "generating clusters ... " << endl;
+  int totV = 0;
+  for (const auto& it: polys) totV += it.size();
+  int maxNum = max(1, (int)(totV * density));
   generator::gen_clusters_in_traversable(oMap, mp, maxNum, pts, out, radius, true);
 }
 
@@ -86,23 +109,28 @@ int main(int argc, char* argv[]) {
       string num = string(argv[4]);
       gen_poly(parkpath, stod(size), stod(num));
     }
-    else if (t == "pts") {
+    else if (t == "query-pts") {
       string polypath = string(argv[2]);
       string meshpath = string(argv[3]);
       int num = atoi(argv[4]);
-      gen_entities_points(polypath, meshpath, num);
+      gen_query_points(polypath, meshpath, num);
+    }
+    else if (t == "pts") {
+      string polypath = string(argv[2]);
+      string meshpath = string(argv[3]);
+      double density = atof(argv[4]);
+      gen_entities_points(polypath, meshpath, density);
     }
     else if (t == "cluster") {
       string polypath = string(argv[2]);
-      string pointpath = string(argv[3]);
-      string meshpath = string(argv[4]);
-      int maxNum = 10;
+      string meshpath = string(argv[3]);
+      double density = 0.01;
       double radius = EPSILON;
+      if (argc > 4)
+        density = atof(argv[4]);
       if (argc > 5)
-        maxNum = atoi(argv[5]);
-      if (argc > 6)
-        radius = atof(argv[6]);
-      gen_clusters(polypath, pointpath, meshpath, maxNum, radius);
+        radius = atof(argv[5]);
+      gen_clusters(polypath, meshpath, density, radius);
     }
   }
   return 0;

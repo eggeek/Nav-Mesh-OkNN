@@ -14,18 +14,12 @@ namespace generator {
 
 void gen_points_in_traversable(EDBT::ObstacleMap* oMap, const vector<vector<pl::Point>>& polys,
                                int num, vector<pl::Point>& out, bool verbose=false) {
-  long long min_x, max_x, min_y, max_y;
+  double min_x, max_x, min_y, max_y;
   // ignore border
-  min_x = max_x = polys[1][0].x;
-  min_y = max_y = polys[1][0].y;
-  for (size_t i=1; i<polys.size(); i++) {
-    for (const auto& p: polys[i]) {
-      min_x = min(min_x, (long long)p.x);
-      max_x = max(max_x, (long long)p.x);
-      min_y = min(min_y, (long long)p.y);
-      max_y = max(max_y, (long long)p.y);
-    }
-  }
+  min_x = oMap->mesh->get_minx();
+  max_x = oMap->mesh->get_maxx();
+  min_y = oMap->mesh->get_miny();
+  max_y = oMap->mesh->get_maxy();
 
   if (verbose) {
     cerr << "border: " << polys[0][0] << " " << polys[0][1] << endl;
@@ -36,19 +30,19 @@ void gen_points_in_traversable(EDBT::ObstacleMap* oMap, const vector<vector<pl::
   out.resize(num);
   random_device rd;
   mt19937 eng(rd());
-  uniform_int_distribution<long long> distx(min_x, max_x);
-  uniform_int_distribution<long long> disty(min_y, max_y);
+  uniform_real_distribution<double> distx(min_x, max_x);
+  uniform_real_distribution<double> disty(min_y, max_y);
 
   if (verbose) {
     cout << num << endl;
   }
 
   for (int i=0; i<num; i++) {
-    long long x, y;
+    double x, y;
     do {
       x = distx(eng);
       y = disty(eng);
-      pl::Point p{(double)x, (double)y};
+      pl::Point p{x, y};
       if (oMap->isCoveredByPolys(p, p, oMap->traversableRtree) &&
           oMap->mesh->get_point_location(p).type == pl::PointLocation::IN_POLYGON) {
         out[i] = p;
@@ -67,7 +61,7 @@ void gen_points_in_traversable(EDBT::ObstacleMap* oMap, const vector<vector<pl::
 void gen_clusters_in_traversable(
     EDBT::ObstacleMap* oMap, pl::Mesh* mesh,
     int maxNum,
-    vector<pl::Point>& targets,
+    vector<pl::Point>& seeds,
     vector<pl::Point>& out, double radius=EPSILON, bool verbose=false)  {
 
   double min_x = mesh->get_minx();
@@ -86,7 +80,7 @@ void gen_clusters_in_traversable(
   uniform_int_distribution<> distnum(maxNum, maxNum);
   uniform_real_distribution<> distx(-dx, dx);
   uniform_real_distribution<> disty(-dy, dy);
-  for (auto& t: targets) {
+  for (auto& t: seeds) {
     int num = distnum(eng);
     for (int i=0; i<num; i++) {
       double x, y;

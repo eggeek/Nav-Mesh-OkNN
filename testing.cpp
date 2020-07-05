@@ -32,6 +32,7 @@ KnnMeshEdgeFence* meshFence;
 vector<Point> pts;
 vector<vector<Point>> polys;
 string testfile, obs_path, polys_path, pts_path, mesh_path;
+double max_time;
 
 void load_points(istream& infile ) {
   int N;
@@ -76,14 +77,12 @@ void dump(const vector<pl::Point> starts) {
 void load_data(const string& testcase) {
   ifstream testin(testcase);
 
-  testin >> mesh_path >> polys_path >> obs_path >> pts_path;
+  testin >> mesh_path >> obs_path >> pts_path;
 
   ifstream meshfile(mesh_path);
   ifstream obsfile(obs_path);
   ifstream ptsfile(pts_path);
-  ifstream polysfile(polys_path);
 
-  polys = generator::read_polys(polysfile);
   load_points(ptsfile);
   mp = new Mesh(meshfile);
   m = *mp;
@@ -125,7 +124,8 @@ TEST_CASE("edbt") { // test competitor in EDBT paper
   edbt->set_goals(pts);
   // Visibility Graph based approach
   // is slow, set time limit to speed up testing
-  edbt->time_limit_micro = 1e6;
+  edbt->time_limit_micro = max_time > 0? max_time: INF;
+  cerr << "time_limit_micro: " << edbt->time_limit_micro << endl;
   for (Point& start: starts) {
     edbt->set_start(start);
     vector<pair<EDBT::pPtr, double>> res = edbt->OkNN(k);
@@ -335,7 +335,9 @@ TEST_CASE("poly-IER") { // test polyanya with incremental euclidean restriction
 int main(int argv, char* args[]) {
   using namespace Catch::clara;
   Catch::Session session;
-  auto cli = session.cli() | Opt(testfile, "testfile")["--input"]("");
+  max_time = 0;
+  auto cli = session.cli() | Opt(testfile, "testfile")["--input"]("")
+                           | Opt(max_time, "time(ms)")["--limit"]("max execution time");
   session.cli(cli);
   int resCode = session.applyCommandLine(argv, args);
   if (resCode != 0)
