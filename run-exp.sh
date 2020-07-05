@@ -5,13 +5,13 @@ path="./input-data"
 outto="./outputs"
 density=(0.1 0.01 0.001 0.0001)
 domains=(
-  #"bg512-map"
+  "bg512-map"
   "da2-map"
-  #"dao-map"
-  #"random-park-tiled"
-  #"sc1-map"
-  #"street-map"
-  #"wc3maps512-map"
+  "dao-map"
+  "random-park-tiled"
+  "sc1-map"
+  "street-map"
+  "wc3maps512-map"
 )
 
 function gen_cmd() {
