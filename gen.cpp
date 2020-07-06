@@ -86,7 +86,7 @@ void gen_clusters(string polypath, string meshpath, double density, double radiu
   cerr << "generating seed ..." << endl;
   ifstream polysfile(polypath);
   vector<vector<pl::Point>> polys = generator::read_polys(polysfile);
-  generator::gen_points_in_traversable(oMap, polys, 1, pts, true);
+  generator::gen_points_in_traversable(oMap, polys, 1, pts, false);
 
   cerr << "generating clusters ... " << endl;
   int totV = 0;
