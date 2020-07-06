@@ -8,7 +8,7 @@ domains=(
   "bg512-map"
   "da2-map"
   "dao-map"
-  "random-park-tiled"
+  #"random-park-tiled"
   "sc1-map"
   "street-map"
   "wc3maps512-map"
