@@ -369,8 +369,6 @@ void print_header(const vector<string>& cols) {
 
 void pre_process() {
   vector<string> cols = {
-    "pts", "polys", "vertices", 
-    "cost_pre", "gen_pre", "edgecnt", "fencecnt", "keycnt", 
     "edgelabels",
     //"map", "domain", "category"
   };
@@ -380,9 +378,6 @@ void pre_process() {
   for (const auto& it: meshFence->get_all_fences()) {
     map<string, double> row;
 
-    row["pts"] = pts.size();
-    row["polys"] = polys.size();
-    row["vertices"] = mp->mesh_vertices.size();
     row["edgelabels"] = it.second.size();
     fill_meshFence(row, meshFence);
 
