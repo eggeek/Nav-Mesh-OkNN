@@ -367,6 +367,33 @@ void print_header(const vector<string>& cols) {
   }
 }
 
+void pre_process() {
+  vector<string> cols = {
+    "pts", "polys", "vertices", 
+    "cost_pre", "gen_pre", "edgecnt", "fencecnt", "keycnt", 
+    "edgelabels",
+    //"map", "domain", "category"
+  };
+  meshFence->set_goals(pts);
+  meshFence->floodfill();
+  print_header(cols);
+  for (const auto& it: meshFence->get_all_fences()) {
+    map<string, double> row;
+
+    row["pts"] = pts.size();
+    row["polys"] = polys.size();
+    row["vertices"] = mp->mesh_vertices.size();
+    row["edgelabels"] = it.second.size();
+    fill_meshFence(row, meshFence);
+
+    for (int i=0; i<(int)cols.size(); i++) {
+      cout << setw(10) << row[cols[i]];
+      if (i+1 == (int)cols.size()) cout << endl;
+      else cout << ",";
+    }
+  }
+}
+
 int main(int argv, char* args[]) {
   load_data();
   vector<string> cols = {
@@ -431,6 +458,9 @@ int main(int argv, char* args[]) {
         poly_only(query, k, cols);
       }
     }
+  }
+  else if (t == "pre") {
+    pre_process();
   }
   else assert(false);
 }

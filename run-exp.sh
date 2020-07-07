@@ -39,6 +39,29 @@ function gen_cmd() {
   echo $cmd
 }
 
+function gen_pre_cmd() {
+  exp=$1
+  domain=$2
+  map=$3
+  desc=$4
+
+  mkdir -p $outto/$exp
+  mkdir -p $path/inputs/$exp
+
+  polypath="$path/polys/$domain/$map.poly"
+  meshpath="$path/meshes/$domain/$map.mesh"
+  pointpath="$path/points/$domain/$map-$desc.pts"
+  file="$path/inputs/$exp/$map-$desc.in"
+
+  echo "$meshpath" > $file
+  echo "$polypath" >> $file
+  echo "$pointpath" >> $file
+  echo "$pointpath" >> $file
+
+  cmd="$exc $exp < $file > $outto/$exp/$map-$desc.log" 
+  echo $cmd
+}
+
 function small() {
   cmd=$(gen_cmd "small" "random-park-tiled" "300" "0.1" 5)
   echo "eval \"$cmd\""
@@ -110,14 +133,35 @@ function nn() {
   done
 }
 
+function pre() {
+  exp="pre"
+  for d in "${density[@]}"; do
+    for domain in "${domains[@]}"; do
+      for mesh in $path/meshes/$domain/*.mesh; do
+        map=$(basename -- ${mesh%.*})
+        cmd=$(gen_pre_cmd "$exp" "$domain" "$map" "$d")
+        echo "eval \"$cmd\""
+        if [ $execute -eq 1 ]; then eval $cmd ; fi
+      done
+    done
+
+    cmd=$(gen_pre_cmd "$exp" "random-park-tiled" "9000" "$d")
+    echo "eval \"$cmd\""
+    if [ $execute -eq 1 ]; then eval $cmd ; fi
+  done
+}
+
 case "$1" in 
   small) small;;
   random) random;;
   cluster) cluster;;
   nn) nn;;
+  pre) pre;;
   *)
     small
+    pre
     random
     cluster
-    nn;;
+    nn
+    ;;
 esac
